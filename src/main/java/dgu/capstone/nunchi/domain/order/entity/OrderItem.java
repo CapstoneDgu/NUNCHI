@@ -26,11 +26,11 @@ public class OrderItem {
     @Column(name = "quantity")
     private Integer quantity;
 
-    // 주문 당시 메뉴명 스냅샷 (이후 메뉴명 변경 대비)
+    // 주문 당시 메뉴명 스냅샷
     @Column(name = "menu_name", length = 255)
     private String menuName;
 
-    // 주문 당시 단가 스냅샷 (이후 가격 변경 대비)
+    // 주문 당시 단가 스냅샷
     @Column(name = "unit_price")
     private Integer unitPrice;
 
