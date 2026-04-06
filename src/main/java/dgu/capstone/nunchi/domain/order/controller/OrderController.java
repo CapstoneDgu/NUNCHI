@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -75,5 +76,5 @@ public class OrderController {
     }
 
     /** 주문 확정 요청 DTO */
-    private record OrderConfirmRequest(@NotNull Long sessionId) {}
+    private record OrderConfirmRequest(@NotNull @Schema(example = "1") Long sessionId) {}
 }
