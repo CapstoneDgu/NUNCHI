@@ -89,7 +89,11 @@ public class OrderService {
     public CartResponse updateItem(Long sessionId, String itemId, CartItemUpdateRequest request) {
         List<CartItem> items = cartRedisRepository.getItems(sessionId);
 
-        // itemId 일치하는 항목을 새 CartItem으로 교체
+        boolean exists = items.stream().anyMatch(item -> item.getItemId().equals(itemId));
+        if (!exists) {
+            throw new OrderException(OrderErrorCode.NOT_FOUND_CART_ITEM);
+        }
+
         List<CartItem> updatedItems = items.stream()
                 .map(item -> {
                     if (item.getItemId().equals(itemId)) {
@@ -113,6 +117,12 @@ public class OrderService {
     /** 장바구니 아이템 삭제 */
     public CartResponse removeItem(Long sessionId, String itemId) {
         List<CartItem> items = cartRedisRepository.getItems(sessionId);
+
+        boolean exists = items.stream().anyMatch(item -> item.getItemId().equals(itemId));
+        if (!exists) {
+            throw new OrderException(OrderErrorCode.NOT_FOUND_CART_ITEM);
+        }
+
         List<CartItem> updatedItems = items.stream()
                 .filter(item -> !item.getItemId().equals(itemId))
                 .toList();
@@ -125,6 +135,10 @@ public class OrderService {
     @Transactional
     public OrderResponse confirmOrder(Long sessionId) {
         List<CartItem> cartItems = cartRedisRepository.getItems(sessionId);
+
+        if (cartItems.isEmpty()) {
+            throw new OrderException(OrderErrorCode.EMPTY_CART);
+        }
 
         // Order 생성 및 저장
         Order order = Order.create(sessionId);
