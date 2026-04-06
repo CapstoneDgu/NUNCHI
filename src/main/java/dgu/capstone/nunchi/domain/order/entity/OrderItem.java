@@ -43,4 +43,8 @@ public class OrderItem {
                 .unitPrice(unitPrice)
                 .build();
     }
+
+    public void updateQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
 }

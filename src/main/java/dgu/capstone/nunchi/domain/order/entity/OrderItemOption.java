@@ -23,10 +23,20 @@ public class OrderItemOption {
     @Column(name = "option_id", nullable = false)
     private Long optionId;
 
-    public static OrderItemOption create(OrderItem orderItem, Long optionId) {
+    // 주문 당시 옵션명 스냅샷
+    @Column(name = "option_name", length = 100)
+    private String optionName;
+
+    // 주문 당시 추가금액 스냅샷
+    @Column(name = "extra_price")
+    private Integer extraPrice;
+
+    public static OrderItemOption create(OrderItem orderItem, Long optionId, String optionName, Integer extraPrice) {
         return OrderItemOption.builder()
                 .orderItem(orderItem)
                 .optionId(optionId)
+                .optionName(optionName)
+                .extraPrice(extraPrice)
                 .build();
     }
 }
