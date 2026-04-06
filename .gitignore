@@ -37,9 +37,9 @@ out/
 .vscode/
 
 ### Claude Code ###
-.claude/
-CLAUDE_RESULT.md
-CLAUDE_PLAN.md
+#.claude/
+#CLAUDE_RESULT.md
+#CLAUDE_PLAN.md
 
 ### Reference ###
 reference/
