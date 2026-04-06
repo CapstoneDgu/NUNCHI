@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew compileJava)",
+      "Bash(psql -U hyodongg -d postgres -c \"\\\\dt\")",
+      "Bash(psql -U postgres -d postgres -c \"\\\\dt\")",
+      "Bash(psql -U hyodongg -d postgres -c \"\\\\d menu_category\")",
+      "Bash(psql -U hyodongg -d postgres -c \"\\\\d menu\")",
+      "Bash(psql -U hyodongg -d postgres -c \"\\\\d menu_option_group\")",
+      "Bash(psql -U hyodongg -d postgres -c \"\\\\d menu_option\")",
+      "Bash(psql:*)",
+      "Bash(./gradlew compileJava:*)",
+      "Bash(./gradlew bootRun)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=local')"
+    ]
+  }
+}
