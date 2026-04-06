@@ -29,6 +29,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	// Bean Validation
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	// Swagger (SpringDoc OpenAPI)
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3'
 
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
