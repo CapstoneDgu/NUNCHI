@@ -1,0 +1,51 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.0.5'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'dgu.capstone'
+version = '0.0.1-SNAPSHOT'
+description = 'NUNCHI'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// H2 콘솔
+	implementation 'org.springframework.boot:spring-boot-h2console'
+	// Spring Data JPA
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	// Spring Security
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	// Spring MVC
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// H2 인메모리 DB
+	runtimeOnly 'com.h2database:h2'
+	// PostgreSQL J
+	runtimeOnly 'org.postgresql:postgresql'
+
+	// 테스트
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testCompileOnly 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
