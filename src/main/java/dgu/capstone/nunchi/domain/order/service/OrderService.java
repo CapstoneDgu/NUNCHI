@@ -1,4 +1,200 @@
 package dgu.capstone.nunchi.domain.order.service;
 
+import dgu.capstone.nunchi.domain.menu.entity.MenuOption;
+import dgu.capstone.nunchi.domain.menu.repository.MenuOptionRepository;
+import dgu.capstone.nunchi.domain.menu.repository.MenuRepository;
+import dgu.capstone.nunchi.domain.order.dto.cart.CartItem;
+import dgu.capstone.nunchi.domain.order.dto.request.CartItemAddRequest;
+import dgu.capstone.nunchi.domain.order.dto.request.CartItemUpdateRequest;
+import dgu.capstone.nunchi.domain.order.dto.response.CartResponse;
+import dgu.capstone.nunchi.domain.order.dto.response.OrderItemResponse;
+import dgu.capstone.nunchi.domain.order.dto.response.OrderResponse;
+import dgu.capstone.nunchi.domain.order.entity.Order;
+import dgu.capstone.nunchi.domain.order.entity.OrderItem;
+import dgu.capstone.nunchi.domain.order.entity.OrderItemOption;
+import dgu.capstone.nunchi.domain.order.repository.CartRedisRepository;
+import dgu.capstone.nunchi.domain.order.repository.OrderItemOptionRepository;
+import dgu.capstone.nunchi.domain.order.repository.OrderItemRepository;
+import dgu.capstone.nunchi.domain.order.repository.OrderRepository;
+import dgu.capstone.nunchi.global.exception.domainException.MenuException;
+import dgu.capstone.nunchi.global.exception.domainException.OrderException;
+import dgu.capstone.nunchi.global.exception.errorcode.MenuErrorCode;
+import dgu.capstone.nunchi.global.exception.errorcode.OrderErrorCode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class OrderService {
+
+    private final CartRedisRepository cartRedisRepository;
+    private final MenuRepository menuRepository;
+    private final MenuOptionRepository menuOptionRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final OrderItemOptionRepository orderItemOptionRepository;
+
+    /** 장바구니 조회 */
+    public CartResponse getCart(Long sessionId) {
+        List<CartItem> items = cartRedisRepository.getItems(sessionId);
+        return CartResponse.from(sessionId, items);
+    }
+
+    /** 장바구니에 아이템 추가 */
+    @Transactional
+    public CartResponse addItem(CartItemAddRequest request) {
+        // 메뉴 조회 (스냅샷용)
+        var menu = menuRepository.findById(request.menuId())
+                .orElseThrow(() -> new MenuException(MenuErrorCode.NOT_FOUND_MENU));
+
+        // 옵션 조회 및 CartOption 스냅샷 생성
+        List<CartItem.CartOption> cartOptions = new ArrayList<>();
+        if (request.optionIds() != null && !request.optionIds().isEmpty()) {
+            for (Long optionId : request.optionIds()) {
+                MenuOption menuOption = menuOptionRepository.findById(optionId)
+                        .orElseThrow(() -> new MenuException(MenuErrorCode.NOT_FOUND_MENU));
+                cartOptions.add(CartItem.CartOption.builder()
+                        .optionId(menuOption.getOptionId())
+                        .optionName(menuOption.getName())
+                        .extraPrice(menuOption.getExtraPrice())
+                        .build());
+            }
+        }
+
+        // 새 CartItem 생성
+        CartItem newItem = CartItem.builder()
+                .itemId(UUID.randomUUID().toString())
+                .menuId(menu.getMenuId())
+                .menuName(menu.getName())
+                .unitPrice(menu.getPrice())
+                .quantity(request.quantity())
+                .options(cartOptions)
+                .build();
+
+        // 기존 장바구니에 추가 후 저장
+        List<CartItem> items = cartRedisRepository.getItems(request.sessionId());
+        items.add(newItem);
+        cartRedisRepository.saveItems(request.sessionId(), items);
+
+        return CartResponse.from(request.sessionId(), items);
+    }
+
+    /** 장바구니 아이템 수량 수정 */
+    public CartResponse updateItem(Long sessionId, String itemId, CartItemUpdateRequest request) {
+        List<CartItem> items = cartRedisRepository.getItems(sessionId);
+
+        // itemId 일치하는 항목을 새 CartItem으로 교체
+        List<CartItem> updatedItems = items.stream()
+                .map(item -> {
+                    if (item.getItemId().equals(itemId)) {
+                        return CartItem.builder()
+                                .itemId(item.getItemId())
+                                .menuId(item.getMenuId())
+                                .menuName(item.getMenuName())
+                                .unitPrice(item.getUnitPrice())
+                                .quantity(request.quantity())
+                                .options(item.getOptions())
+                                .build();
+                    }
+                    return item;
+                })
+                .toList();
+
+        cartRedisRepository.saveItems(sessionId, updatedItems);
+        return CartResponse.from(sessionId, updatedItems);
+    }
+
+    /** 장바구니 아이템 삭제 */
+    public CartResponse removeItem(Long sessionId, String itemId) {
+        List<CartItem> items = cartRedisRepository.getItems(sessionId);
+        List<CartItem> updatedItems = items.stream()
+                .filter(item -> !item.getItemId().equals(itemId))
+                .toList();
+
+        cartRedisRepository.saveItems(sessionId, updatedItems);
+        return CartResponse.from(sessionId, updatedItems);
+    }
+
+    /** 주문 확정: Redis 장바구니 → PostgreSQL Order + OrderItem + OrderItemOption */
+    @Transactional
+    public OrderResponse confirmOrder(Long sessionId) {
+        List<CartItem> cartItems = cartRedisRepository.getItems(sessionId);
+
+        // Order 생성 및 저장
+        Order order = Order.create(sessionId);
+        orderRepository.save(order);
+
+        int totalAmount = 0;
+
+        // 각 CartItem → OrderItem + OrderItemOption 저장
+        for (CartItem cartItem : cartItems) {
+            OrderItem orderItem = OrderItem.create(
+                    order,
+                    cartItem.getMenuId(),
+                    cartItem.getQuantity(),
+                    cartItem.getMenuName(),
+                    cartItem.getUnitPrice()
+            );
+            orderItemRepository.save(orderItem);
+
+            int optionExtra = 0;
+            if (cartItem.getOptions() != null) {
+                for (CartItem.CartOption cartOption : cartItem.getOptions()) {
+                    OrderItemOption itemOption = OrderItemOption.create(
+                            orderItem,
+                            cartOption.getOptionId(),
+                            cartOption.getOptionName(),
+                            cartOption.getExtraPrice()
+                    );
+                    orderItemOptionRepository.save(itemOption);
+                    optionExtra += cartOption.getExtraPrice() != null ? cartOption.getExtraPrice() : 0;
+                }
+            }
+
+            totalAmount += (cartItem.getUnitPrice() + optionExtra) * cartItem.getQuantity();
+        }
+
+        // 총금액 업데이트 및 주문 완료 처리
+        order.updateTotalAmount(totalAmount);
+        order.complete();
+
+        // Redis 장바구니 삭제
+        cartRedisRepository.deleteCart(sessionId);
+
+        // 응답 생성
+        List<OrderItem> savedItems = orderItemRepository.findAllByOrder(order);
+        List<OrderItemResponse> itemResponses = savedItems.stream()
+                .map(item -> {
+                    List<OrderItemOption> options = orderItemOptionRepository.findAllByOrderItem(item);
+                    return OrderItemResponse.from(item, options);
+                })
+                .toList();
+
+        return OrderResponse.from(order, itemResponses);
+    }
+
+    /** 주문 취소 */
+    @Transactional
+    public OrderResponse cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderException(OrderErrorCode.NOT_FOUND_ORDER));
+
+        order.cancel();
+
+        List<OrderItem> items = orderItemRepository.findAllByOrder(order);
+        List<OrderItemResponse> itemResponses = items.stream()
+                .map(item -> {
+                    List<OrderItemOption> options = orderItemOptionRepository.findAllByOrderItem(item);
+                    return OrderItemResponse.from(item, options);
+                })
+                .toList();
+
+        return OrderResponse.from(order, itemResponses);
+    }
 }
