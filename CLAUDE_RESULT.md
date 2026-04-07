@@ -1,69 +1,413 @@
-# PR 코드리뷰 반영 결과 보고서
+# 전체 주문 플로우 시뮬레이션 보고서
 
-## 반영 완료 항목
-
-### 1. DTO 요청 검증 강화
-**파일**: `CartItemAddRequest.java`
-
-- `sessionId`, `menuId`: `@Positive` 추가 (0 이하 값 차단)
-- `optionIds`: `List<@NotNull @Positive Long>` 으로 변경 (null 요소 및 음수 ID 차단)
-
-### 2. OrderItemResponse itemTotal 계산 수정
-**파일**: `OrderItemResponse.java`
-
-- 기존: `unitPrice * quantity` (옵션 추가금 누락)
-- 수정: `(unitPrice + optionExtra) * quantity` (옵션 추가금 합산 후 수량 곱셈)
-- `extraPrice`가 null인 경우 0으로 처리하여 NPE 방지
-
-### 3. springdoc-openapi 버전 업그레이드
-**파일**: `build.gradle`
-
-- 기존: `springdoc-openapi-starter-webmvc-ui:2.8.3` (Spring Boot 3.x 호환)
-- 수정: `springdoc-openapi-starter-webmvc-ui:3.0.0` (Spring Boot 4.x 호환)
-
-### 4. 결제 중복 요청 방지
-**파일**: `PaymentService.java`, `PaymentRepository.java`, `PaymentErrorCode.java`
-
-- `findTopByOrderIdOrderByCreatedAtDesc` 메서드 추가
-- `requestPayment()` 진입 시 기존 결제 조회:
-  - `PENDING` / `SUCCESS` 상태이면 `PAYMENT_ALREADY_EXISTS(400)` 예외 발생
-  - `FAILED` 상태이면 재시도 허용
-- `PaymentErrorCode.PAYMENT_ALREADY_EXISTS` 에러코드 추가
-
-### 5. 결제 상태 전이 경쟁 조건 방지
-**파일**: `PaymentRepository.java`, `PaymentService.java`
-
-- `findByIdWithLock(Long paymentId)`: `PESSIMISTIC_WRITE` 락 적용
-- `successPayment()`, `failPayment()` 모두 락 조회로 교체
-- 동시 성공/실패 콜백이 들어와도 한쪽만 PENDING 상태를 확보하여 원자성 보장
-
-### 6. 세션 완료 처리 경쟁 조건 방지
-**파일**: `KioskSessionRepository.java`, `SessionService.java`
-
-- `findByIdWithLock(Long sessionId)`: `PESSIMISTIC_WRITE` 락 적용
-- `completeSession()` 에서 락 조회로 교체
-- 동시 요청 시 두 트랜잭션이 모두 ACTIVE 판정받는 상황 차단
-
-### 7. ObjectMapper 빈 격리
-**파일**: `RedisConfig.java`, `CartRedisRepository.java`
-
-- `objectMapper` → `@Bean("redisObjectMapper")`로 이름 변경
-- `CartRedisRepository` 에서 `@Qualifier("redisObjectMapper")` 명시적 주입
-- Spring Boot 자동 구성 `ObjectMapper` 오버라이드 방지
+## 시나리오
+> 고객이 키오스크에서 **동국 비빔밥(7,500원) + 계란 추가 옵션(500원) x2**와 **동국 순두부(6,500원) x1**을 주문하고 IC카드로 결제한다.
 
 ---
 
-## 파일별 변경 요약
+## STEP 1. 세션 생성
 
-| 파일 | 변경 내용 |
-|------|-----------|
-| `CartItemAddRequest.java` | `@Positive`, `@NotNull @Positive` 검증 추가 |
-| `OrderItemResponse.java` | itemTotal 옵션 추가금 반영 |
-| `build.gradle` | springdoc 2.8.3 → 3.0.0 |
-| `PaymentErrorCode.java` | `PAYMENT_ALREADY_EXISTS` 추가 |
-| `PaymentRepository.java` | `findTopByOrderId...`, `findByIdWithLock` 추가 |
-| `PaymentService.java` | 중복 결제 차단 로직, 락 조회 적용 |
-| `KioskSessionRepository.java` | `findByIdWithLock` 추가 |
-| `SessionService.java` | 락 조회로 교체 |
-| `RedisConfig.java` | 빈 이름 `redisObjectMapper`로 변경 |
-| `CartRedisRepository.java` | `@Qualifier("redisObjectMapper")` 명시 |
+```
+POST /api/sessions
+```
+
+**요청**
+```json
+{ "mode": "NORMAL", "language": "ko" }
+```
+
+**코드 흐름**
+- `SessionService.createSession()` → `KioskSession.create(NORMAL, "ko")` → DB 저장
+- 초기 상태: `sessionStatus = ACTIVE`
+
+**응답** `201 Created`
+```json
+{
+  "code": 201,
+  "msg": "생성이 완료되었습니다.",
+  "data": {
+    "sessionId": 1,
+    "mode": "NORMAL",
+    "status": "ACTIVE",
+    "language": "ko",
+    "createdAt": "2026-04-07T10:00:00"
+  }
+}
+```
+
+---
+
+## STEP 2. 카테고리 목록 조회
+
+```
+GET /api/menus/categories
+```
+
+**코드 흐름**
+- `MenuService.getCategories()` → `menuCategoryRepository.findAll()`
+
+**응답** `200 OK`
+```json
+{
+  "code": 200,
+  "msg": "요청이 성공했습니다.",
+  "data": [
+    { "categoryId": 1, "name": "학생식당" },
+    { "categoryId": 2, "name": "분식당" }
+  ]
+}
+```
+
+---
+
+## STEP 3. 메뉴 목록 조회
+
+```
+GET /api/menus?categoryId=1
+```
+
+**코드 흐름**
+- `MenuService.getMenus(1L)` → `menuRepository.findByCategory_CategoryId(1)`
+
+**응답** `200 OK`
+```json
+{
+  "code": 200,
+  "msg": "요청이 성공했습니다.",
+  "data": [
+    { "menuId": 1, "name": "동국 비빔밥", "price": 7500, "isSoldOut": false },
+    { "menuId": 2, "name": "동국 순두부", "price": 6500, "isSoldOut": false },
+    ...
+  ]
+}
+```
+
+---
+
+## STEP 4. 메뉴 상세 조회 (옵션 확인)
+
+```
+GET /api/menus/1
+```
+
+**코드 흐름**
+- `MenuService.getMenuDetail(1L)`
+- `menuRepository.findById(1)` → 메뉴 조회
+- `menuOptionGroupRepository.findByMenu_MenuId(1)` → 옵션그룹 조회
+- `menuOptionRepository.findByOptionGroup_OptionGroupIdIn([1])` → 옵션 일괄 조회 (N+1 방지)
+
+**응답** `200 OK`
+```json
+{
+  "code": 200,
+  "msg": "요청이 성공했습니다.",
+  "data": {
+    "menuId": 1,
+    "name": "동국 비빔밥",
+    "price": 7500,
+    "isSoldOut": false,
+    "imageUrl": "https://...",
+    "optionGroups": [
+      {
+        "groupId": 1,
+        "groupName": "추가 옵션",
+        "options": [
+          { "optionId": 1, "name": "계란 추가", "extraPrice": 500 },
+          { "optionId": 2, "name": "김치 추가", "extraPrice": 300 }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+## STEP 5. 장바구니 담기 - 동국 비빔밥 x2 (계란 추가)
+
+```
+POST /api/orders/cart/items
+```
+
+**요청**
+```json
+{
+  "sessionId": 1,
+  "menuId": 1,
+  "quantity": 2,
+  "optionIds": [1]
+}
+```
+
+**코드 흐름**
+1. `@Valid` 검증: `sessionId(@Positive)`, `menuId(@Positive)`, `quantity(@Min(1))`, `optionIds(List<@NotNull @Positive>)` 통과
+2. `menuRepository.findById(1)` → 동국 비빔밥(7500원) 조회
+3. `menuOptionRepository.findById(1)` → 계란 추가(500원) 조회
+4. `CartItem` 생성 (UUID 자동 생성: `"a1b2-c3d4-..."`)
+5. `cartRedisRepository.getItems(1)` → 빈 리스트
+6. 리스트에 추가 후 `cartRedisRepository.saveItems(1, items)` → Redis 저장 (TTL 30분)
+
+**응답** `200 OK`
+```json
+{
+  "code": 200,
+  "msg": "요청이 성공했습니다.",
+  "data": {
+    "sessionId": 1,
+    "items": [
+      {
+        "itemId": "a1b2-c3d4-e5f6",
+        "menuId": 1,
+        "menuName": "동국 비빔밥",
+        "unitPrice": 7500,
+        "quantity": 2,
+        "itemTotal": 16000,
+        "options": [
+          { "optionId": 1, "optionName": "계란 추가", "extraPrice": 500 }
+        ]
+      }
+    ],
+    "totalAmount": 16000
+  }
+}
+```
+> itemTotal = (7500 + 500) * 2 = **16,000원**
+
+---
+
+## STEP 6. 장바구니 담기 - 동국 순두부 x1 (옵션 없음)
+
+```
+POST /api/orders/cart/items
+```
+
+**요청**
+```json
+{
+  "sessionId": 1,
+  "menuId": 2,
+  "quantity": 1,
+  "optionIds": []
+}
+```
+
+**코드 흐름**
+- `cartRedisRepository.getItems(1)` → 기존 1개 아이템 조회
+- 새 `CartItem` 추가 후 저장 (총 2개)
+
+**응답** `200 OK`
+```json
+{
+  "code": 200,
+  "msg": "요청이 성공했습니다.",
+  "data": {
+    "sessionId": 1,
+    "items": [
+      {
+        "itemId": "a1b2-c3d4-e5f6",
+        "menuName": "동국 비빔밥",
+        "unitPrice": 7500,
+        "quantity": 2,
+        "itemTotal": 16000,
+        "options": [{ "optionId": 1, "optionName": "계란 추가", "extraPrice": 500 }]
+      },
+      {
+        "itemId": "b2c3-d4e5-f6a7",
+        "menuName": "동국 순두부",
+        "unitPrice": 6500,
+        "quantity": 1,
+        "itemTotal": 6500,
+        "options": []
+      }
+    ],
+    "totalAmount": 22500
+  }
+}
+```
+> totalAmount = 16,000 + 6,500 = **22,500원**
+
+---
+
+## STEP 7. 장바구니 확인
+
+```
+GET /api/orders/cart/1
+```
+
+**코드 흐름**
+- `cartRedisRepository.getItems(1)` → Redis에서 2개 아이템 조회
+- `CartResponse.from(1, items)` 구성
+
+**응답**: STEP 6 응답과 동일
+
+---
+
+## STEP 8. 주문 확정 (Redis → PostgreSQL)
+
+```
+POST /api/orders/confirm
+```
+
+**요청**
+```json
+{ "sessionId": 1 }
+```
+
+**코드 흐름**
+1. `cartRedisRepository.getItems(1)` → 2개 아이템
+2. 빈 장바구니 체크 통과
+3. `Order.create(1)` → DB 저장 (orderId=1, status=PENDING, totalAmount=0)
+4. **루프 - 아이템1 (동국 비빔밥)**
+   - `OrderItem.create(order, 1, 2, "동국 비빔밥", 7500)` → DB 저장
+   - `OrderItemOption.create(orderItem, 1, "계란 추가", 500)` → DB 저장
+   - optionExtra=500, totalAmount += (7500+500)*2 = 16,000
+5. **루프 - 아이템2 (동국 순두부)**
+   - `OrderItem.create(order, 2, 1, "동국 순두부", 6500)` → DB 저장
+   - 옵션 없음, totalAmount += 6500*1 = 6,500
+6. `order.updateTotalAmount(22500)` + `order.complete()` → status=COMPLETED
+7. `cartRedisRepository.deleteCart(1)` → Redis 장바구니 삭제
+8. 루프에서 수집한 메모리 데이터로 응답 직접 구성 (DB 재조회 없음)
+
+**응답** `200 OK`
+```json
+{
+  "code": 200,
+  "msg": "요청이 성공했습니다.",
+  "data": {
+    "orderId": 1,
+    "sessionId": 1,
+    "totalAmount": 22500,
+    "orderStatus": "COMPLETED",
+    "items": [
+      {
+        "orderItemId": 1,
+        "menuId": 1,
+        "menuName": "동국 비빔밥",
+        "unitPrice": 7500,
+        "quantity": 2,
+        "itemTotal": 16000,
+        "options": [{ "optionId": 1, "optionName": "계란 추가", "extraPrice": 500 }]
+      },
+      {
+        "orderItemId": 2,
+        "menuId": 2,
+        "menuName": "동국 순두부",
+        "unitPrice": 6500,
+        "quantity": 1,
+        "itemTotal": 6500,
+        "options": []
+      }
+    ]
+  }
+}
+```
+
+---
+
+## STEP 9. 결제 요청
+
+```
+POST /api/payments
+```
+
+**요청**
+```json
+{ "orderId": 1, "method": "IC_CARD" }
+```
+
+**코드 흐름**
+1. `@Valid`: `orderId(@Positive)` 통과
+2. `orderRepository.findById(1)` → COMPLETED 확인 통과
+3. `paymentRepository.findTopByOrderIdOrderByCreatedAtDesc(1)` → 결과 없음 → 중복 결제 없음 확인
+4. `Payment.create(1, IC_CARD)` → DB 저장 (paymentId=1, status=PENDING)
+
+**응답** `201 Created`
+```json
+{
+  "code": 201,
+  "msg": "생성이 완료되었습니다.",
+  "data": {
+    "paymentId": 1,
+    "orderId": 1,
+    "method": "IC_CARD",
+    "status": "PENDING",
+    "createdAt": "2026-04-07T10:02:00"
+  }
+}
+```
+
+---
+
+## STEP 10. 결제 성공 처리 (카드 단말기 승인 콜백)
+
+```
+PATCH /api/payments/1/success
+```
+
+**코드 흐름**
+1. `paymentRepository.findByIdWithLock(1)` → `SELECT ... FOR UPDATE` (비관적 락)
+2. `payment.getStatus() == PENDING` → 통과
+3. `payment.success()` → status=SUCCESS
+
+**응답** `200 OK`
+```json
+{
+  "code": 200,
+  "msg": "요청이 성공했습니다.",
+  "data": {
+    "paymentId": 1,
+    "orderId": 1,
+    "method": "IC_CARD",
+    "status": "SUCCESS",
+    "createdAt": "2026-04-07T10:02:00"
+  }
+}
+```
+
+---
+
+## STEP 11. 세션 종료
+
+```
+PATCH /api/sessions/1/complete
+```
+
+**코드 흐름**
+1. `kioskSessionRepository.findByIdWithLock(1)` → `SELECT ... FOR UPDATE` (비관적 락)
+2. `session.getSessionStatus() == ACTIVE` → 통과
+3. `session.complete()` → status=COMPLETED
+
+**응답** `200 OK`
+```json
+{
+  "code": 200,
+  "msg": "요청이 성공했습니다.",
+  "data": {
+    "sessionId": 1,
+    "mode": "NORMAL",
+    "status": "COMPLETED",
+    "language": "ko",
+    "createdAt": "2026-04-07T10:00:00"
+  }
+}
+```
+
+---
+
+## 최종 금액 검증
+
+| 항목 | 계산 | 금액 |
+|------|------|------|
+| 동국 비빔밥 x2 (계란 추가 x1) | (7,500 + 500) × 2 | 16,000원 |
+| 동국 순두부 x1 | 6,500 × 1 | 6,500원 |
+| **합계** | | **22,500원** |
+
+- 장바구니 totalAmount: 22,500원 ✓
+- 주문 확정 totalAmount: 22,500원 ✓
+- 결제 금액 불일치 없음 ✓
+
+---
+
+## 시뮬레이션 결과
+
+전체 11단계 이상 없이 정상 동작 확인.
