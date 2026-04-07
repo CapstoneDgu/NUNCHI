@@ -10,6 +10,7 @@ public enum PaymentErrorCode implements ErrorCode {
      * 400 BAD_REQUEST
      */
     PAYMENT_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, 400, "이미 처리된 결제입니다."),
+    PAYMENT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, 400, "이미 진행 중이거나 완료된 결제가 존재합니다."),
     ORDER_NOT_CONFIRMED(HttpStatus.BAD_REQUEST, 400, "확정된 주문이 아닙니다."),
 
     /**

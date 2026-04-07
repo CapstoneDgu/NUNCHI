@@ -27,7 +27,7 @@ public class SessionService {
 
     @Transactional
     public SessionResponse completeSession(Long sessionId) {
-        KioskSession session = kioskSessionRepository.findById(sessionId)
+        KioskSession session = kioskSessionRepository.findByIdWithLock(sessionId)
                 .orElseThrow(() -> new SessionException(SessionErrorCode.NOT_FOUND_SESSION));
 
         // 이미 종료된 세션이면 예외 처리

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dgu.capstone.nunchi.domain.order.dto.cart.CartItem;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -12,11 +13,16 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Repository
-@RequiredArgsConstructor
 public class CartRedisRepository {
 
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
+
+    public CartRedisRepository(RedisTemplate<String, String> redisTemplate,
+                               @Qualifier("redisObjectMapper") ObjectMapper objectMapper) {
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
+    }
     private static final long CART_TTL_SECONDS = 1800L;
 
     /** Redis 키 생성 */

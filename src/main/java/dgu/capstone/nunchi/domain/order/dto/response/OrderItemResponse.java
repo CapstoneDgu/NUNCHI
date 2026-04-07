@@ -22,13 +22,17 @@ public record OrderItemResponse(
                 .map(opt -> new OptionInfo(opt.getOptionId(), opt.getOptionName(), opt.getExtraPrice()))
                 .toList();
 
+        int optionExtra = optionInfos.stream()
+                .mapToInt(o -> o.extraPrice() != null ? o.extraPrice() : 0)
+                .sum();
+
         return new OrderItemResponse(
                 item.getOrderItemId(),
                 item.getMenuId(),
                 item.getMenuName(),
                 item.getUnitPrice(),
                 item.getQuantity(),
-                item.getUnitPrice() * item.getQuantity(),
+                (item.getUnitPrice() + optionExtra) * item.getQuantity(),
                 optionInfos
         );
     }

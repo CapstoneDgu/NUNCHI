@@ -34,6 +34,14 @@ public class PaymentService {
             throw new PaymentException(PaymentErrorCode.ORDER_NOT_CONFIRMED);
         }
 
+        // 기존 결제 조회 — PENDING/SUCCESS는 차단, FAILED만 재시도 허용
+        paymentRepository.findTopByOrderIdOrderByCreatedAtDesc(request.orderId())
+                .ifPresent(existing -> {
+                    if (existing.getStatus() == PaymentStatus.PENDING || existing.getStatus() == PaymentStatus.SUCCESS) {
+                        throw new PaymentException(PaymentErrorCode.PAYMENT_ALREADY_EXISTS);
+                    }
+                });
+
         Payment payment = paymentRepository.save(Payment.create(request.orderId(), request.method()));
         return PaymentResponse.from(payment);
     }
@@ -41,7 +49,7 @@ public class PaymentService {
     /** 결제 성공 처리 */
     @Transactional
     public PaymentResponse successPayment(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
+        Payment payment = paymentRepository.findByIdWithLock(paymentId)
                 .orElseThrow(() -> new PaymentException(PaymentErrorCode.NOT_FOUND_PAYMENT));
 
         if (payment.getStatus() != PaymentStatus.PENDING) {
@@ -55,7 +63,7 @@ public class PaymentService {
     /** 결제 실패 처리 */
     @Transactional
     public PaymentResponse failPayment(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
+        Payment payment = paymentRepository.findByIdWithLock(paymentId)
                 .orElseThrow(() -> new PaymentException(PaymentErrorCode.NOT_FOUND_PAYMENT));
 
         if (payment.getStatus() != PaymentStatus.PENDING) {

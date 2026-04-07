@@ -20,8 +20,8 @@ public class RedisConfig {
         return template;
     }
 
-    @Bean
-    public ObjectMapper objectMapper() {
+    @Bean("redisObjectMapper")
+    public ObjectMapper redisObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         return mapper;
