@@ -11,6 +11,7 @@ import dgu.capstone.nunchi.domain.order.dto.response.OrderItemResponse;
 import dgu.capstone.nunchi.domain.order.dto.response.OrderResponse;
 import dgu.capstone.nunchi.domain.order.entity.Order;
 import dgu.capstone.nunchi.domain.order.entity.OrderItem;
+import dgu.capstone.nunchi.domain.order.entity.OrderStatus;
 import dgu.capstone.nunchi.domain.order.entity.OrderItemOption;
 import dgu.capstone.nunchi.domain.order.repository.CartRedisRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderItemOptionRepository;
@@ -58,7 +59,7 @@ public class OrderService {
         if (request.optionIds() != null && !request.optionIds().isEmpty()) {
             for (Long optionId : request.optionIds()) {
                 MenuOption menuOption = menuOptionRepository.findById(optionId)
-                        .orElseThrow(() -> new MenuException(MenuErrorCode.NOT_FOUND_MENU));
+                        .orElseThrow(() -> new MenuException(MenuErrorCode.NOT_FOUND_MENU_OPTION));
                 cartOptions.add(CartItem.CartOption.builder()
                         .optionId(menuOption.getOptionId())
                         .optionName(menuOption.getName())
@@ -86,6 +87,7 @@ public class OrderService {
     }
 
     /** 장바구니 아이템 수량 수정 */
+    @Transactional
     public CartResponse updateItem(Long sessionId, String itemId, CartItemUpdateRequest request) {
         List<CartItem> items = cartRedisRepository.getItems(sessionId);
 
@@ -115,6 +117,7 @@ public class OrderService {
     }
 
     /** 장바구니 아이템 삭제 */
+    @Transactional
     public CartResponse removeItem(Long sessionId, String itemId) {
         List<CartItem> items = cartRedisRepository.getItems(sessionId);
 
@@ -145,8 +148,9 @@ public class OrderService {
         orderRepository.save(order);
 
         int totalAmount = 0;
+        List<OrderItemResponse> itemResponses = new ArrayList<>();
 
-        // 각 CartItem → OrderItem + OrderItemOption 저장
+        // 각 CartItem → OrderItem + OrderItemOption 저장 (응답도 루프 내에서 함께 구성)
         for (CartItem cartItem : cartItems) {
             OrderItem orderItem = OrderItem.create(
                     order,
@@ -158,6 +162,7 @@ public class OrderService {
             orderItemRepository.save(orderItem);
 
             int optionExtra = 0;
+            List<OrderItemOption> savedOptions = new ArrayList<>();
             if (cartItem.getOptions() != null) {
                 for (CartItem.CartOption cartOption : cartItem.getOptions()) {
                     OrderItemOption itemOption = OrderItemOption.create(
@@ -167,11 +172,13 @@ public class OrderService {
                             cartOption.getExtraPrice()
                     );
                     orderItemOptionRepository.save(itemOption);
+                    savedOptions.add(itemOption);
                     optionExtra += cartOption.getExtraPrice() != null ? cartOption.getExtraPrice() : 0;
                 }
             }
 
             totalAmount += (cartItem.getUnitPrice() + optionExtra) * cartItem.getQuantity();
+            itemResponses.add(OrderItemResponse.from(orderItem, savedOptions));
         }
 
         // 총금액 업데이트 및 주문 완료 처리
@@ -180,15 +187,6 @@ public class OrderService {
 
         // Redis 장바구니 삭제
         cartRedisRepository.deleteCart(sessionId);
-
-        // 응답 생성
-        List<OrderItem> savedItems = orderItemRepository.findAllByOrder(order);
-        List<OrderItemResponse> itemResponses = savedItems.stream()
-                .map(item -> {
-                    List<OrderItemOption> options = orderItemOptionRepository.findAllByOrderItem(item);
-                    return OrderItemResponse.from(item, options);
-                })
-                .toList();
 
         return OrderResponse.from(order, itemResponses);
     }
@@ -199,14 +197,15 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderException(OrderErrorCode.NOT_FOUND_ORDER));
 
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            throw new OrderException(OrderErrorCode.ORDER_ALREADY_CANCELLED);
+        }
+
         order.cancel();
 
         List<OrderItem> items = orderItemRepository.findAllByOrder(order);
         List<OrderItemResponse> itemResponses = items.stream()
-                .map(item -> {
-                    List<OrderItemOption> options = orderItemOptionRepository.findAllByOrderItem(item);
-                    return OrderItemResponse.from(item, options);
-                })
+                .map(item -> OrderItemResponse.from(item, orderItemOptionRepository.findAllByOrderItem(item)))
                 .toList();
 
         return OrderResponse.from(order, itemResponses);

@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -76,5 +77,5 @@ public class OrderController {
     }
 
     /** 주문 확정 요청 DTO */
-    private record OrderConfirmRequest(@NotNull @Schema(example = "1") Long sessionId) {}
+    private record OrderConfirmRequest(@NotNull @Positive @Schema(example = "1") Long sessionId) {}
 }
