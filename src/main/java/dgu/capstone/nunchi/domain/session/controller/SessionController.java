@@ -1,6 +1,8 @@
 package dgu.capstone.nunchi.domain.session.controller;
 
+import dgu.capstone.nunchi.domain.session.dto.request.ConversationMessageSaveRequest;
 import dgu.capstone.nunchi.domain.session.dto.request.SessionCreateRequest;
+import dgu.capstone.nunchi.domain.session.dto.response.ConversationMessageResponse;
 import dgu.capstone.nunchi.domain.session.dto.response.SessionResponse;
 import dgu.capstone.nunchi.domain.session.service.SessionService;
 import dgu.capstone.nunchi.global.response.ApiResponse;
@@ -37,6 +39,16 @@ public class SessionController {
             @Parameter(description = "세션 ID") @PathVariable Long sessionId
     ) {
         SessionResponse response = sessionService.completeSession(sessionId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @Operation(summary = "대화 메시지 저장", description = "FastAPI가 사용자 발화 및 AI 응답을 저장할 때 호출. role: USER / ASSISTANT")
+    @PostMapping("/{sessionId}/messages")
+    public ResponseEntity<ApiResponse<ConversationMessageResponse>> saveMessage(
+            @Parameter(description = "세션 ID") @PathVariable Long sessionId,
+            @RequestBody @Valid ConversationMessageSaveRequest request
+    ) {
+        ConversationMessageResponse response = sessionService.saveMessage(sessionId, request);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

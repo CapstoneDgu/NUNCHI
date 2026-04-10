@@ -1,9 +1,13 @@
 package dgu.capstone.nunchi.domain.session.service;
 
+import dgu.capstone.nunchi.domain.session.dto.request.ConversationMessageSaveRequest;
 import dgu.capstone.nunchi.domain.session.dto.request.SessionCreateRequest;
+import dgu.capstone.nunchi.domain.session.dto.response.ConversationMessageResponse;
 import dgu.capstone.nunchi.domain.session.dto.response.SessionResponse;
+import dgu.capstone.nunchi.domain.session.entity.ConversationMessage;
 import dgu.capstone.nunchi.domain.session.entity.KioskSession;
 import dgu.capstone.nunchi.domain.session.entity.SessionStatus;
+import dgu.capstone.nunchi.domain.session.repository.ConversationMessageRepository;
 import dgu.capstone.nunchi.domain.session.repository.KioskSessionRepository;
 import dgu.capstone.nunchi.global.exception.domainException.SessionException;
 import dgu.capstone.nunchi.global.exception.errorcode.SessionErrorCode;
@@ -17,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SessionService {
 
     private final KioskSessionRepository kioskSessionRepository;
+    private final ConversationMessageRepository conversationMessageRepository;
 
     @Transactional
     public SessionResponse createSession(SessionCreateRequest request) {
@@ -37,5 +42,16 @@ public class SessionService {
 
         session.complete();
         return SessionResponse.from(session);
+    }
+
+    @Transactional
+    public ConversationMessageResponse saveMessage(Long sessionId, ConversationMessageSaveRequest request) {
+        KioskSession session = kioskSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new SessionException(SessionErrorCode.NOT_FOUND_SESSION));
+
+        ConversationMessage message = ConversationMessage.create(session, request.role(), request.text());
+        conversationMessageRepository.save(message);
+
+        return ConversationMessageResponse.from(message);
     }
 }
