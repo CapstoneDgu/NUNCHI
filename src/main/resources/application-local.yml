@@ -27,9 +27,5 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
-  web:
-    resources:
-      add-mappings: false
-
 fastapi:
   base-url: http://localhost:8000
