@@ -36,6 +36,9 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
+	// Spring Boot DevTools (개발 시 자동 재시작 / LiveReload)
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
 	// H2 인메모리 DB
 	runtimeOnly 'com.h2database:h2'
 	// PostgreSQL J
