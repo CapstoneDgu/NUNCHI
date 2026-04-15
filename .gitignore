@@ -43,3 +43,6 @@ CLAUDE_PLAN.md
 
 ### Reference ###
 reference/
+
+### Figma raw export (변환 후 삭제) ###
+src/main/resources/static/_figma-raw/
