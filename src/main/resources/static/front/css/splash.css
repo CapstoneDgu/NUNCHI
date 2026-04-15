@@ -1,0 +1,283 @@
+.splash {
+    position: relative;
+    width: var(--screen-width);
+    height: var(--screen-height);
+    margin: 0 auto;
+    background-color: var(--color-bg);
+    overflow: hidden;
+}
+
+/* === 동국대 로고 (우상단 SVG) === */
+.splash__logo {
+    position: absolute;
+    top: 48px;
+    right: 40px;
+    width: 180px;
+    height: auto;
+    mix-blend-mode: multiply;
+}
+
+/* === 매장 타이틀 === */
+.splash__title {
+    position: absolute;
+    top: 162px;
+    left: 227px;
+    display: flex;
+    flex-direction: column;
+    width: 269px;
+    gap: 6px;
+}
+
+.splash__title-sub {
+    color: var(--color-text-subtle);
+    font-size: 22px;
+    line-height: 33px;
+    letter-spacing: 0.74px;
+    text-align: center;
+}
+
+.splash__title-main {
+    color: var(--color-text);
+    font-size: 96px;
+    line-height: 96px;
+    letter-spacing: -4px;
+    text-align: center;
+}
+
+/* === 인기 메뉴 섹션 (카드 + 인디케이터) === */
+.splash__featured {
+    position: absolute;
+    top: 312px;
+    left: 27px;
+    display: flex;
+    flex-direction: column;
+    width: 664px;
+    height: 516px;
+    gap: 12px;
+}
+
+.splash__card {
+    display: flex;
+    flex-direction: column;
+    height: 499px;
+    margin-top: 37px;
+    background-color: var(--color-surface);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+}
+
+.splash__card-image {
+    position: relative;
+    width: 664px;
+    height: 387px;
+    background-image: url("/images/common/splash-featured.jpg");
+    background-size: cover;
+    background-position: 50% 50%;
+}
+
+.splash__card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.04) 0%,
+        rgba(0, 0, 0, 0) 35%,
+        rgba(0, 0, 0, 0.75) 100%
+    );
+}
+
+.splash__card-badge {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 18px;
+    background-color: var(--color-accent-purple);
+    border-radius: 9999px;
+    box-shadow: var(--shadow-badge);
+    color: #ffffff;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: -0.31px;
+}
+
+.splash__card-title-block {
+    position: absolute;
+    top: 281px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    width: 616px;
+    gap: 5px;
+}
+
+.splash__card-title {
+    color: #ffffff;
+    font-size: 32px;
+    line-height: 35.2px;
+    letter-spacing: 0.41px;
+}
+
+.splash__card-price {
+    color: var(--color-accent-peach);
+    font-size: 26px;
+    line-height: 39px;
+    letter-spacing: 0.22px;
+}
+
+/* 카드 하단 통계 영역 */
+.splash__card-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    padding: 20px 24px 0;
+}
+
+.splash__card-stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.splash__card-stats-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.splash__card-stats-label {
+    color: var(--color-text);
+    font-size: 18px;
+    line-height: 27px;
+    letter-spacing: -0.44px;
+}
+
+.splash__card-stats-desc {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    line-height: 21px;
+    letter-spacing: -0.15px;
+}
+
+.splash__card-stats-value {
+    color: var(--color-accent-purple);
+    font-size: 34px;
+    line-height: 34px;
+    letter-spacing: 0.39px;
+}
+
+.splash__card-progress {
+    position: relative;
+    width: 100%;
+    height: 9px;
+    background-color: var(--color-border-subtle);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.splash__card-progress-fill {
+    width: 81%;
+    height: 100%;
+    background-color: var(--color-accent-purple);
+    border-radius: 9999px;
+}
+
+/* === 캐러셀 인디케이터 === */
+.splash__indicators {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 8px;
+}
+
+.splash__indicator {
+    width: 8px;
+    height: 8px;
+    background-color: var(--color-indicator);
+    border-radius: 4px;
+}
+
+.splash__indicator--active {
+    width: 26px;
+    background-color: var(--color-primary);
+}
+
+/* === 주문하기 버튼 === */
+.splash__order-btn {
+    position: absolute;
+    top: 919px;
+    left: 27px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 664px;
+    height: 118px;
+    background-color: var(--color-primary);
+    border-radius: 28px;
+    box-shadow: var(--shadow-primary-btn);
+    color: #ffffff;
+    font-size: 40px;
+    line-height: 60px;
+    letter-spacing: -0.63px;
+    text-align: center;
+    transition: background-color 0.15s ease;
+}
+
+.splash__order-btn:hover,
+.splash__order-btn:active {
+    background-color: var(--color-primary-hover);
+}
+
+/* === 터치 힌트 === */
+.splash__hint {
+    position: absolute;
+    top: 1052px;
+    left: 288px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 144px;
+    height: 77px;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.splash__hint-arrow {
+    color: var(--color-text-subtle);
+    font-size: 28px;
+    line-height: 42px;
+    letter-spacing: 0.38px;
+}
+
+.splash__hint-text {
+    color: var(--color-text-subtle);
+    font-size: 18px;
+    line-height: 27px;
+    letter-spacing: -0.44px;
+}
+
+/* === Design System 개발용 버튼 === */
+.splash__design-btn {
+    position: absolute;
+    top: 1223px;
+    left: 287px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 146px;
+    height: 33px;
+    border: 1px solid var(--color-border);
+    border-radius: 9999px;
+    color: var(--color-text-subtle);
+    font-size: 13px;
+    line-height: 19.5px;
+    letter-spacing: -0.08px;
+    text-align: center;
+}

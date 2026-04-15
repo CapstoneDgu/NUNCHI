@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- 터치 리플 바깥 링 -->
+  <circle cx="60" cy="60" r="52" stroke="#E8762B" stroke-width="3" stroke-opacity="0.2"/>
+  <circle cx="60" cy="60" r="38" stroke="#E8762B" stroke-width="3" stroke-opacity="0.45"/>
+  <!-- 손가락 끝 -->
+  <circle cx="60" cy="60" r="18" fill="#E8762B"/>
+  <circle cx="60" cy="60" r="18" stroke="#FFFFFF" stroke-width="3"/>
+</svg>

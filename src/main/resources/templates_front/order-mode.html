@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=720, initial-scale=1" />
+    <title>주문 방식 선택 - 상록원</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/order-mode.css">
+</head>
+<body>
+<main class="order-mode">
+    <!-- 상단 헤더 -->
+    <header class="order-mode__header">
+        <div class="order-mode__header-row">
+            <button class="order-mode__back-btn" type="button" aria-label="뒤로 가기">
+                <img class="order-mode__back-icon" src="/images/common/icons/arrow-back.svg" alt="">
+            </button>
+            <div class="order-mode__title-group">
+                <span class="order-mode__title-sub">상록원</span>
+                <h1 class="order-mode__title-main">주문 방식 선택</h1>
+            </div>
+        </div>
+        <button class="order-mode__voice-btn" type="button" aria-label="음성으로 주문하기">
+            <img src="/images/common/icons/voice-mic.svg" alt="">
+        </button>
+    </header>
+
+    <!-- 음성/터치 안내 배너 -->
+    <div class="order-mode__banner" role="note">
+        <p class="order-mode__banner-text">&ldquo;터치 주문이요&rdquo; 또는 &ldquo;아바타 주문이요&rdquo;라고 말하거나 선택하세요</p>
+    </div>
+
+    <!-- 주문 방식 카드 (터치 / AI 아바타) -->
+    <section class="order-mode__cards" aria-label="주문 방식 선택">
+        <button class="order-mode__card order-mode__card--touch" type="button" aria-label="터치로 주문하기 선택">
+            <div class="order-mode__card-icon">
+                <img class="order-mode__card-icon-img" src="/images/common/icons/touch-tap.svg" alt="">
+            </div>
+            <div class="order-mode__card-body">
+                <span class="order-mode__card-title">터치로 주문하기</span>
+                <span class="order-mode__card-subtitle">Touch Order</span>
+                <p class="order-mode__card-desc">직접 메뉴를 터치해서 간편하게<br>주문하세요</p>
+            </div>
+            <img class="order-mode__card-cta" src="/images/common/icons/card-cta.svg" alt="" aria-hidden="true">
+        </button>
+
+        <button class="order-mode__card order-mode__card--avatar" type="button" aria-label="AI 아바타 대화하기 선택">
+            <div class="order-mode__card-icon">
+                <img class="order-mode__card-icon-img" src="/images/common/icons/ai-robot.svg" alt="">
+            </div>
+            <div class="order-mode__card-body">
+                <span class="order-mode__card-title">AI 아바타 대화하기</span>
+                <span class="order-mode__card-subtitle">AI Avatar Order</span>
+                <p class="order-mode__card-desc">말 한마디로 AI가 메뉴 추천부터 결제까지 도와줘요</p>
+            </div>
+            <img class="order-mode__card-cta" src="/images/common/icons/card-cta.svg" alt="" aria-hidden="true">
+        </button>
+    </section>
+
+    <!-- 도움말 버튼 — partial 주입 -->
+    <div data-include="/layouts/_help-button.html"></div>
+</main>
+
+<script type="module" src="/js/common/partials-loader.js"></script>
+</body>
+</html>
