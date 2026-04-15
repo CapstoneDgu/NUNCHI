@@ -1,0 +1,196 @@
+/* ========================================================
+   S01-mode.css — 주문 방식 선택
+   요구사항: 0-3, 0-4
+   ======================================================== */
+
+.s01 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--pad-top) var(--pad-side) var(--pad-footer);
+    gap: 40px;
+}
+
+/* === 타이틀 === */
+.s01__header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    margin-top: 60px;
+}
+
+.s01__title {
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--color-text-heading);
+    letter-spacing: -1px;
+}
+
+.s01__subtitle {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+/* === 카드 그룹 === */
+.s01__cards {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 28px;
+    margin-top: 20px;
+}
+
+/* === 공통 카드 (Liquid Glass) === */
+.s01__card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    width: 100%;
+    min-height: 220px;
+    padding: 32px 36px;
+    border-radius: 28px;
+    cursor: pointer;
+    text-align: left;
+}
+
+/* 카드 내부 블롭 (각 모드별 색상 다름) */
+.s01__card::before {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.s01__card > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* === 카드 아이콘 === */
+.s01__card-icon {
+    flex-shrink: 0;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 68px;
+    border-radius: 28px;
+    background: var(--glass-bg-heavy);
+    border: 1px solid var(--glass-border);
+}
+
+/* === 카드 본문 === */
+.s01__card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-grow: 1;
+}
+
+.s01__card-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--color-text-heading);
+    letter-spacing: -0.5px;
+}
+
+.s01__card-desc {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.s01__card-arrow {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    font-size: 32px;
+    color: var(--color-text-secondary);
+}
+
+/* === Variant: 일반 주문 카드 === */
+.s01__card--normal {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 2px solid var(--primary-500);
+    box-shadow: var(--shadow-md), 0 0 0 4px rgba(232, 96, 10, 0.08);
+}
+
+.s01__card--normal::before {
+    width: 260px;
+    height: 260px;
+    top: -60px;
+    right: -40px;
+    background-color: var(--primary-200);
+    opacity: 0.45;
+}
+
+.s01__card--normal .s01__card-icon {
+    color: var(--primary-500);
+    background-color: var(--primary-50);
+}
+
+/* === Variant: 아바타 주문 카드 === */
+.s01__card--avatar {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 2px solid var(--secondary-500);
+    box-shadow: var(--shadow-md), 0 0 0 4px rgba(212, 179, 10, 0.08);
+}
+
+.s01__card--avatar::before {
+    width: 260px;
+    height: 260px;
+    top: -60px;
+    right: -40px;
+    background-color: var(--secondary-100);
+    opacity: 0.55;
+}
+
+.s01__card--avatar::after {
+    content: "";
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    bottom: -40px;
+    left: -20px;
+    background-color: var(--primary-100);
+    filter: blur(50px);
+    opacity: 0.5;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.s01__card--avatar .s01__card-icon {
+    color: var(--secondary-700);
+    background-color: var(--secondary-50);
+}
+
+/* === Hover / Active === */
+.s01__card {
+    transition: transform var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.s01__card:hover {
+    transform: translateY(-4px);
+}
+
+.s01__card:active {
+    transform: scale(0.98);
+}
