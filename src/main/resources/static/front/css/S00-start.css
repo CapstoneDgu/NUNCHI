@@ -1,0 +1,169 @@
+/* ========================================================
+   S00-start.css — 시작 화면
+   요구사항: 0-1
+   ======================================================== */
+
+.s00 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--pad-top) var(--pad-side) var(--pad-footer);
+}
+
+/* === 로고 영역 === */
+.s00__logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 80px;
+}
+
+.s00__logo-icon {
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    color: var(--color-text-inverse);
+    font-size: 42px;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(232, 96, 10, 0.3);
+}
+
+.s00__logo-text {
+    font-family: var(--font-title);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--color-text-heading);
+    letter-spacing: -1px;
+}
+
+/* === 타이틀 블록 === */
+.s00__hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+}
+
+.s00__title {
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--color-text-heading);
+    letter-spacing: -1.2px;
+}
+
+.s00__title-accent {
+    color: var(--primary-500);
+}
+
+.s00__subtitle {
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}
+
+/* === 광고 배너 (선택) === */
+.s00__banner {
+    width: 100%;
+    max-width: 560px;
+    height: 140px;
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--glass-bg-heavy);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--glass-shadow);
+}
+
+.s00__banner-icon {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary-100);
+    color: var(--primary-600);
+    font-size: 38px;
+    border-radius: 16px;
+}
+
+.s00__banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.s00__banner-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text-heading);
+}
+
+.s00__banner-desc {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+/* === CTA === */
+.s00__cta-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+}
+
+.s00__cta {
+    width: 100%;
+    max-width: 600px;
+    min-height: 100px;
+    font-size: 32px;
+    border-radius: 20px;
+}
+
+.s00__cta-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    color: var(--color-text-secondary);
+    animation: pulseHint 2s var(--ease-out) infinite;
+}
+
+.s00__cta-hint i {
+    color: var(--primary-500);
+}
+
+@keyframes pulseHint {
+    0%, 100% { opacity: 0.6; }
+    50%      { opacity: 1;   }
+}
+
+/* === 어트랙션 모드 (30초 후) === */
+.s00.s00--attract {
+    cursor: pointer;
+}
+
+.s00.s00--attract .s00__hero,
+.s00.s00--attract .s00__banner,
+.s00.s00--attract .s00__cta-wrap {
+    animation: breathe 3s var(--ease-out) infinite alternate;
+}
+
+@keyframes breathe {
+    from { transform: scale(1);    opacity: 1;   }
+    to   { transform: scale(1.03); opacity: 0.9; }
+}

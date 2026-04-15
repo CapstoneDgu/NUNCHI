@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=720, initial-scale=1" />
+    <title>눈치 · 상록원 키오스크</title>
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/S00-start.css">
+</head>
+<body>
+<main class="page-bg s00">
+    <!-- 로고 -->
+    <div class="s00__logo fade-up" style="--delay: 0ms;">
+        <div class="s00__logo-icon" aria-hidden="true">눈</div>
+        <span class="s00__logo-text">눈치 · 상록원</span>
+    </div>
+
+    <!-- 히어로 타이틀 -->
+    <section class="s00__hero fade-up" style="--delay: 150ms;">
+        <h1 class="s00__title">
+            오늘 뭐 먹지?<br>
+            고민은 <span class="s00__title-accent">눈치</span>에게 맡기세요!
+        </h1>
+        <p class="s00__subtitle">
+            AI가 메뉴 추천부터 결제까지<br>
+            친절하게 도와드릴게요
+        </p>
+    </section>
+
+    <!-- 광고 배너 -->
+    <div class="s00__banner fade-up" style="--delay: 300ms;" role="note">
+        <div class="s00__banner-icon" aria-hidden="true">
+            <i class="xi xi-alarm-clock"></i>
+        </div>
+        <div class="s00__banner-text">
+            <span class="s00__banner-title">지금은 점심 피크 타임</span>
+            <span class="s00__banner-desc">숯불삼겹솥밥이 오늘의 인기 메뉴예요</span>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="s00__cta-wrap fade-up" style="--delay: 450ms;">
+        <button class="btn-cta btn-cta--primary s00__cta"
+                type="button"
+                data-action="start-order"
+                aria-label="주문 시작하기">
+            주문 시작하기
+        </button>
+        <div class="s00__cta-hint" aria-hidden="true">
+            <i class="xi xi-touch"></i>
+            <span>화면을 터치해주세요</span>
+        </div>
+    </div>
+</main>
+
+<script src="/lib/jquery-3.7.0.min.js"></script>
+<script src="/js/S00-start.js"></script>
+</body>
+</html>
