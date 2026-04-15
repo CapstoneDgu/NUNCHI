@@ -11,11 +11,17 @@
 </head>
 <body>
 <main class="page-bg s00">
-    <!-- 로고 -->
-    <div class="s00__logo fade-up" style="--delay: 0ms;">
-        <div class="s00__logo-icon" aria-hidden="true">눈</div>
-        <span class="s00__logo-text">눈치 · 상록원</span>
-    </div>
+    <!-- 상단: 로고 + 동국대 -->
+    <header class="s00__top fade-up" style="--delay: 0ms;">
+        <div class="s00__logo">
+            <div class="s00__logo-icon" aria-hidden="true">눈</div>
+            <span class="s00__logo-text">눈치 · 상록원</span>
+        </div>
+        <div class="s00__dongguk" aria-label="동국대학교">
+            <i class="xi xi-university" aria-hidden="true"></i>
+            <span>동국대학교</span>
+        </div>
+    </header>
 
     <!-- 히어로 타이틀 -->
     <section class="s00__hero fade-up" style="--delay: 150ms;">
@@ -23,22 +29,44 @@
             오늘 뭐 먹지?<br>
             고민은 <span class="s00__title-accent">눈치</span>에게 맡기세요!
         </h1>
-        <p class="s00__subtitle">
-            AI가 메뉴 추천부터 결제까지<br>
-            친절하게 도와드릴게요
-        </p>
+        <p class="s00__subtitle">AI가 메뉴 추천부터 결제까지 도와드릴게요</p>
     </section>
 
-    <!-- 광고 배너 -->
-    <div class="s00__banner fade-up" style="--delay: 300ms;" role="note">
-        <div class="s00__banner-icon" aria-hidden="true">
-            <i class="xi xi-alarm-clock"></i>
+    <!-- 음식 슬라이드 -->
+    <section class="s00__slider fade-up" style="--delay: 300ms;" aria-label="오늘의 추천 메뉴">
+        <div class="s00__slider-track" data-slider-track>
+            <article class="s00__slide s00__slide--1">
+                <div class="s00__slide-badge">오늘의 1위</div>
+                <div class="s00__slide-icon" aria-hidden="true">🍚</div>
+                <div class="s00__slide-name">숯불삼겹솥밥</div>
+                <div class="s00__slide-price">₩ 5,500</div>
+            </article>
+            <article class="s00__slide s00__slide--2">
+                <div class="s00__slide-badge">HOT</div>
+                <div class="s00__slide-icon" aria-hidden="true">🍲</div>
+                <div class="s00__slide-name">김치찌개정식</div>
+                <div class="s00__slide-price">₩ 5,000</div>
+            </article>
+            <article class="s00__slide s00__slide--3">
+                <div class="s00__slide-badge">NEW</div>
+                <div class="s00__slide-icon" aria-hidden="true">🍜</div>
+                <div class="s00__slide-name">얼큰수제비</div>
+                <div class="s00__slide-price">₩ 4,500</div>
+            </article>
+            <article class="s00__slide s00__slide--4">
+                <div class="s00__slide-badge">추천</div>
+                <div class="s00__slide-icon" aria-hidden="true">🍖</div>
+                <div class="s00__slide-name">제육덮밥</div>
+                <div class="s00__slide-price">₩ 5,500</div>
+            </article>
         </div>
-        <div class="s00__banner-text">
-            <span class="s00__banner-title">지금은 점심 피크 타임</span>
-            <span class="s00__banner-desc">숯불삼겹솥밥이 오늘의 인기 메뉴예요</span>
+        <div class="s00__slider-dots" role="tablist" data-slider-dots>
+            <button class="s00__slider-dot s00__slider-dot--active" type="button" data-idx="0" role="tab" aria-label="슬라이드 1"></button>
+            <button class="s00__slider-dot" type="button" data-idx="1" role="tab" aria-label="슬라이드 2"></button>
+            <button class="s00__slider-dot" type="button" data-idx="2" role="tab" aria-label="슬라이드 3"></button>
+            <button class="s00__slider-dot" type="button" data-idx="3" role="tab" aria-label="슬라이드 4"></button>
         </div>
-    </div>
+    </section>
 
     <!-- CTA -->
     <div class="s00__cta-wrap fade-up" style="--delay: 450ms;">
