@@ -1,0 +1,49 @@
+/* ========================================================
+   variables.css — 디자인 토큰만 정의
+   색/폰트/간격/그림자. 선택자·스타일 금지.
+   페이지·컴포넌트에서 var(--...) 로 참조.
+   ======================================================== */
+
+:root {
+    /* Typography */
+    --font-family-base: "DONGGUK UNIVERSITY", -apple-system, "Pretendard", sans-serif;
+
+    /* Surface (배경/면) */
+    --color-bg: #fafafa;
+    --color-surface: #ffffff;
+    --color-surface-subtle: #f2f3f5;       /* 기본 회색 면 (배경/아이콘박스) */
+    --color-surface-peach: #fff8f3;        /* 피치 배너 */
+    --color-surface-peach-soft: #fffaf6;   /* 피치 카드 */
+
+    /* Text */
+    --color-text: #191f28;                 /* 본문 */
+    --color-text-muted: #8b95a1;           /* 보조 */
+    --color-text-faint: #b0bac6;           /* 3차 (캡션/라벨) */
+    --color-text-subtle: #c5cbd2;          /* 힌트 */
+    --color-text-dark: #0a0a0a;            /* 이모지 등 대형 */
+
+    /* Border */
+    --color-border: #e5e8eb;
+    --color-border-subtle: #f0f1f3;        /* splash progress track / order-mode 헤더 보더 */
+    --color-border-peach: #f5e6d8;
+
+    /* Brand / Accent */
+    --color-primary: #e8762b;
+    --color-primary-hover: #d96a22;
+    --color-accent-purple: #5856d6;
+    --color-accent-peach: #ffd4a0;
+
+    /* Utility */
+    --color-indicator: #d1d5db;
+    --color-focus: #4a90e2;
+
+    /* Shadow */
+    --shadow-card: 0 12px 52px rgba(0, 0, 0, 0.15);
+    --shadow-card-subtle: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --shadow-badge: 0 4px 14px rgba(88, 86, 214, 0.33);
+    --shadow-primary-btn: 0 12px 44px rgba(232, 118, 43, 0.5);
+
+    /* Layout — 720×1280 세로형 키오스크 */
+    --screen-width: 720px;
+    --screen-height: 1280px;
+}
