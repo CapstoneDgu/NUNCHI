@@ -7,8 +7,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: var(--pad-top) var(--pad-side) var(--pad-footer);
-    gap: 40px;
+    width: 100%;
+    padding: 150px 56px var(--pad-footer);
+    gap: 56px;
 }
 
 /* === 타이틀 === */
@@ -17,46 +18,49 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 12px;
-    margin-top: 60px;
+    gap: 14px;
 }
 
 .s01__title {
-    font-size: 40px;
+    font-size: 42px;
     font-weight: 800;
-    line-height: 1.3;
+    line-height: 1.25;
     color: var(--color-text-heading);
-    letter-spacing: -1px;
+    letter-spacing: -1.2px;
 }
 
 .s01__subtitle {
     font-size: 20px;
     font-weight: 500;
     color: var(--color-text-secondary);
+    letter-spacing: -0.3px;
 }
 
-/* === 카드 그룹 (가로 배치) === */
+/* === 카드 그룹 (가로 배치, 중앙 정렬, 축소) === */
 .s01__cards {
     display: flex;
     flex-direction: row;
+    justify-content: center;
     width: 100%;
-    gap: 22px;
-    margin-top: 24px;
+    gap: 32px;
 }
 
 /* === 공통 카드 (Liquid Glass, 세로 배열 내부) === */
 .s01__card {
     position: relative;
-    flex: 1;
+    flex: 0 0 auto;
+    width: 280px;
+    min-height: 480px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    min-height: 620px;
-    padding: 48px 24px 36px;
+    padding: 40px 22px 32px;
     border-radius: 28px;
     cursor: pointer;
     text-align: center;
+    transition: transform var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
 }
 
 /* 카드 내부 블롭 */
@@ -65,7 +69,7 @@
     content: "";
     position: absolute;
     border-radius: 50%;
-    filter: blur(60px);
+    filter: blur(56px);
     pointer-events: none;
     z-index: 0;
 }
@@ -75,16 +79,16 @@
     z-index: 1;
 }
 
-/* === 카드 아이콘 (상단 대형) === */
+/* === 카드 아이콘 (상단) === */
 .s01__card-icon {
     flex-shrink: 0;
-    width: 180px;
-    height: 180px;
+    width: 140px;
+    height: 140px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 96px;
-    border-radius: 36px;
+    font-size: 76px;
+    border-radius: 32px;
     background: var(--glass-bg-heavy);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-sm);
@@ -95,32 +99,32 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
-    padding: 0 8px;
+    gap: 10px;
+    padding: 0 4px;
+}
+
+.s01__card-subtitle {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .s01__card-title {
-    font-size: 32px;
+    font-size: 26px;
     font-weight: 800;
     color: var(--color-text-heading);
     letter-spacing: -0.5px;
     line-height: 1.2;
 }
 
-.s01__card-subtitle {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-}
-
 .s01__card-desc {
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 500;
     color: var(--color-text-secondary);
     line-height: 1.5;
-    max-width: 220px;
+    max-width: 200px;
 }
 
 /* === 카드 화살표 (하단) === */
@@ -129,11 +133,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 56px;
-    height: 56px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    font-size: 28px;
-    transition: transform var(--duration-fast) var(--ease-out);
+    font-size: 24px;
 }
 
 /* ========================================================
@@ -148,19 +151,19 @@
 }
 
 .s01__card--normal::before {
-    width: 260px;
-    height: 260px;
-    top: -70px;
-    right: -80px;
+    width: 220px;
+    height: 220px;
+    top: -60px;
+    right: -60px;
     background-color: var(--primary-200);
     opacity: 0.5;
 }
 
 .s01__card--normal::after {
-    width: 180px;
-    height: 180px;
+    width: 160px;
+    height: 160px;
     bottom: -50px;
-    left: -60px;
+    left: -50px;
     background-color: var(--primary-100);
     opacity: 0.6;
 }
@@ -188,19 +191,19 @@
 }
 
 .s01__card--avatar::before {
-    width: 260px;
-    height: 260px;
-    top: -70px;
-    right: -80px;
+    width: 220px;
+    height: 220px;
+    top: -60px;
+    right: -60px;
     background-color: var(--secondary-100);
     opacity: 0.7;
 }
 
 .s01__card--avatar::after {
-    width: 180px;
-    height: 180px;
+    width: 160px;
+    height: 160px;
     bottom: -50px;
-    left: -60px;
+    left: -50px;
     background-color: var(--primary-100);
     opacity: 0.55;
 }
@@ -219,19 +222,18 @@
 /* ========================================================
    Interaction
    ======================================================== */
-.s01__card {
-    transition: transform var(--duration-fast) var(--ease-out),
-                box-shadow var(--duration-fast) var(--ease-out);
-}
-
 .s01__card:hover {
     transform: translateY(-6px);
 }
 
 .s01__card:hover .s01__card-arrow {
-    transform: translateX(4px);
+    transform: translateX(3px);
 }
 
 .s01__card:active {
     transform: scale(0.98);
+}
+
+.s01__card-arrow {
+    transition: transform var(--duration-fast) var(--ease-out);
 }
