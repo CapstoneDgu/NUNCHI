@@ -4,20 +4,17 @@
 // ========================================================
 
 (function () {
-    // 모드별 다음 화면 매핑
-    const NEXT_BY_MODE = {
-        normal: "/flowN/N01-dine.html",
-        avatar: "/flowA/A01-avatar.html",
-    };
+    // 두 모드 모두 S02 매장/포장 → 그 다음에 모드별 분기
+    var NEXT_URL = "/S02-dine.html";
 
     function selectMode(mode) {
-        if (!NEXT_BY_MODE[mode]) {
+        if (mode !== "normal" && mode !== "avatar") {
             console.warn("[S01] unknown mode:", mode);
             return;
         }
         sessionStorage.setItem("mode", mode);
-        sessionStorage.setItem("currentStep", mode === "normal" ? "N01" : "A01");
-        location.href = NEXT_BY_MODE[mode];
+        sessionStorage.setItem("currentStep", "S02");
+        location.href = NEXT_URL;
     }
 
     document.addEventListener("DOMContentLoaded", () => {

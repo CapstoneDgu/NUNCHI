@@ -1,10 +1,10 @@
 /* ========================================================
-   N01-dine.css — 매장 / 포장 선택
+   S02-dine.css — 매장 / 포장 선택 (공용 진입)
    요구사항: 1-1
-   S01 레이아웃 레퍼런스
+   S01-mode 레이아웃 완전 준수
    ======================================================== */
 
-.n01 {
+.s02 {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -14,7 +14,7 @@
 }
 
 /* === 타이틀 === */
-.n01__header {
+.s02__header {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -23,7 +23,7 @@
     gap: 14px;
 }
 
-.n01__title {
+.s02__title {
     font-size: 42px;
     font-weight: 800;
     line-height: 1.25;
@@ -31,15 +31,15 @@
     letter-spacing: -1.2px;
 }
 
-.n01__subtitle {
+.s02__subtitle {
     font-size: 20px;
     font-weight: 500;
     color: var(--color-text-secondary);
     letter-spacing: -0.3px;
 }
 
-/* === 카드 그룹 === */
-.n01__cards {
+/* === 카드 그룹 (가로 배치, 중앙 정렬) === */
+.s02__cards {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -47,8 +47,8 @@
     gap: 32px;
 }
 
-/* === 공통 카드 (Liquid Glass, 세로) === */
-.n01__card {
+/* === 공통 카드 (S01 동일 구조) === */
+.s02__card {
     position: relative;
     flex: 0 0 auto;
     width: 280px;
@@ -57,18 +57,16 @@
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    padding: 44px 22px 40px;
+    padding: 40px 22px 32px;
     border-radius: 28px;
     cursor: pointer;
     text-align: center;
     transition: transform var(--duration-fast) var(--ease-out),
-                box-shadow var(--duration-fast) var(--ease-out),
-                border-color var(--duration-fast) var(--ease-out);
+                box-shadow var(--duration-fast) var(--ease-out);
 }
 
-/* 카드 내부 블롭 */
-.n01__card::before,
-.n01__card::after {
+.s02__card::before,
+.s02__card::after {
     content: "";
     position: absolute;
     border-radius: 50%;
@@ -77,56 +75,28 @@
     z-index: 0;
 }
 
-.n01__card > * {
+.s02__card > * {
     position: relative;
     z-index: 1;
 }
 
-/* === 체크 배지 (선택 시 우상단 표시) === */
-.n01__card-check {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background-color: var(--primary-500);
-    color: var(--color-text-inverse);
-    font-size: 20px;
-    box-shadow: 0 4px 12px rgba(232, 96, 10, 0.4);
-    opacity: 0;
-    transform: scale(0.5);
-    transition: opacity var(--duration-fast) var(--ease-out),
-                transform var(--duration-base) var(--ease-bounce);
-    z-index: 2;
-}
-
-.n01__card.is-selected .n01__card-check {
-    opacity: 1;
-    transform: scale(1);
-}
-
 /* === 카드 아이콘 === */
-.n01__card-icon {
+.s02__card-icon {
     flex-shrink: 0;
-    width: 150px;
-    height: 150px;
+    width: 140px;
+    height: 140px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 84px;
-    border-radius: 34px;
+    font-size: 76px;
+    border-radius: 32px;
     background: var(--glass-bg-heavy);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-sm);
-    margin-top: 8px;
 }
 
 /* === 카드 본문 === */
-.n01__card-body {
+.s02__card-body {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -134,7 +104,7 @@
     padding: 0 4px;
 }
 
-.n01__card-subtitle {
+.s02__card-subtitle {
     font-size: 13px;
     font-weight: 700;
     color: var(--color-text-secondary);
@@ -142,15 +112,15 @@
     text-transform: uppercase;
 }
 
-.n01__card-title {
-    font-size: 28px;
+.s02__card-title {
+    font-size: 26px;
     font-weight: 800;
     color: var(--color-text-heading);
     letter-spacing: -0.5px;
     line-height: 1.2;
 }
 
-.n01__card-desc {
+.s02__card-desc {
     font-size: 15px;
     font-weight: 500;
     color: var(--color-text-secondary);
@@ -158,10 +128,23 @@
     max-width: 200px;
 }
 
+/* === 카드 화살표 (S01 동일) === */
+.s02__card-arrow {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    font-size: 24px;
+    transition: transform var(--duration-fast) var(--ease-out);
+}
+
 /* ========================================================
    Variant: 매장 (Primary)
    ======================================================== */
-.n01__card--dine-in {
+.s02__card--dine-in {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -169,7 +152,7 @@
     box-shadow: var(--shadow-md), 0 0 0 4px rgba(232, 96, 10, 0.08);
 }
 
-.n01__card--dine-in::before {
+.s02__card--dine-in::before {
     width: 220px;
     height: 220px;
     top: -60px;
@@ -178,7 +161,7 @@
     opacity: 0.5;
 }
 
-.n01__card--dine-in::after {
+.s02__card--dine-in::after {
     width: 160px;
     height: 160px;
     bottom: -50px;
@@ -187,15 +170,21 @@
     opacity: 0.6;
 }
 
-.n01__card--dine-in .n01__card-icon {
+.s02__card--dine-in .s02__card-icon {
     color: var(--primary-500);
     background-color: var(--primary-50);
+}
+
+.s02__card--dine-in .s02__card-arrow {
+    color: var(--color-text-inverse);
+    background-color: var(--primary-500);
+    box-shadow: 0 6px 16px rgba(232, 96, 10, 0.35);
 }
 
 /* ========================================================
    Variant: 포장 (Secondary)
    ======================================================== */
-.n01__card--takeout {
+.s02__card--takeout {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -203,7 +192,7 @@
     box-shadow: var(--shadow-md), 0 0 0 4px rgba(212, 179, 10, 0.1);
 }
 
-.n01__card--takeout::before {
+.s02__card--takeout::before {
     width: 220px;
     height: 220px;
     top: -60px;
@@ -212,7 +201,7 @@
     opacity: 0.7;
 }
 
-.n01__card--takeout::after {
+.s02__card--takeout::after {
     width: 160px;
     height: 160px;
     bottom: -50px;
@@ -221,32 +210,28 @@
     opacity: 0.55;
 }
 
-.n01__card--takeout .n01__card-icon {
+.s02__card--takeout .s02__card-icon {
     color: var(--secondary-700);
     background-color: var(--secondary-50);
 }
 
-.n01__card--takeout .n01__card-check {
+.s02__card--takeout .s02__card-arrow {
+    color: var(--color-text-inverse);
     background-color: var(--secondary-500);
-    box-shadow: 0 4px 12px rgba(212, 179, 10, 0.4);
+    box-shadow: 0 6px 16px rgba(212, 179, 10, 0.4);
 }
 
 /* ========================================================
-   Interaction
+   Interaction (S01 동일)
    ======================================================== */
-.n01__card:hover {
+.s02__card:hover {
     transform: translateY(-6px);
 }
 
-.n01__card:active {
+.s02__card:hover .s02__card-arrow {
+    transform: translateX(3px);
+}
+
+.s02__card:active {
     transform: scale(0.98);
-}
-
-.n01__card.is-selected {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg), 0 0 0 6px rgba(232, 96, 10, 0.12);
-}
-
-.n01__card--takeout.is-selected {
-    box-shadow: var(--shadow-lg), 0 0 0 6px rgba(212, 179, 10, 0.15);
 }

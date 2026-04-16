@@ -7,58 +7,58 @@
     <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
     <link rel="stylesheet" href="/css/common.css">
     <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/flowN/N01-dine.css">
+    <link rel="stylesheet" href="/css/S02-dine.css">
 </head>
 <body>
-<main class="page-bg n01">
+<main class="page-bg s02">
     <!-- 타이틀 -->
-    <header class="n01__header fade-up" style="--delay: 0ms;">
-        <h1 class="n01__title">어디서 드실 건가요?</h1>
-        <p class="n01__subtitle">드시는 장소를 선택해주세요</p>
+    <header class="s02__header fade-up" style="--delay: 0ms;">
+        <h1 class="s02__title">어디서 드실 건가요?</h1>
+        <p class="s02__subtitle">드시는 장소를 선택해주세요</p>
     </header>
 
     <!-- 카드 그룹 -->
-    <section class="n01__cards" aria-label="식사 장소">
+    <section class="s02__cards" aria-label="식사 장소">
         <!-- 매장 -->
-        <button class="n01__card n01__card--dine-in fade-up"
+        <button class="s02__card s02__card--dine-in fade-up"
                 style="--delay: 150ms;"
                 type="button"
                 data-dine="dine_in"
                 aria-label="매장에서 식사하기">
-            <div class="n01__card-check" aria-hidden="true">
-                <i class="xi xi-check"></i>
-            </div>
-            <div class="n01__card-icon" aria-hidden="true">
+            <div class="s02__card-icon" aria-hidden="true">
                 <i class="xi xi-restaurant"></i>
             </div>
-            <div class="n01__card-body">
-                <span class="n01__card-subtitle">Dine In</span>
-                <span class="n01__card-title">매장에서</span>
-                <p class="n01__card-desc">식당에서<br>편하게 드세요</p>
+            <div class="s02__card-body">
+                <span class="s02__card-subtitle">Dine In</span>
+                <span class="s02__card-title">매장에서</span>
+                <p class="s02__card-desc">식당에서<br>편하게 드세요</p>
+            </div>
+            <div class="s02__card-arrow" aria-hidden="true">
+                <i class="xi xi-angle-right-thin"></i>
             </div>
         </button>
 
         <!-- 포장 -->
-        <button class="n01__card n01__card--takeout fade-up"
+        <button class="s02__card s02__card--takeout fade-up"
                 style="--delay: 300ms;"
                 type="button"
                 data-dine="take_out"
                 aria-label="포장해서 가져가기">
-            <div class="n01__card-check" aria-hidden="true">
-                <i class="xi xi-check"></i>
-            </div>
-            <div class="n01__card-icon" aria-hidden="true">
+            <div class="s02__card-icon" aria-hidden="true">
                 <i class="xi xi-package"></i>
             </div>
-            <div class="n01__card-body">
-                <span class="n01__card-subtitle">Take Out</span>
-                <span class="n01__card-title">포장해서</span>
-                <p class="n01__card-desc">가져가서<br>드세요</p>
+            <div class="s02__card-body">
+                <span class="s02__card-subtitle">Take Out</span>
+                <span class="s02__card-title">포장해서</span>
+                <p class="s02__card-desc">가져가서<br>드세요</p>
+            </div>
+            <div class="s02__card-arrow" aria-hidden="true">
+                <i class="xi xi-angle-right-thin"></i>
             </div>
         </button>
     </section>
 
-    <!-- 좌하단 홈 + 뒤로가기 -->
+    <!-- 좌하단 홈 + 뒤로 -->
     <button class="btn-home" type="button" aria-label="처음으로"
             onclick="location.href='/index.html'">
         <i class="xi xi-home" aria-hidden="true"></i>
@@ -70,6 +70,6 @@
 </main>
 
 <script src="/lib/jquery-3.7.0.min.js"></script>
-<script src="/js/flowN/N01-dine.js"></script>
+<script src="/js/S02-dine.js"></script>
 </body>
 </html>
