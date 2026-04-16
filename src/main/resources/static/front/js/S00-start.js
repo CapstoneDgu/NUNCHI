@@ -25,7 +25,11 @@
 
     // ---- 페이지 이동 ----
     function startOrder() {
-        sessionStorage.setItem("currentStep", "S01");
+        try {
+            sessionStorage.setItem("currentStep", "S01");
+        } catch (e) {
+            console.warn("[S00] sessionStorage 쓰기 실패", e);
+        }
         location.href = "/S01-mode.html";
     }
 
@@ -37,6 +41,7 @@
     let slideTimer = null;
 
     function updateSlide(idx) {
+        if (SLIDE_COUNT === 0) return;
         slideIdx = ((idx % SLIDE_COUNT) + SLIDE_COUNT) % SLIDE_COUNT;
         if ($track) {
             $track.style.transform = `translateX(-${slideIdx * 100}%)`;
@@ -52,6 +57,7 @@
 
     function startSlideTimer() {
         stopSlideTimer();
+        if (SLIDE_COUNT === 0) return;
         slideTimer = setInterval(nextSlide, SLIDE_INTERVAL_MS);
     }
 

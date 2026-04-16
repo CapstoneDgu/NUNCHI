@@ -36,7 +36,7 @@
     left: -120px;
     background-color: var(--primary-200);
     opacity: 0.55;
-    animation: floatBlob 20s var(--ease-out) infinite alternate;
+    animation: float-blob 20s var(--ease-out) infinite alternate;
 }
 
 .page-bg::after {
@@ -46,7 +46,7 @@
     right: -80px;
     background-color: var(--primary-100);
     opacity: 0.65;
-    animation: floatBlob 24s var(--ease-out) infinite alternate-reverse;
+    animation: float-blob 24s var(--ease-out) infinite alternate-reverse;
 }
 
 /* 페이지 콘텐츠는 블롭 위에 올림 */
@@ -55,7 +55,7 @@
     z-index: 1;
 }
 
-@keyframes floatBlob {
+@keyframes float-blob {
     0%   { transform: translate(0, 0)      scale(1);    }
     50%  { transform: translate(40px, -30px) scale(1.1);  }
     100% { transform: translate(-20px, 25px) scale(0.95); }
@@ -204,11 +204,11 @@
 .fade-up {
     opacity: 0;
     transform: translateY(20px);
-    animation: fadeUp var(--duration-base) var(--ease-out) forwards;
+    animation: fade-up var(--duration-base) var(--ease-out) forwards;
     animation-delay: var(--delay, 0ms);
 }
 
-@keyframes fadeUp {
+@keyframes fade-up {
     to {
         opacity: 1;
         transform: translateY(0);

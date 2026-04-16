@@ -414,7 +414,7 @@
     align-items: center;
     gap: 4px;
     color: var(--neutral-400);
-    animation: pulseHint 2s var(--ease-out) infinite;
+    animation: pulse-hint 2s var(--ease-out) infinite;
 }
 
 .s00__cta-hint i {
@@ -429,7 +429,7 @@
     letter-spacing: -0.3px;
 }
 
-@keyframes pulseHint {
+@keyframes pulse-hint {
     0%, 100% { opacity: 0.65; }
     50%      { opacity: 1;    }
 }

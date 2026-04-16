@@ -2,20 +2,26 @@
 // 예: <div data-include="/layouts/_help-button.html"></div>
 // 로드 후 커스텀 이벤트 "partials:ready" 를 document 에 발생시켜 후속 JS 가 훅 가능
 
+var PARTIAL_TIMEOUT_MS = 5000;
+
 async function loadPartials() {
-    const targets = document.querySelectorAll("[data-include]");
-    const jobs = Array.from(targets).map(async (el) => {
-        const url = el.getAttribute("data-include");
+    var targets = document.querySelectorAll("[data-include]");
+    var jobs = Array.from(targets).map(async function (el) {
+        var url = el.getAttribute("data-include");
+        var controller = new AbortController();
+        var timer = setTimeout(function () { controller.abort(); }, PARTIAL_TIMEOUT_MS);
         try {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const html = await res.text();
+            var res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timer);
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            var html = await res.text();
             el.outerHTML = html;
         } catch (err) {
-            console.error(`[partials-loader] ${url} 로드 실패:`, err);
+            clearTimeout(timer);
+            console.error("[partials-loader] " + url + " 로드 실패:", err);
         }
     });
-    await Promise.all(jobs);
+    await Promise.allSettled(jobs);
     document.dispatchEvent(new CustomEvent("partials:ready"));
 }
 

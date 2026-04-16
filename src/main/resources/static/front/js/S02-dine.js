@@ -8,14 +8,19 @@
 (function () {
     function getNextUrl() {
         var mode = sessionStorage.getItem("mode");
-        return mode === "avatar"
-            ? "/flowA/A01-avatar.html"
-            : "/flowN/N02-menu.html";
+        if (mode === "avatar") return "/flowA/A01-avatar.html";
+        if (mode === "normal") return "/flowN/N02-menu.html";
+        // mode 가 없거나 잘못된 값 → 모드 선택으로 복귀
+        return "/S01-mode.html";
     }
 
     function selectDine(option) {
-        sessionStorage.setItem("dineOption", option);
-        sessionStorage.setItem("currentStep", "S02");
+        try {
+            sessionStorage.setItem("dineOption", option);
+            sessionStorage.setItem("currentStep", "S02");
+        } catch (e) {
+            console.warn("[S02] sessionStorage 쓰기 실패", e);
+        }
         location.href = getNextUrl();
     }
 
