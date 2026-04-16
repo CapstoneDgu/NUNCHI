@@ -6,6 +6,12 @@ spring:
   application:
     name: NUNCHI
 
+  web:
+    resources:
+      static-locations:
+        - classpath:/static/front/
+        - classpath:/templates_front/
+
   datasource:
     url: ${LOCAL_DB_URL}
     username: ${LOCAL_DB_USERNAME}

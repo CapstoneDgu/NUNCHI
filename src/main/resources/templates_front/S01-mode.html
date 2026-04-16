@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=720, initial-scale=1" />
+    <title>주문 방식 선택 · 눈치</title>
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/S01-mode.css">
+</head>
+<body>
+<main class="page-bg s01">
+    <!-- 타이틀 -->
+    <header class="s01__header fade-up" style="--delay: 0ms;">
+        <h1 class="s01__title">주문 방식을 선택해주세요</h1>
+        <p class="s01__subtitle">원하는 방식으로 주문을 시작할 수 있어요</p>
+    </header>
+
+    <!-- 카드 그룹 -->
+    <section class="s01__cards" aria-label="주문 방식">
+        <!-- 일반 주문 -->
+        <button class="s01__card s01__card--normal fade-up"
+                style="--delay: 150ms;"
+                type="button"
+                data-mode="normal"
+                aria-label="일반 주문으로 시작하기">
+            <div class="s01__card-icon" aria-hidden="true">
+                <i class="xi xi-touch"></i>
+            </div>
+            <div class="s01__card-body">
+                <span class="s01__card-subtitle">Touch Order</span>
+                <span class="s01__card-title">일반 주문</span>
+                <p class="s01__card-desc">메뉴를 직접 골라<br>주문해요</p>
+            </div>
+            <div class="s01__card-arrow" aria-hidden="true">
+                <i class="xi xi-angle-right-thin"></i>
+            </div>
+        </button>
+
+        <!-- AI 아바타 주문 -->
+        <button class="s01__card s01__card--avatar fade-up"
+                style="--delay: 300ms;"
+                type="button"
+                data-mode="avatar"
+                aria-label="AI 아바타와 대화해서 주문하기">
+            <div class="s01__card-icon" aria-hidden="true">
+                <i class="xi xi-microphone"></i>
+            </div>
+            <div class="s01__card-body">
+                <span class="s01__card-subtitle">AI Avatar</span>
+                <span class="s01__card-title">AI 대화 주문</span>
+                <p class="s01__card-desc">캐릭터와 대화하며<br>주문해요</p>
+            </div>
+            <div class="s01__card-arrow" aria-hidden="true">
+                <i class="xi xi-angle-right-thin"></i>
+            </div>
+        </button>
+    </section>
+
+    <!-- 좌하단 홈 버튼 -->
+    <button class="btn-home" type="button" aria-label="처음으로"
+            onclick="location.href='/index.html'">
+        <i class="xi xi-home" aria-hidden="true"></i>
+    </button>
+</main>
+
+<script src="/lib/jquery-3.7.0.min.js"></script>
+<script src="/js/S01-mode.js"></script>
+</body>
+</html>
