@@ -447,3 +447,12 @@
     from { transform: scale(1);    opacity: 1;    }
     to   { transform: scale(1.02); opacity: 0.94; }
 }
+
+/* ========================================================
+   접근성 — will-change revert (common.css 글로벌 룰 보완)
+   ======================================================== */
+@media (prefers-reduced-motion: reduce) {
+    .s00__slider-track {
+        will-change: auto;
+    }
+}

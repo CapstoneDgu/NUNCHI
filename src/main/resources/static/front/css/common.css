@@ -279,3 +279,20 @@ button:focus-visible {
     white-space: nowrap;
     border: 0;
 }
+
+/* ========================================================
+   접근성 — prefers-reduced-motion
+   모션 민감 사용자를 위해 모든 transition/animation 비활성화.
+   0.01ms (0 이 아닌) 으로 설정해 animationend 이벤트는 정상 발화.
+   ======================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
