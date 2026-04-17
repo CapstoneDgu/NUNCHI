@@ -1,0 +1,37 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  application:
+    name: NUNCHI
+
+  web:
+    resources:
+      static-locations:
+        - classpath:/static/front/
+        - classpath:/templates_front/
+
+  datasource:
+    url: ${LOCAL_DB_URL}
+    username: ${LOCAL_DB_USERNAME}
+    password: ${LOCAL_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+    open-in-view: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+fastapi:
+  base-url: http://localhost:8000

@@ -1,0 +1,216 @@
+/* ========================================================
+   components.css — 공통 재사용 컴포넌트 v2
+   - 하드코딩 색/간격 금지 (common.css 토큰만 사용)
+   - 한 곳에서만 쓰이면 pages/* 로 이동
+   ======================================================== */
+
+/* ========================================================
+   .page-bg — 페이지 배경 + Primary 컬러 블롭
+   모든 페이지의 최상위 래퍼에 부여.
+   ======================================================== */
+
+.page-bg {
+    position: relative;
+    width: var(--screen-width);
+    height: var(--screen-height);
+    margin: 0 auto;
+    background-color: var(--color-bg-page);
+    overflow: hidden;
+}
+
+/* 블롭 1 — 좌상단 */
+.page-bg::before,
+.page-bg::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.page-bg::before {
+    width: 480px;
+    height: 480px;
+    top: -140px;
+    left: -120px;
+    background-color: var(--primary-200);
+    opacity: 0.55;
+    animation: float-blob 20s var(--ease-out) infinite alternate;
+}
+
+.page-bg::after {
+    width: 400px;
+    height: 400px;
+    bottom: -100px;
+    right: -80px;
+    background-color: var(--primary-100);
+    opacity: 0.65;
+    animation: float-blob 24s var(--ease-out) infinite alternate-reverse;
+}
+
+/* 페이지 콘텐츠는 블롭 위에 올림 */
+.page-bg > * {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes float-blob {
+    0%   { transform: translate(0, 0)      scale(1);    }
+    50%  { transform: translate(40px, -30px) scale(1.1);  }
+    100% { transform: translate(-20px, 25px) scale(0.95); }
+}
+
+/* ========================================================
+   .glass-card — Liquid Glass (글래스모피즘 카드)
+   모드 선택, 메뉴 카드, 모달 등 공용
+   ======================================================== */
+
+.glass-card {
+    position: relative;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--glass-shadow);
+    overflow: hidden;
+    transition: transform var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.glass-card--heavy {
+    background: var(--glass-bg-heavy);
+}
+
+.glass-card:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-md);
+}
+
+/* ========================================================
+   .btn-cta — CTA 버튼 (Primary / Secondary / Disabled)
+   ======================================================== */
+
+.btn-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--btn-height);
+    padding: 0 32px;
+    font-size: 22px;
+    font-weight: 700;
+    border-radius: var(--btn-radius);
+    transition: background-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+}
+
+.btn-cta--primary {
+    background-color: var(--color-btn-primary);
+    color: var(--color-text-inverse);
+    box-shadow: 0 8px 24px rgba(232, 96, 10, 0.35);
+}
+
+.btn-cta--primary:hover {
+    background-color: var(--color-btn-hover);
+}
+
+.btn-cta--primary:active {
+    background-color: var(--color-btn-press);
+    transform: scale(0.98);
+}
+
+.btn-cta--secondary {
+    background-color: transparent;
+    color: var(--primary-500);
+    border: 2px solid var(--primary-500);
+}
+
+.btn-cta--secondary:hover {
+    background-color: var(--primary-50);
+}
+
+.btn-cta--secondary:active {
+    background-color: var(--primary-100);
+    transform: scale(0.98);
+}
+
+.btn-cta--disabled,
+.btn-cta:disabled {
+    background-color: var(--color-btn-disabled);
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none;
+}
+
+.btn-cta--lg {
+    min-height: 67px;
+    font-size: 26px;
+    padding: 0 48px;
+}
+
+.btn-cta--block {
+    display: flex;
+    width: 100%;
+}
+
+/* ========================================================
+   .btn-home · .btn-back — 좌하단 네비 버튼 (글래스 원형)
+   xeicon 사용 (xi-home, xi-angle-left-thin 등)
+   ======================================================== */
+
+.btn-home,
+.btn-back {
+    position: absolute;
+    bottom: var(--pad-side);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    color: var(--color-text-body);
+    font-size: 28px;
+    box-shadow: var(--shadow-sm);
+    z-index: 10;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+}
+
+.btn-home {
+    left: var(--pad-side);
+}
+
+.btn-back {
+    left: calc(var(--pad-side) + 60px + 16px);
+}
+
+.btn-home:active,
+.btn-back:active {
+    background: var(--glass-bg-heavy);
+    transform: scale(0.94);
+}
+
+/* ========================================================
+   .fade-up — 순차 등장 애니메이션
+   요소에 .fade-up 을 붙이고 --delay 커스텀 속성으로 지연 지정
+   ======================================================== */
+
+.fade-up {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fade-up var(--duration-base) var(--ease-out) forwards;
+    animation-delay: var(--delay, 0ms);
+}
+
+@keyframes fade-up {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

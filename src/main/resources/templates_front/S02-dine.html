@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=720, initial-scale=1" />
+    <title>매장 / 포장 선택 · 눈치</title>
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/S02-dine.css">
+</head>
+<body>
+<main class="page-bg s02">
+    <!-- 타이틀 -->
+    <header class="s02__header fade-up" style="--delay: 0ms;">
+        <h1 class="s02__title">어디서 드실 건가요?</h1>
+        <p class="s02__subtitle">드시는 장소를 선택해주세요</p>
+    </header>
+
+    <!-- 카드 그룹 -->
+    <section class="s02__cards" aria-label="식사 장소">
+        <!-- 매장 -->
+        <button class="s02__card s02__card--dine-in fade-up"
+                style="--delay: 150ms;"
+                type="button"
+                data-dine="dine_in"
+                aria-label="매장에서 식사하기">
+            <div class="s02__card-icon" aria-hidden="true">
+                <i class="xi xi-restaurant"></i>
+            </div>
+            <div class="s02__card-body">
+                <span class="s02__card-subtitle">Dine In</span>
+                <span class="s02__card-title">매장에서</span>
+                <p class="s02__card-desc">식당에서<br>편하게 드세요</p>
+            </div>
+            <div class="s02__card-arrow" aria-hidden="true">
+                <i class="xi xi-angle-right-thin"></i>
+            </div>
+        </button>
+
+        <!-- 포장 -->
+        <button class="s02__card s02__card--takeout fade-up"
+                style="--delay: 300ms;"
+                type="button"
+                data-dine="take_out"
+                aria-label="포장해서 가져가기">
+            <div class="s02__card-icon" aria-hidden="true">
+                <i class="xi xi-package"></i>
+            </div>
+            <div class="s02__card-body">
+                <span class="s02__card-subtitle">Take Out</span>
+                <span class="s02__card-title">포장해서</span>
+                <p class="s02__card-desc">가져가서<br>드세요</p>
+            </div>
+            <div class="s02__card-arrow" aria-hidden="true">
+                <i class="xi xi-angle-right-thin"></i>
+            </div>
+        </button>
+    </section>
+
+    <!-- 좌하단 홈 + 뒤로 -->
+    <button class="btn-home" type="button" aria-label="처음으로"
+            onclick="location.href='/index.html'">
+        <i class="xi xi-home" aria-hidden="true"></i>
+    </button>
+    <button class="btn-back" type="button" aria-label="뒤로 가기"
+            onclick="location.href='/S01-mode.html'">
+        <i class="xi xi-angle-left-thin" aria-hidden="true"></i>
+    </button>
+</main>
+
+<script src="/lib/jquery-3.7.0.min.js"></script>
+<script src="/js/S02-dine.js"></script>
+</body>
+</html>
