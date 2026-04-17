@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: nunchi-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: nunchi-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  app:
+    build: .
+    container_name: nunchi-app
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      LOCAL_DB_URL: ${LOCAL_DB_URL}
+      LOCAL_DB_USERNAME: ${LOCAL_DB_USERNAME}
+      LOCAL_DB_PASSWORD: ${LOCAL_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
