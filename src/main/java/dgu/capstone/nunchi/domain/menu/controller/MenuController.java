@@ -3,6 +3,7 @@ package dgu.capstone.nunchi.domain.menu.controller;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuCategoryResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuDetailResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuResponse;
+import dgu.capstone.nunchi.domain.menu.dto.response.TopMenuResponse;
 import dgu.capstone.nunchi.domain.menu.service.MenuService;
 import dgu.capstone.nunchi.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +22,14 @@ import java.util.List;
 public class MenuController {
 
     private final MenuService menuService;
+
+    @Operation(summary = "오늘 판매량 상위 메뉴 조회", description = "오늘 날짜 기준 판매량 합산 후 내림차순 상위 N개 반환")
+    @GetMapping("/top")
+    public ResponseEntity<ApiResponse<List<TopMenuResponse>>> getTopMenus(
+            @Parameter(description = "조회할 메뉴 수") @RequestParam(defaultValue = "5") int limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(menuService.getTopMenus(limit)));
+    }
 
     @Operation(summary = "카테고리 목록 조회")
     @GetMapping("/categories")
