@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.PageRequest;
+
 import java.util.List;
 
 @Service
@@ -78,12 +80,12 @@ public class SessionService {
         return AiToolCallLogResponse.from(log);
     }
 
-    public List<AiToolCallLogResponse> getToolCallLogs(Long sessionId) {
+    public List<AiToolCallLogResponse> getToolCallLogs(Long sessionId, int limit) {
         if (!kioskSessionRepository.existsById(sessionId)) {
             throw new SessionException(SessionErrorCode.NOT_FOUND_SESSION);
         }
 
-        return aiToolCallLogRepository.findAllBySessionSessionIdOrderByCreatedAtAsc(sessionId)
+        return aiToolCallLogRepository.findAllBySessionSessionIdOrderByCreatedAtAsc(sessionId, PageRequest.of(0, limit))
                 .stream()
                 .map(AiToolCallLogResponse::from)
                 .toList();

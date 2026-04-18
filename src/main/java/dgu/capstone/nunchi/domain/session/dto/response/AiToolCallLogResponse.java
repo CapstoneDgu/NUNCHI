@@ -8,8 +8,6 @@ public record AiToolCallLogResponse(
         Long logId,
         Long sessionId,
         String toolName,
-        String request,
-        String response,
         LocalDateTime createdAt
 ) {
     public static AiToolCallLogResponse from(AiToolCallLog log) {
@@ -17,8 +15,6 @@ public record AiToolCallLogResponse(
                 log.getLogId(),
                 log.getSession().getSessionId(),
                 log.getToolName(),
-                log.getRequest(),
-                log.getResponse(),
                 log.getCreatedAt()
         );
     }

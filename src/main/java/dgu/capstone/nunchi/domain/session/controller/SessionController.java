@@ -53,7 +53,8 @@ public class SessionController {
             @RequestBody @Valid ConversationMessageSaveRequest request
     ) {
         ConversationMessageResponse response = sessionService.saveMessage(sessionId, request);
-        return ResponseEntity.ok(ApiResponse.ok(response));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(response));
     }
 
     @Operation(summary = "AI 툴 호출 로그 저장", description = "FastAPI가 툴 호출 결과를 session 단위로 저장할 때 호출")
@@ -70,9 +71,10 @@ public class SessionController {
     @Operation(summary = "AI 툴 호출 로그 조회", description = "세션에 연결된 AI 툴 호출 로그를 생성 시각 순으로 조회")
     @GetMapping("/{sessionId}/tool-logs")
     public ResponseEntity<ApiResponse<List<AiToolCallLogResponse>>> getToolCallLogs(
-            @Parameter(description = "세션 ID") @PathVariable Long sessionId
+            @Parameter(description = "세션 ID") @PathVariable Long sessionId,
+            @Parameter(description = "조회 최대 개수") @RequestParam(defaultValue = "50") int limit
     ) {
-        List<AiToolCallLogResponse> response = sessionService.getToolCallLogs(sessionId);
+        List<AiToolCallLogResponse> response = sessionService.getToolCallLogs(sessionId, limit);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }
