@@ -3,9 +3,15 @@ package dgu.capstone.nunchi.domain.menu.dto.response;
 import dgu.capstone.nunchi.domain.menu.entity.Menu;
 import dgu.capstone.nunchi.domain.menu.entity.MenuOption;
 import dgu.capstone.nunchi.domain.menu.entity.MenuOptionGroup;
+import dgu.capstone.nunchi.domain.menu.entity.NutritionInfo;
+import dgu.capstone.nunchi.domain.menu.entity.enums.AllergyType;
+import dgu.capstone.nunchi.domain.menu.entity.enums.Season;
+import dgu.capstone.nunchi.domain.menu.entity.enums.TemperatureType;
+import dgu.capstone.nunchi.domain.menu.entity.enums.VegetarianType;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public record MenuDetailResponse(
         Long menuId,
@@ -13,7 +19,14 @@ public record MenuDetailResponse(
         Integer price,
         Boolean isSoldOut,
         String imageUrl,
-        List<OptionGroupInfo> optionGroups
+        List<OptionGroupInfo> optionGroups,
+        NutritionInfo nutrition,
+        Set<AllergyType> allergies,
+        Integer spicyLevel,
+        TemperatureType temperatureType,
+        VegetarianType vegetarianType,
+        Season seasonRecommended,
+        String originInfo
 ) {
 
     public record OptionGroupInfo(Long groupId, String groupName, List<OptionInfo> options) {
@@ -33,7 +46,6 @@ public record MenuDetailResponse(
         }
     }
 
-    // groups 별로 options를 매핑해서 응답 생성
     public static MenuDetailResponse from(Menu menu, List<MenuOptionGroup> groups, Map<Long, List<MenuOption>> optionsByGroupId) {
         List<OptionGroupInfo> groupInfos = groups.stream()
                 .map(group -> OptionGroupInfo.from(
@@ -48,7 +60,14 @@ public record MenuDetailResponse(
                 menu.getPrice(),
                 menu.getIsSoldOut(),
                 menu.getImageUrl(),
-                groupInfos
+                groupInfos,
+                menu.getNutrition(),
+                menu.getAllergies(),
+                menu.getSpicyLevel(),
+                menu.getTemperatureType(),
+                menu.getVegetarianType(),
+                menu.getSeasonRecommended(),
+                menu.getOriginInfo()
         );
     }
 }
