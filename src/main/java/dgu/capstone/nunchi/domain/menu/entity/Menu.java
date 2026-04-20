@@ -51,6 +51,7 @@ public class Menu extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "allergy")
     @Builder.Default
+    @org.hibernate.annotations.BatchSize(size = 50)
     private Set<AllergyType> allergies = new HashSet<>();
 
     // 매운맛 단계 (0=안매움 ~ 5=매우매움)
