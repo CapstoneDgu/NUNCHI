@@ -273,7 +273,7 @@ public class DataInitializer implements CommandLineRunner {
                 .name("냉모밀").price(7000).imageUrl("/images/menu/naengmomil.jpg")
                 .category(catMyeon).isSoldOut(false)
                 .nutrition(nutrition(480, 18.0, 78.0, 6.0, 720, 10.0, 0.0, 20, 3.0))
-                .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG, AllergyType.BUCKWHEAT))
                 .spicyLevel(0).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.NONE)
                 .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산").build());
 

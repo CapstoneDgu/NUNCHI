@@ -5,5 +5,5 @@ public enum AllergyType {
     PEANUT, WALNUT, PINE,
     SHRIMP, CRAB, SQUID, CLAM,
     BEEF, PORK, CHICKEN,
-    PEACH, TOMATO
+    PEACH, TOMATO, BUCKWHEAT
 }
