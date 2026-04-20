@@ -62,7 +62,7 @@ public record MenuDetailResponse(
                 menu.getImageUrl(),
                 groupInfos,
                 menu.getNutrition(),
-                menu.getAllergies(),
+                new java.util.HashSet<>(menu.getAllergies()),
                 menu.getSpicyLevel(),
                 menu.getTemperatureType(),
                 menu.getVegetarianType(),

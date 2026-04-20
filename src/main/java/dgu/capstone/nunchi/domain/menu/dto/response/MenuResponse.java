@@ -33,7 +33,7 @@ public record MenuResponse(
                 menu.getTemperatureType(),
                 menu.getVegetarianType(),
                 menu.getSeasonRecommended(),
-                menu.getAllergies(),
+                new java.util.HashSet<>(menu.getAllergies()),
                 menu.getNutrition() != null ? menu.getNutrition().getCalorie() : null
         );
     }
