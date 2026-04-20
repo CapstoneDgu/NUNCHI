@@ -4,7 +4,12 @@ import dgu.capstone.nunchi.domain.menu.entity.Menu;
 import dgu.capstone.nunchi.domain.menu.entity.MenuCategory;
 import dgu.capstone.nunchi.domain.menu.entity.MenuOption;
 import dgu.capstone.nunchi.domain.menu.entity.MenuOptionGroup;
+import dgu.capstone.nunchi.domain.menu.entity.NutritionInfo;
 import dgu.capstone.nunchi.domain.menu.entity.SalesDaily;
+import dgu.capstone.nunchi.domain.menu.entity.enums.AllergyType;
+import dgu.capstone.nunchi.domain.menu.entity.enums.Season;
+import dgu.capstone.nunchi.domain.menu.entity.enums.TemperatureType;
+import dgu.capstone.nunchi.domain.menu.entity.enums.VegetarianType;
 import dgu.capstone.nunchi.domain.menu.repository.MenuCategoryRepository;
 import dgu.capstone.nunchi.domain.menu.repository.MenuOptionGroupRepository;
 import dgu.capstone.nunchi.domain.menu.repository.MenuOptionRepository;
@@ -34,6 +39,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Component
 @Profile("local")
@@ -58,13 +65,10 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (menuCategoryRepository.count() > 0) {
-            return;
-        }
+        if (menuCategoryRepository.count() > 0) return;
 
         MenuSeedData menuData = seedMenus();
         seedSalesHistory(menuData);
-
         SessionSeedData sessionData = seedSessions();
         seedConversationMessages(sessionData.avatarSession());
         seedAiToolCallLogs(sessionData.avatarSession());
@@ -72,240 +76,520 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private MenuSeedData seedMenus() {
-        MenuCategory catBurger = menuCategoryRepository.save(MenuCategory.create("버거", 1));
-        MenuCategory catSide = menuCategoryRepository.save(MenuCategory.create("사이드", 2));
-        MenuCategory catDrink = menuCategoryRepository.save(MenuCategory.create("음료", 3));
-        MenuCategory catSet = menuCategoryRepository.save(MenuCategory.create("세트", 4));
 
-        Menu burger1 = menuRepository.save(Menu.create("불고기버거", 4500, "/images/menu/bulgogi.jpg", catBurger));
-        Menu burger2 = menuRepository.save(Menu.create("치킨버거", 4000, "/images/menu/chicken.jpg", catBurger));
-        Menu burger3 = menuRepository.save(Menu.builder()
-                .name("새우버거")
-                .price(4200)
-                .imageUrl("/images/menu/shrimp.jpg")
-                .category(catBurger)
-                .isSoldOut(true)
-                .isRecommended(false)
-                .build());
-        Menu burger4 = menuRepository.save(Menu.builder()
-                .name("더블패티버거")
-                .price(5500)
-                .imageUrl("/images/menu/double.jpg")
-                .category(catBurger)
-                .isSoldOut(false)
-                .isRecommended(true)
-                .build());
+        // ===== 카테고리 =====
+        MenuCategory catBap      = menuCategoryRepository.save(MenuCategory.create("밥류", 1));
+        MenuCategory catDeopbap  = menuCategoryRepository.save(MenuCategory.create("덮밥류", 2));
+        MenuCategory catCheolpan = menuCategoryRepository.save(MenuCategory.create("철판류", 3));
+        MenuCategory catMyeon    = menuCategoryRepository.save(MenuCategory.create("면류", 4));
+        MenuCategory catSet      = menuCategoryRepository.save(MenuCategory.create("세트메뉴", 5));
+        MenuCategory catExtra    = menuCategoryRepository.save(MenuCategory.create("추가메뉴", 6));
+        MenuCategory catDrink    = menuCategoryRepository.save(MenuCategory.create("음료", 7));
 
-        Menu side1 = menuRepository.save(Menu.create("감자튀김", 1500, "/images/menu/fries.jpg", catSide));
-        Menu side2 = menuRepository.save(Menu.create("어니언링", 2000, "/images/menu/onion.jpg", catSide));
-        Menu side3 = menuRepository.save(Menu.builder()
-                .name("코울슬로")
-                .price(1200)
-                .imageUrl("/images/menu/coleslaw.jpg")
-                .category(catSide)
-                .isSoldOut(false)
-                .isRecommended(true)
-                .build());
+        // ===== 밥류 =====
+        Menu teriyakiChicken = menuRepository.save(Menu.builder()
+                .name("데리야끼치킨솥밥").price(7500).imageUrl("/images/menu/teriyaki_chicken.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(650, 28.0, 90.0, 14.0, 820, 8.0, 0.1, 75, 3.0))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.CHICKEN, AllergyType.EGG))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 닭고기:국내산").build());
 
-        Menu drink1 = menuRepository.save(Menu.create("콜라", 1000, "/images/menu/cola.jpg", catDrink));
-        Menu drink2 = menuRepository.save(Menu.create("사이다", 1000, "/images/menu/cider.jpg", catDrink));
-        Menu drink3 = menuRepository.save(Menu.create("오렌지주스", 1500, "/images/menu/oj.jpg", catDrink));
-        Menu drink4 = menuRepository.save(Menu.builder()
-                .name("아메리카노")
-                .price(2000)
-                .imageUrl("/images/menu/americano.jpg")
-                .category(catDrink)
-                .isSoldOut(false)
-                .isRecommended(true)
-                .build());
+        Menu charcoalPork = menuRepository.save(Menu.builder()
+                .name("숯불삼겹솥밥").price(8000).imageUrl("/images/menu/charcoal_pork.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(780, 25.0, 88.0, 24.0, 760, 3.0, 0.2, 80, 2.5))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.PORK))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:국내산").build());
 
-        Menu set1 = menuRepository.save(Menu.builder()
-                .name("불고기버거세트")
-                .price(6500)
-                .imageUrl("/images/menu/bulgogi_set.jpg")
-                .category(catSet)
-                .isSoldOut(false)
-                .isRecommended(true)
-                .build());
-        Menu set2 = menuRepository.save(Menu.create("치킨버거세트", 6000, "/images/menu/chicken_set.jpg", catSet));
+        Menu tunaMayo = menuRepository.save(Menu.builder()
+                .name("참치마요솥밥").price(7000).imageUrl("/images/menu/tuna_mayo.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(620, 22.0, 85.0, 16.0, 680, 4.0, 0.1, 45, 2.0))
+                .allergies(allergies(AllergyType.EGG, AllergyType.SOY))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 참치:원양산").build());
 
-        MenuOptionGroup sizeGroup = menuOptionGroupRepository.save(
-                MenuOptionGroup.create("사이즈", false, 1, burger1));
-        menuOptionRepository.save(MenuOption.create("기본", 0, sizeGroup));
-        MenuOption optLarge = menuOptionRepository.save(MenuOption.create("라지", 500, sizeGroup));
+        Menu cornCheese = menuRepository.save(Menu.builder()
+                .name("콘치즈솥밥").price(7000).imageUrl("/images/menu/corn_cheese.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(600, 15.0, 92.0, 13.0, 720, 6.0, 0.2, 30, 3.5))
+                .allergies(allergies(AllergyType.MILK, AllergyType.EGG, AllergyType.WHEAT))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGETARIAN)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 옥수수:미국산, 치즈:뉴질랜드산").build());
 
-        MenuOptionGroup sauceGroup = menuOptionGroupRepository.save(
-                MenuOptionGroup.create("소스", false, 2, burger1));
-        MenuOption optKetchup = menuOptionRepository.save(MenuOption.create("케첩", 0, sauceGroup));
-        menuOptionRepository.save(MenuOption.create("머스타드", 0, sauceGroup));
-        menuOptionRepository.save(MenuOption.create("마요네즈", 0, sauceGroup));
+        Menu octopusPork = menuRepository.save(Menu.builder()
+                .name("낙지삼겹솥밥").price(8500).imageUrl("/images/menu/octopus_pork.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(720, 27.0, 82.0, 22.0, 980, 5.0, 0.2, 120, 2.0))
+                .allergies(allergies(AllergyType.SQUID, AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
+                .spicyLevel(4).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.FALL).originInfo("쌀:국내산, 낙지:국내산, 돼지고기:국내산").build());
 
-        MenuOptionGroup cookGroup = menuOptionGroupRepository.save(
-                MenuOptionGroup.create("패티 굽기", true, 1, burger4));
-        menuOptionRepository.save(MenuOption.create("웰던", 0, cookGroup));
-        menuOptionRepository.save(MenuOption.create("미디엄", 0, cookGroup));
-        menuOptionRepository.save(MenuOption.create("레어", 0, cookGroup));
+        Menu spamKimchi = menuRepository.save(Menu.builder()
+                .name("스팸김치솥밥").price(7500).imageUrl("/images/menu/spam_kimchi.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(700, 20.0, 88.0, 18.0, 1100, 4.0, 0.3, 55, 3.0))
+                .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
+                .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:미국산, 배추:국내산").build());
 
-        MenuOptionGroup saltGroup = menuOptionGroupRepository.save(
-                MenuOptionGroup.create("소금 옵션", false, 1, side1));
+        Menu jangjorimButter = menuRepository.save(Menu.builder()
+                .name("장조림버터솥밥").price(7500).imageUrl("/images/menu/jangjorim_butter.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(680, 26.0, 86.0, 16.0, 750, 5.0, 0.2, 85, 2.0))
+                .allergies(allergies(AllergyType.BEEF, AllergyType.MILK, AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.WINTER).originInfo("쌀:국내산, 쇠고기:호주산").build());
+
+        Menu flyingFishBulgogi = menuRepository.save(Menu.builder()
+                .name("날치알김치불고기솥밥").price(8500).imageUrl("/images/menu/flying_fish_bulgogi.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(740, 29.0, 84.0, 20.0, 920, 6.0, 0.1, 90, 2.5))
+                .allergies(allergies(AllergyType.BEEF, AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
+                .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 쇠고기:국내산, 날치알:러시아산").build());
+
+        Menu spamLunchbox = menuRepository.save(Menu.builder()
+                .name("스팸도시락").price(5500).imageUrl("/images/menu/spam_lunchbox.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(620, 18.0, 82.0, 20.0, 980, 3.0, 0.3, 50, 2.0))
+                .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:미국산").build());
+
+        // 솥밥 8개 국 선택 + 공기밥 추가 옵션 (스팸도시락 제외)
+        for (Menu sotbap : new Menu[]{teriyakiChicken, charcoalPork, tunaMayo, cornCheese, octopusPork, spamKimchi, jangjorimButter, flyingFishBulgogi}) {
+            MenuOptionGroup soupGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("국 선택", true, 1, sotbap));
+            menuOptionRepository.save(MenuOption.create("된장국", 0, soupGroup));
+            menuOptionRepository.save(MenuOption.create("미역국", 0, soupGroup));
+
+            MenuOptionGroup riceGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("공기밥 추가", false, 1, sotbap));
+            menuOptionRepository.save(MenuOption.create("없음", 0, riceGroup));
+            menuOptionRepository.save(MenuOption.create("공기밥 추가", 500, riceGroup));
+        }
+
+        // ===== 덮밥류 =====
+        Menu curryRice = menuRepository.save(Menu.builder()
+                .name("일식카레덮밥").price(7000).imageUrl("/images/menu/curry_rice.jpg")
+                .category(catDeopbap).isSoldOut(false)
+                .nutrition(nutrition(680, 14.0, 108.0, 14.0, 860, 8.0, 0.1, 20, 5.0))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.MILK))
+                .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGETARIAN)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산").build());
+
+        Menu katsudon = menuRepository.save(Menu.builder()
+                .name("가츠동").price(8000).imageUrl("/images/menu/katsudon.jpg")
+                .category(catDeopbap).isSoldOut(false)
+                .nutrition(nutrition(820, 34.0, 88.0, 28.0, 920, 6.0, 0.3, 110, 2.5))
+                .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.EGG, AllergyType.SOY))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:국내산, 밀:미국산").build());
+
+        Menu ikura = menuRepository.save(Menu.builder()
+                .name("알밥").price(7500).imageUrl("/images/menu/ikura.jpg")
+                .category(catDeopbap).isSoldOut(false)
+                .nutrition(nutrition(720, 22.0, 96.0, 20.0, 980, 5.0, 0.2, 180, 2.0))
+                .allergies(allergies(AllergyType.EGG, AllergyType.WHEAT, AllergyType.SOY, AllergyType.SQUID))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 날치알:러시아산").build());
+
+        Menu mazeDon = menuRepository.save(Menu.builder()
+                .name("마제덮밥").price(8000).imageUrl("/images/menu/maze_don.jpg")
+                .category(catDeopbap).isSoldOut(false)
+                .nutrition(nutrition(750, 26.0, 90.0, 24.0, 860, 4.0, 0.2, 95, 3.0))
+                .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
+                .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:국내산").build());
+
+        // 덮밥류 계란 추가 옵션
+        for (Menu deopbap : new Menu[]{curryRice, katsudon, ikura, mazeDon}) {
+            MenuOptionGroup eggGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("계란 추가", false, 1, deopbap));
+            menuOptionRepository.save(MenuOption.create("없음", 0, eggGroup));
+            menuOptionRepository.save(MenuOption.create("1개", 500, eggGroup));
+            menuOptionRepository.save(MenuOption.create("2개", 1000, eggGroup));
+        }
+
+        // ===== 철판류 =====
+        Menu porkKimchiCheolpan = menuRepository.save(Menu.builder()
+                .name("삼겹살김치철판").price(8500).imageUrl("/images/menu/pork_kimchi_cheolpan.jpg")
+                .category(catCheolpan).isSoldOut(false)
+                .nutrition(nutrition(820, 32.0, 65.0, 38.0, 1050, 5.0, 0.3, 95, 4.0))
+                .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
+                .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 배추:국내산").build());
+
+        Menu cheeseBuldak = menuRepository.save(Menu.builder()
+                .name("치즈불닭철판").price(9000).imageUrl("/images/menu/cheese_buldak.jpg")
+                .category(catCheolpan).isSoldOut(false)
+                .nutrition(nutrition(880, 36.0, 68.0, 35.0, 1300, 6.0, 0.4, 110, 3.0))
+                .allergies(allergies(AllergyType.CHICKEN, AllergyType.MILK, AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
+                .spicyLevel(5).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("닭고기:국내산, 치즈:뉴질랜드산").build());
+
+        Menu cheeseDonkatsu = menuRepository.save(Menu.builder()
+                .name("철판치즈돈가스").price(8000).imageUrl("/images/menu/cheese_donkatsu.jpg")
+                .category(catCheolpan).isSoldOut(false)
+                .nutrition(nutrition(850, 35.0, 72.0, 36.0, 980, 4.0, 0.4, 100, 2.5))
+                .allergies(allergies(AllergyType.PORK, AllergyType.MILK, AllergyType.WHEAT, AllergyType.EGG))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산").build());
+
+        // 삼겹살김치철판 옵션
+        MenuOptionGroup porkEggGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("계란 추가", false, 1, porkKimchiCheolpan));
+        menuOptionRepository.save(MenuOption.create("없음", 0, porkEggGroup));
+        menuOptionRepository.save(MenuOption.create("1개", 500, porkEggGroup));
+        menuOptionRepository.save(MenuOption.create("2개", 1000, porkEggGroup));
+
+        // 치즈불닭철판 옵션
+        MenuOptionGroup spicyGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("매운맛 조절", false, 1, cheeseBuldak));
+        menuOptionRepository.save(MenuOption.create("순하게", 0, spicyGroup));
+        menuOptionRepository.save(MenuOption.create("기본 (신라면)", 0, spicyGroup));
+        menuOptionRepository.save(MenuOption.create("맵게 (불닭볶음면)", 0, spicyGroup));
+        MenuOptionGroup buldakEggGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("계란 추가", false, 1, cheeseBuldak));
+        menuOptionRepository.save(MenuOption.create("없음", 0, buldakEggGroup));
+        menuOptionRepository.save(MenuOption.create("1개", 500, buldakEggGroup));
+        menuOptionRepository.save(MenuOption.create("2개", 1000, buldakEggGroup));
+
+        // 철판치즈돈가스 옵션
+        MenuOptionGroup sauceGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("소스 선택", true, 1, cheeseDonkatsu));
+        menuOptionRepository.save(MenuOption.create("돈가스소스", 0, sauceGroup));
+        menuOptionRepository.save(MenuOption.create("카레소스", 0, sauceGroup));
+        menuOptionRepository.save(MenuOption.create("크림소스", 500, sauceGroup));
+        MenuOptionGroup wasabiGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("와사비", false, 1, cheeseDonkatsu));
+        menuOptionRepository.save(MenuOption.create("와사비 없이", 0, wasabiGroup));
+        menuOptionRepository.save(MenuOption.create("와사비 추가", 0, wasabiGroup));
+        MenuOptionGroup saltGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("소금", false, 1, cheeseDonkatsu));
         menuOptionRepository.save(MenuOption.create("소금 없이", 0, saltGroup));
         menuOptionRepository.save(MenuOption.create("소금 추가", 0, saltGroup));
+        MenuOptionGroup donkatsuEggGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("계란 추가", false, 1, cheeseDonkatsu));
+        menuOptionRepository.save(MenuOption.create("없음", 0, donkatsuEggGroup));
+        menuOptionRepository.save(MenuOption.create("1개", 500, donkatsuEggGroup));
+        menuOptionRepository.save(MenuOption.create("2개", 1000, donkatsuEggGroup));
 
-        MenuOptionGroup drinkSize1 = menuOptionGroupRepository.save(
-                MenuOptionGroup.create("사이즈", true, 1, drink1));
-        menuOptionRepository.save(MenuOption.create("S", 0, drinkSize1));
-        menuOptionRepository.save(MenuOption.create("M", 300, drinkSize1));
-        menuOptionRepository.save(MenuOption.create("L", 500, drinkSize1));
+        // ===== 면류 =====
+        Menu naengmomil = menuRepository.save(Menu.builder()
+                .name("냉모밀").price(7000).imageUrl("/images/menu/naengmomil.jpg")
+                .category(catMyeon).isSoldOut(false)
+                .nutrition(nutrition(480, 18.0, 78.0, 6.0, 720, 10.0, 0.0, 20, 3.0))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
+                .spicyLevel(0).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산").build());
 
-        MenuOptionGroup drinkSize2 = menuOptionGroupRepository.save(
-                MenuOptionGroup.create("사이즈", true, 1, drink2));
-        menuOptionRepository.save(MenuOption.create("S", 0, drinkSize2));
-        menuOptionRepository.save(MenuOption.create("M", 300, drinkSize2));
-        menuOptionRepository.save(MenuOption.create("L", 500, drinkSize2));
+        Menu shrimpUdon = menuRepository.save(Menu.builder()
+                .name("새우튀김우동").price(7500).imageUrl("/images/menu/shrimp_udon.jpg")
+                .category(catMyeon).isSoldOut(false)
+                .nutrition(nutrition(620, 24.0, 82.0, 14.0, 980, 4.0, 0.2, 85, 2.5))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SHRIMP, AllergyType.EGG))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.WINTER).originInfo("새우:베트남산, 밀:미국산").build());
 
-        MenuOptionGroup setDrink = menuOptionGroupRepository.save(
-                MenuOptionGroup.create("음료 선택", true, 1, set1));
-        menuOptionRepository.save(MenuOption.create("콜라", 0, setDrink));
-        menuOptionRepository.save(MenuOption.create("사이다", 0, setDrink));
-        menuOptionRepository.save(MenuOption.create("오렌지주스", 500, setDrink));
+        Menu fishcakeUdon = menuRepository.save(Menu.builder()
+                .name("어묵우동").price(6500).imageUrl("/images/menu/fishcake_udon.jpg")
+                .category(catMyeon).isSoldOut(false)
+                .nutrition(nutrition(520, 20.0, 76.0, 8.0, 1100, 3.0, 0.1, 30, 2.0))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.WINTER).originInfo("어묵:국내산, 밀:미국산").build());
+
+        Menu bibimUdon = menuRepository.save(Menu.builder()
+                .name("비빔우동").price(7000).imageUrl("/images/menu/bibim_udon.jpg")
+                .category(catMyeon).isSoldOut(false)
+                .nutrition(nutrition(550, 16.0, 88.0, 10.0, 860, 12.0, 0.1, 15, 3.5))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
+                .spicyLevel(1).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.SUMMER).originInfo("밀:미국산, 배추:국내산").build());
+
+        Menu seafoodJjambbong = menuRepository.save(Menu.builder()
+                .name("해물짬뽕우동").price(8000).imageUrl("/images/menu/seafood_jjambbong.jpg")
+                .category(catMyeon).isSoldOut(false)
+                .nutrition(nutrition(580, 26.0, 72.0, 12.0, 1400, 4.0, 0.1, 95, 3.0))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SHRIMP, AllergyType.CRAB, AllergyType.SQUID, AllergyType.CLAM))
+                .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("새우:베트남산, 오징어:국내산, 조개:국내산").build());
+
+        // 우동/모밀 면 양 조절 옵션
+        for (Menu udon : new Menu[]{naengmomil, shrimpUdon, fishcakeUdon, bibimUdon, seafoodJjambbong}) {
+            MenuOptionGroup noodleGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("면 양 조절", false, 1, udon));
+            menuOptionRepository.save(MenuOption.create("보통", 0, noodleGroup));
+            menuOptionRepository.save(MenuOption.create("곱배기", 1000, noodleGroup));
+        }
+        // 냉모밀 와사비 옵션
+        MenuOptionGroup wasabiNaeng = menuOptionGroupRepository.save(MenuOptionGroup.create("와사비", false, 1, naengmomil));
+        menuOptionRepository.save(MenuOption.create("와사비 없이", 0, wasabiNaeng));
+        menuOptionRepository.save(MenuOption.create("와사비 추가", 0, wasabiNaeng));
+
+        // 라면류
+        Menu eggRamen = menuRepository.save(Menu.builder()
+                .name("계란라면").price(4000).imageUrl("/images/menu/egg_ramen.jpg")
+                .category(catMyeon).isSoldOut(false)
+                .nutrition(nutrition(480, 14.0, 68.0, 14.0, 1600, 2.0, 0.2, 185, 2.5))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.EGG))
+                .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGETARIAN)
+                .seasonRecommended(Season.ALL).originInfo("계란:국내산, 밀:미국산").build());
+
+        Menu cheeseRamen = menuRepository.save(Menu.builder()
+                .name("치즈라면").price(4500).imageUrl("/images/menu/cheese_ramen.jpg")
+                .category(catMyeon).isSoldOut(false)
+                .nutrition(nutrition(540, 16.0, 70.0, 18.0, 1700, 3.0, 0.3, 195, 2.0))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.EGG, AllergyType.MILK))
+                .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGETARIAN)
+                .seasonRecommended(Season.WINTER).originInfo("계란:국내산, 밀:미국산, 치즈:뉴질랜드산").build());
+
+        Menu haejangramen = menuRepository.save(Menu.builder()
+                .name("해장라면").price(4500).imageUrl("/images/menu/haejang_ramen.jpg")
+                .category(catMyeon).isSoldOut(false)
+                .nutrition(nutrition(460, 12.0, 66.0, 12.0, 1800, 2.0, 0.1, 30, 2.5))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.BEEF))
+                .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("밀:미국산, 쇠고기:호주산").build());
+
+        // 라면 토핑 옵션
+        for (Menu ramen : new Menu[]{eggRamen, cheeseRamen, haejangramen}) {
+            MenuOptionGroup ramenEgg = menuOptionGroupRepository.save(MenuOptionGroup.create("계란 추가", false, 1, ramen));
+            menuOptionRepository.save(MenuOption.create("없음", 0, ramenEgg));
+            menuOptionRepository.save(MenuOption.create("계란 추가", 500, ramenEgg));
+
+            MenuOptionGroup ramenCheese = menuOptionGroupRepository.save(MenuOptionGroup.create("치즈 추가", false, 1, ramen));
+            menuOptionRepository.save(MenuOption.create("없음", 0, ramenCheese));
+            menuOptionRepository.save(MenuOption.create("치즈 추가", 500, ramenCheese));
+
+            MenuOptionGroup ramenTuna = menuOptionGroupRepository.save(MenuOptionGroup.create("참치 추가", false, 1, ramen));
+            menuOptionRepository.save(MenuOption.create("없음", 0, ramenTuna));
+            menuOptionRepository.save(MenuOption.create("참치 추가", 500, ramenTuna));
+        }
+
+        // ===== 세트메뉴 =====
+        Menu setNaengDonkatsu = menuRepository.save(Menu.builder()
+                .name("냉모밀+돈가스 세트").price(13000).imageUrl("/images/menu/set_naeng_donkatsu.jpg")
+                .category(catSet).isSoldOut(false)
+                .nutrition(nutrition(1330, 53.0, 150.0, 42.0, 1700, 14.0, 0.4, 120, 5.5))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG, AllergyType.PORK, AllergyType.MILK))
+                .spicyLevel(0).temperatureType(TemperatureType.BOTH).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산, 돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산").build());
+
+        Menu setNaengIkura = menuRepository.save(Menu.builder()
+                .name("냉모밀+알밥 세트").price(12500).imageUrl("/images/menu/set_naeng_ikura.jpg")
+                .category(catSet).isSoldOut(false)
+                .nutrition(nutrition(1200, 40.0, 174.0, 26.0, 1700, 15.0, 0.1, 200, 5.0))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG, AllergyType.SQUID))
+                .spicyLevel(0).temperatureType(TemperatureType.BOTH).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산, 쌀:국내산, 날치알:러시아산").build());
+
+        Menu setDonkatsuCurry = menuRepository.save(Menu.builder()
+                .name("돈가스+카레 세트").price(13500).imageUrl("/images/menu/set_donkatsu_curry.jpg")
+                .category(catSet).isSoldOut(false)
+                .nutrition(nutrition(1530, 49.0, 180.0, 50.0, 1840, 12.0, 0.5, 120, 7.5))
+                .allergies(allergies(AllergyType.PORK, AllergyType.MILK, AllergyType.WHEAT, AllergyType.EGG, AllergyType.SOY))
+                .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산, 쌀:국내산").build());
+
+        Menu setUdonKatsudon = menuRepository.save(Menu.builder()
+                .name("우동+가츠동 세트").price(13000).imageUrl("/images/menu/set_udon_katsudon.jpg")
+                .category(catSet).isSoldOut(false)
+                .nutrition(nutrition(1440, 58.0, 170.0, 42.0, 1900, 10.0, 0.5, 195, 5.0))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.SHRIMP, AllergyType.EGG, AllergyType.PORK, AllergyType.SOY))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.WINTER).originInfo("새우:베트남산, 밀:미국산, 쌀:국내산, 돼지고기:국내산").build());
+
+        // 돈가스+카레 세트만 국 선택 옵션
+        MenuOptionGroup setSoupGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("국 선택", false, 1, setDonkatsuCurry));
+        menuOptionRepository.save(MenuOption.create("없음", 0, setSoupGroup));
+        menuOptionRepository.save(MenuOption.create("된장국", 0, setSoupGroup));
+        menuOptionRepository.save(MenuOption.create("미역국", 0, setSoupGroup));
+
+        // ===== 추가메뉴 =====
+        Menu friedEgg = menuRepository.save(Menu.builder()
+                .name("계란후라이").price(500).imageUrl("/images/menu/fried_egg.jpg")
+                .category(catExtra).isSoldOut(false)
+                .nutrition(nutrition(90, 6.0, 0.5, 7.0, 150, 0.0, 0.1, 185, 0.0))
+                .allergies(allergies(AllergyType.EGG))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGETARIAN)
+                .seasonRecommended(Season.ALL).originInfo("계란:국내산").build());
+
+        menuRepository.save(Menu.builder()
+                .name("소시지").price(800).imageUrl("/images/menu/sausage.jpg")
+                .category(catExtra).isSoldOut(false)
+                .nutrition(nutrition(180, 7.0, 4.0, 14.0, 580, 2.0, 0.3, 35, 0.0))
+                .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산").build());
+
+        Menu plainRice = menuRepository.save(Menu.builder()
+                .name("공기밥").price(1000).imageUrl("/images/menu/plain_rice.jpg")
+                .category(catExtra).isSoldOut(false)
+                .nutrition(nutrition(300, 5.0, 66.0, 0.5, 0, 0.0, 0.0, 0, 0.5))
+                .allergies(new HashSet<>())
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGAN)
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산").build());
+
+        menuRepository.save(Menu.builder()
+                .name("해시브라운").price(800).imageUrl("/images/menu/hashbrown.jpg")
+                .category(catExtra).isSoldOut(false)
+                .nutrition(nutrition(150, 2.0, 18.0, 8.0, 280, 0.5, 0.2, 0, 1.5))
+                .allergies(new HashSet<>())
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGETARIAN)
+                .seasonRecommended(Season.ALL).originInfo("감자:국내산").build());
+
+        // ===== 음료 =====
+        menuRepository.save(Menu.builder()
+                .name("콜라").price(1500).imageUrl("/images/menu/cola.jpg")
+                .category(catDrink).isSoldOut(false)
+                .nutrition(nutrition(140, 0.0, 38.0, 0.0, 45, 38.0, 0.0, 0, 0.0))
+                .allergies(new HashSet<>())
+                .spicyLevel(0).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.VEGAN)
+                .seasonRecommended(Season.ALL).originInfo(null).build());
+
+        menuRepository.save(Menu.builder()
+                .name("제로콜라").price(1500).imageUrl("/images/menu/zero_cola.jpg")
+                .category(catDrink).isSoldOut(false)
+                .nutrition(nutrition(0, 0.0, 0.0, 0.0, 40, 0.0, 0.0, 0, 0.0))
+                .allergies(new HashSet<>())
+                .spicyLevel(0).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.VEGAN)
+                .seasonRecommended(Season.ALL).originInfo(null).build());
+
+        menuRepository.save(Menu.builder()
+                .name("사이다").price(1500).imageUrl("/images/menu/cider.jpg")
+                .category(catDrink).isSoldOut(false)
+                .nutrition(nutrition(130, 0.0, 34.0, 0.0, 35, 34.0, 0.0, 0, 0.0))
+                .allergies(new HashSet<>())
+                .spicyLevel(0).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.VEGAN)
+                .seasonRecommended(Season.ALL).originInfo(null).build());
+
+        menuRepository.save(Menu.builder()
+                .name("환타").price(1500).imageUrl("/images/menu/fanta.jpg")
+                .category(catDrink).isSoldOut(false)
+                .nutrition(nutrition(160, 0.0, 43.0, 0.0, 30, 43.0, 0.0, 0, 0.0))
+                .allergies(new HashSet<>())
+                .spicyLevel(0).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.VEGAN)
+                .seasonRecommended(Season.ALL).originInfo(null).build());
 
         return new MenuSeedData(
-                burger1,
-                burger2,
-                burger3,
-                burger4,
-                side1,
-                side2,
-                side3,
-                drink1,
-                drink2,
-                drink3,
-                drink4,
-                set1,
-                set2,
-                optLarge,
-                optKetchup
+                teriyakiChicken, flyingFishBulgogi,
+                porkKimchiCheolpan, cheeseDonkatsu,
+                curryRice, katsudon,
+                shrimpUdon, setNaengDonkatsu,
+                eggRamen, plainRice, naengmomil, friedEgg
         );
     }
 
-    private void seedSalesHistory(MenuSeedData menuData) {
+    private void seedSalesHistory(MenuSeedData d) {
         LocalDate today = LocalDate.now();
+        int[][] data = {
+                {45}, {38}, {32}, {40}, {50}, {35}, {28}, {22}, {30}
+        };
+        Menu[] menus = {
+                d.teriyakiChicken(), d.flyingFishBulgogi(),
+                d.porkKimchiCheolpan(), d.cheeseDonkatsu(),
+                d.curryRice(), d.katsudon(),
+                d.shrimpUdon(), d.setNaengDonkatsu(),
+                d.eggRamen()
+        };
+        int[] prices = {7500, 8500, 8500, 8000, 7000, 8000, 7500, 13000, 4000};
 
         for (int i = SALES_HISTORY_DAYS - 1; i >= 0; i--) {
             LocalDate date = today.minusDays(i);
-            salesDailyRepository.save(SalesDaily.create(date, 30 + i * 3, (30 + i * 3) * 4500, menuData.bulgogiBurger()));
-            salesDailyRepository.save(SalesDaily.create(date, 20 + i * 2, (20 + i * 2) * 4000, menuData.chickenBurger()));
-            salesDailyRepository.save(SalesDaily.create(date, 25 + i, (25 + i) * 6500, menuData.bulgogiBurgerSet()));
-            salesDailyRepository.save(SalesDaily.create(date, 40 + i * 4, (40 + i * 4) * 1500, menuData.frenchFries()));
-            salesDailyRepository.save(SalesDaily.create(date, 50 + i * 5, (50 + i * 5) * 1000, menuData.cola()));
+            for (int m = 0; m < menus.length; m++) {
+                int qty = data[m][0] + i * 2;
+                salesDailyRepository.save(SalesDaily.create(date, qty, qty * prices[m], menus[m]));
+            }
         }
     }
 
     private SessionSeedData seedSessions() {
-        KioskSession activeSession = kioskSessionRepository.save(KioskSession.create(SessionMode.NORMAL, "ko"));
-        KioskSession avatarSession = kioskSessionRepository.save(KioskSession.create(SessionMode.AVATAR, "ko"));
+        KioskSession activeSession    = kioskSessionRepository.save(KioskSession.create(SessionMode.NORMAL, "ko"));
+        KioskSession avatarSession    = kioskSessionRepository.save(KioskSession.create(SessionMode.AVATAR, "ko"));
         KioskSession completedSession = kioskSessionRepository.save(KioskSession.create(SessionMode.NORMAL, "ko"));
-        KioskSession expiredSession = kioskSessionRepository.save(KioskSession.create(SessionMode.AVATAR, "ko"));
-
+        KioskSession expiredSession   = kioskSessionRepository.save(KioskSession.create(SessionMode.AVATAR, "ko"));
         completedSession.complete();
         expiredSession.expire();
-
         return new SessionSeedData(activeSession, avatarSession, completedSession, expiredSession);
     }
 
     private void seedConversationMessages(KioskSession avatarSession) {
-        conversationMessageRepository.save(
-                ConversationMessage.create(avatarSession, MessageRole.USER, "안녕하세요, 메뉴 추천해 주세요"));
-        conversationMessageRepository.save(
-                ConversationMessage.create(avatarSession, MessageRole.ASSISTANT, "안녕하세요! 오늘의 추천 메뉴는 더블패티버거와 불고기버거세트입니다."));
-        conversationMessageRepository.save(
-                ConversationMessage.create(avatarSession, MessageRole.USER, "불고기버거세트 하나 주세요"));
-        conversationMessageRepository.save(
-                ConversationMessage.create(avatarSession, MessageRole.ASSISTANT, "불고기버거세트 1개를 장바구니에 담았습니다. 음료는 어떤 걸로 하시겠어요?"));
-        conversationMessageRepository.save(
-                ConversationMessage.create(avatarSession, MessageRole.USER, "콜라로 주세요"));
-        conversationMessageRepository.save(
-                ConversationMessage.create(avatarSession, MessageRole.ASSISTANT, "콜라로 설정했습니다. 결제를 진행할까요?"));
+        conversationMessageRepository.save(ConversationMessage.create(avatarSession, MessageRole.USER, "오늘 추천 메뉴 뭐야?"));
+        conversationMessageRepository.save(ConversationMessage.create(avatarSession, MessageRole.ASSISTANT, "안녕하세요! 오늘의 추천 메뉴는 일식카레덮밥과 날치알김치불고기솥밥입니다."));
+        conversationMessageRepository.save(ConversationMessage.create(avatarSession, MessageRole.USER, "날치알김치불고기솥밥 하나 담아줘"));
+        conversationMessageRepository.save(ConversationMessage.create(avatarSession, MessageRole.ASSISTANT, "날치알김치불고기솥밥 1개를 장바구니에 담았습니다. 국은 어떤 걸로 하시겠어요?"));
+        conversationMessageRepository.save(ConversationMessage.create(avatarSession, MessageRole.USER, "된장국으로 줘"));
+        conversationMessageRepository.save(ConversationMessage.create(avatarSession, MessageRole.ASSISTANT, "된장국으로 설정했습니다. 결제를 진행할까요?"));
     }
 
     private void seedAiToolCallLogs(KioskSession avatarSession) {
         aiToolCallLogRepository.save(AiToolCallLog.create(
-                avatarSession,
-                "recommend_menu",
-                "{\"userText\":\"안녕하세요, 메뉴 추천해 주세요\",\"mode\":\"AVATAR\",\"language\":\"ko\"}",
-                "{\"recommendedMenus\":[{\"name\":\"더블패티버거\"},{\"name\":\"불고기버거세트\"}]}"
+                avatarSession, "recommend_menu",
+                "{\"userText\":\"오늘 추천 메뉴 뭐야?\",\"mode\":\"AVATAR\",\"language\":\"ko\"}",
+                "{\"recommendedMenus\":[{\"name\":\"일식카레덮밥\"},{\"name\":\"날치알김치불고기솥밥\"}]}"
         ));
-
         aiToolCallLogRepository.save(AiToolCallLog.create(
-                avatarSession,
-                "add_to_cart",
-                "{\"menuName\":\"불고기버거세트\",\"quantity\":1}",
-                "{\"cartItems\":[{\"menuName\":\"불고기버거세트\",\"quantity\":1}],\"orderStatus\":\"PENDING\"}"
+                avatarSession, "add_to_cart",
+                "{\"menuName\":\"날치알김치불고기솥밥\",\"quantity\":1}",
+                "{\"cartItems\":[{\"menuName\":\"날치알김치불고기솥밥\",\"quantity\":1}],\"orderStatus\":\"PENDING\"}"
         ));
-
         aiToolCallLogRepository.save(AiToolCallLog.create(
-                avatarSession,
-                "select_menu_option",
-                "{\"menuName\":\"불고기버거세트\",\"optionGroup\":\"음료 선택\",\"optionName\":\"콜라\"}",
-                "{\"selectedOption\":{\"optionGroup\":\"음료 선택\",\"optionName\":\"콜라\"}}"
+                avatarSession, "select_menu_option",
+                "{\"menuName\":\"날치알김치불고기솥밥\",\"optionGroup\":\"국 선택\",\"optionName\":\"된장국\"}",
+                "{\"selectedOption\":{\"optionGroup\":\"국 선택\",\"optionName\":\"된장국\"}}"
         ));
     }
 
     private void seedOrdersAndPayments(MenuSeedData menuData, SessionSeedData sessionData) {
-        Order orderPending = orderRepository.save(Order.create(sessionData.activeSession().getSessionId()));
+        orderRepository.save(Order.create(sessionData.activeSession().getSessionId()));
 
         Order orderCompleted = orderRepository.save(Order.create(sessionData.completedSession().getSessionId()));
-        OrderItem completedBurgerItem = orderItemRepository.save(
-                OrderItem.create(orderCompleted, menuData.bulgogiBurger().getMenuId(), 2, "불고기버거", 4500));
+        OrderItem completedItem = orderItemRepository.save(
+                OrderItem.create(orderCompleted, menuData.teriyakiChicken().getMenuId(), 1, "데리야끼치킨솥밥", 7500));
         orderItemRepository.save(
-                OrderItem.create(orderCompleted, menuData.frenchFries().getMenuId(), 1, "감자튀김", 1500));
-        orderItemOptionRepository.save(
-                OrderItemOption.create(completedBurgerItem, menuData.largeOption().getOptionId(), "라지", 500));
-        orderItemOptionRepository.save(
-                OrderItemOption.create(completedBurgerItem, menuData.ketchupOption().getOptionId(), "케첩", 0));
-        orderCompleted.updateTotalAmount(10500);
+                OrderItem.create(orderCompleted, menuData.plainRice().getMenuId(), 1, "공기밥", 1000));
+        orderCompleted.updateTotalAmount(8500);
         orderCompleted.complete();
 
         Order orderCancelled = orderRepository.save(Order.create(sessionData.expiredSession().getSessionId()));
         orderItemRepository.save(
-                OrderItem.create(orderCancelled, menuData.cola().getMenuId(), 1, "콜라", 1000));
+                OrderItem.create(orderCancelled, menuData.naengmomil().getMenuId(), 1, "냉모밀", 7000));
         orderCancelled.cancel();
 
-        Payment paymentSuccess = paymentRepository.save(
-                Payment.create(orderCompleted.getOrderId(), PaymentMethod.IC_CARD));
+        Payment paymentSuccess = paymentRepository.save(Payment.create(orderCompleted.getOrderId(), PaymentMethod.IC_CARD));
         paymentSuccess.success();
-
-        paymentRepository.save(Payment.create(orderPending.getOrderId(), PaymentMethod.VEIN_AUTH));
-
-        Payment paymentFailed = paymentRepository.save(
-                Payment.create(orderCancelled.getOrderId(), PaymentMethod.IC_CARD));
+        paymentRepository.save(Payment.create(orderRepository.save(Order.create(sessionData.activeSession().getSessionId())).getOrderId(), PaymentMethod.VEIN_AUTH));
+        Payment paymentFailed = paymentRepository.save(Payment.create(orderCancelled.getOrderId(), PaymentMethod.IC_CARD));
         paymentFailed.fail();
     }
 
-    private record MenuSeedData(
-            Menu bulgogiBurger,
-            Menu chickenBurger,
-            Menu shrimpBurger,
-            Menu doublePattyBurger,
-            Menu frenchFries,
-            Menu onionRings,
-            Menu coleslaw,
-            Menu cola,
-            Menu cider,
-            Menu orangeJuice,
-            Menu americano,
-            Menu bulgogiBurgerSet,
-            Menu chickenBurgerSet,
-            MenuOption largeOption,
-            MenuOption ketchupOption
-    ) {
+    // ===== 헬퍼 메서드 =====
+
+    private NutritionInfo nutrition(int calorie, double protein, double carb, double fat,
+                                    int sodium, double sugar, double transFat, int cholesterol, double fiber) {
+        return NutritionInfo.builder()
+                .calorie(calorie).protein(protein).carbohydrate(carb).fat(fat)
+                .sodium(sodium).sugar(sugar).transFat(transFat).cholesterol(cholesterol).dietaryFiber(fiber)
+                .build();
     }
+
+    private Set<AllergyType> allergies(AllergyType... types) {
+        return new HashSet<>(Set.of(types));
+    }
+
+    private record MenuSeedData(
+            Menu teriyakiChicken,
+            Menu flyingFishBulgogi,
+            Menu porkKimchiCheolpan,
+            Menu cheeseDonkatsu,
+            Menu curryRice,
+            Menu katsudon,
+            Menu shrimpUdon,
+            Menu setNaengDonkatsu,
+            Menu eggRamen,
+            Menu plainRice,
+            Menu naengmomil,
+            Menu friedEgg
+    ) {}
 
     private record SessionSeedData(
             KioskSession activeSession,
             KioskSession avatarSession,
             KioskSession completedSession,
             KioskSession expiredSession
-    ) {
-    }
+    ) {}
 }
