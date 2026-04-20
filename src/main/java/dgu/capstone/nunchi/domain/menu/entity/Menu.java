@@ -37,10 +37,6 @@ public class Menu extends BaseEntity {
     @Column(name = "image_url", length = 255)
     private String imageUrl;
 
-    @Column(name = "is_recommended")
-    @Builder.Default
-    private Boolean isRecommended = false;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private MenuCategory category;
