@@ -1,0 +1,240 @@
+/* ========================================================
+   S01-mode.css — 주문 방식 선택
+   요구사항: 0-3, 0-4
+   ======================================================== */
+
+.s01 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 200px 56px var(--pad-footer);
+    gap: 0;
+}
+
+/* === 타이틀 === */
+.s01__header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 125px;
+    gap: 14px;
+}
+
+.s01__title {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--color-text-heading);
+    letter-spacing: -1.2px;
+}
+
+.s01__subtitle {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    letter-spacing: -0.3px;
+}
+
+/* === 카드 그룹 (가로 배치, 중앙 정렬, 축소) === */
+.s01__cards {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    width: 100%;
+    gap: 32px;
+}
+
+/* === 공통 카드 (Liquid Glass, 세로 배열 내부) === */
+.s01__card {
+    position: relative;
+    flex: 0 0 auto;
+    width: 280px;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 40px 22px 32px;
+    border-radius: 28px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+}
+
+/* 카드 내부 블롭 */
+.s01__card::before,
+.s01__card::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(56px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.s01__card > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* === 카드 아이콘 (상단) === */
+.s01__card-icon {
+    flex-shrink: 0;
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 76px;
+    border-radius: 32px;
+    background: var(--glass-bg-heavy);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-sm);
+}
+
+/* === 카드 본문 (중앙) === */
+.s01__card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 0 4px;
+}
+
+.s01__card-subtitle {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.s01__card-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--color-text-heading);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+
+.s01__card-desc {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    max-width: 200px;
+}
+
+/* === 카드 화살표 (하단) === */
+.s01__card-arrow {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    font-size: 24px;
+}
+
+/* ========================================================
+   Variant: 일반 주문 카드 (Primary)
+   ======================================================== */
+.s01__card--normal {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 2px solid var(--primary-500);
+    box-shadow: var(--shadow-md), 0 0 0 4px rgba(232, 96, 10, 0.08);
+}
+
+.s01__card--normal::before {
+    width: 220px;
+    height: 220px;
+    top: -60px;
+    right: -60px;
+    background-color: var(--primary-200);
+    opacity: 0.5;
+}
+
+.s01__card--normal::after {
+    width: 160px;
+    height: 160px;
+    bottom: -50px;
+    left: -50px;
+    background-color: var(--primary-100);
+    opacity: 0.6;
+}
+
+.s01__card--normal .s01__card-icon {
+    color: var(--primary-500);
+    background-color: var(--primary-50);
+}
+
+.s01__card--normal .s01__card-arrow {
+    color: var(--color-text-inverse);
+    background-color: var(--primary-500);
+    box-shadow: 0 6px 16px rgba(232, 96, 10, 0.35);
+}
+
+/* ========================================================
+   Variant: AI 대화 카드 (Secondary)
+   ======================================================== */
+.s01__card--avatar {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 2px solid var(--secondary-500);
+    box-shadow: var(--shadow-md), 0 0 0 4px rgba(212, 179, 10, 0.1);
+}
+
+.s01__card--avatar::before {
+    width: 220px;
+    height: 220px;
+    top: -60px;
+    right: -60px;
+    background-color: var(--secondary-100);
+    opacity: 0.7;
+}
+
+.s01__card--avatar::after {
+    width: 160px;
+    height: 160px;
+    bottom: -50px;
+    left: -50px;
+    background-color: var(--primary-100);
+    opacity: 0.55;
+}
+
+.s01__card--avatar .s01__card-icon {
+    color: var(--secondary-700);
+    background-color: var(--secondary-50);
+}
+
+.s01__card--avatar .s01__card-arrow {
+    color: var(--color-text-inverse);
+    background-color: var(--secondary-500);
+    box-shadow: 0 6px 16px rgba(212, 179, 10, 0.4);
+}
+
+/* ========================================================
+   Interaction
+   ======================================================== */
+.s01__card:hover {
+    transform: translateY(-6px);
+}
+
+.s01__card:hover .s01__card-arrow {
+    transform: translateX(3px);
+}
+
+.s01__card:active {
+    transform: scale(0.98);
+}
+
+.s01__card-arrow {
+    transition: transform var(--duration-fast) var(--ease-out);
+}
