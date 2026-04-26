@@ -86,8 +86,22 @@
                     aria-checked="false"
                     data-method="vein"
                     style="--tint: var(--primary-600);">
-                <span class="method-card__icon" aria-hidden="true">
-                    <i class="xi-fingerprint"></i>
+                <span class="method-card__icon p02__method-icon--vein" aria-hidden="true">
+                    <!-- 손바닥 정맥인증 아이콘 (커스텀 SVG)
+                         - 손가락 4개 + 엄지 실루엣
+                         - 내부 2줄의 정맥 라인(곡선) 으로 "정맥" 은유
+                         - stroke="currentColor" : method-card 의 color(tint) 를 상속
+                    -->
+                    <svg viewBox="0 0 48 48" width="40" height="40"
+                         fill="none" stroke="currentColor"
+                         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 22V11a2.5 2.5 0 0 1 5 0v11"/>
+                        <path d="M23 22V9a2.5 2.5 0 0 1 5 0v13"/>
+                        <path d="M28 22V10a2.5 2.5 0 0 1 5 0v12"/>
+                        <path d="M33 22v-4a2.5 2.5 0 0 1 5 0v16.5C38 39.5 34 43.5 28.5 43.5h-4c-2.6 0-5-1-6.7-2.9l-6.2-7c-1.3-1.5-1-3.3.5-4.2 1.5-.8 3.2-.3 4.2.9L18 32"/>
+                        <path d="M20 32c2 1.6 5.5 1.6 8 0" opacity=".6"/>
+                        <path d="M22 36.5c1.6 1 3.4 1 5 0" opacity=".45"/>
+                    </svg>
                 </span>
                 <span class="method-card__title">정맥인증</span>
                 <span class="method-card__desc">등록된 손바닥 정맥으로<br>간편하게 결제합니다</span>
