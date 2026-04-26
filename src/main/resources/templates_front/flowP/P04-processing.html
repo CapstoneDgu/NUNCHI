@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=720, initial-scale=1.0, user-scalable=no">
+    <title>카드 결제 처리 · 눈치 키오스크</title>
+
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/flowP/P04-processing.css">
+</head>
+<body>
+<div class="page-bg">
+
+    <!-- 상단바 -->
+    <header class="p-topbar">
+        <button type="button" class="p-topbar__back" data-action="back" aria-label="뒤로가기">
+            <i class="xi-angle-left-thin" aria-hidden="true"></i>
+        </button>
+        <div class="p-topbar__titles">
+            <span class="p-topbar__eyebrow" data-bind="storeName">상록원</span>
+            <h1 class="p-topbar__title">카드 결제</h1>
+        </div>
+    </header>
+
+    <!-- 3-step 진행 표시 -->
+    <ol class="step-indicator" aria-label="결제 단계" style="--steps: 3;">
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">주문 확인</span>
+        </li>
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">결제 수단</span>
+        </li>
+        <li class="step-indicator__item" data-state="active">
+            <span class="step-indicator__dot" aria-hidden="true">3</span>
+            <span class="step-indicator__label">결제</span>
+        </li>
+    </ol>
+
+    <!-- 본문 : 3상태 전환 (inserting / processing / approved) -->
+    <section class="p04" data-state="inserting" aria-live="polite">
+
+        <!-- 결제 금액 요약 -->
+        <div class="p04__amount">
+            <span class="p04__amount-label">결제 금액</span>
+            <strong class="p04__amount-price" data-bind="total">₩0</strong>
+        </div>
+
+        <!-- 카드 슬롯 비주얼 -->
+        <div class="p04__visual" aria-hidden="true">
+
+            <!-- 유도 화살표 (inserting 에서만 노출) -->
+            <div class="p04__arrows">
+                <i class="xi-angle-down-thin"></i>
+                <i class="xi-angle-down-thin"></i>
+            </div>
+
+            <!-- 카드 (IC 칩 + 매그스트라이프) -->
+            <div class="p04__card">
+                <div class="p04__card-chip" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                    <span></span><span></span><span></span>
+                </div>
+                <div class="p04__card-stripe"></div>
+                <span class="p04__card-brand">NUNCHI</span>
+            </div>
+
+            <!-- 슬롯 (카드가 삽입될 박스) -->
+            <div class="p04__slot">
+                <span class="p04__slot-mouth"></span>
+                <span class="p04__slot-label">IC CARD</span>
+
+                <!-- processing 스피너 (슬롯 하단) -->
+                <span class="p04__spinner" role="status" aria-label="결제 처리 중">
+                    <i></i>
+                </span>
+
+                <!-- 성공 오버레이 (approved) -->
+                <span class="p04__check" aria-hidden="true">
+                    <i class="xi-check"></i>
+                </span>
+            </div>
+        </div>
+
+        <!-- 상태 텍스트 -->
+        <div class="p04__text">
+            <h2 class="p04__title" data-bind="title">카드를 투입해주세요</h2>
+            <p class="p04__desc" data-bind="desc">IC칩이 위로 향하게 하여 슬롯에 카드를 넣어주세요</p>
+
+            <!-- processing 진행바 -->
+            <div class="p04__progress" role="progressbar"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <span class="p04__progress-bar" data-bind="progressBar"></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 하단 액션 -->
+    <footer class="p04__cta-wrap">
+
+        <!-- inserting : 결제 취소 가능 -->
+        <button type="button"
+                class="btn-cta btn-cta--secondary btn-cta--lg btn-cta--block p04__cta p04__cta--cancel"
+                data-action="cancel">
+            결제 취소 (다른 수단 선택)
+        </button>
+
+        <!-- processing : 카드 유지 안내 (버튼 없음) -->
+        <p class="p04__cta--processing-hint" aria-live="polite">
+            <i class="xi-warning" aria-hidden="true"></i>
+            <span>처리 중에는 카드를 빼지 마세요</span>
+        </p>
+
+        <!-- approved : 자동 이동 안내 -->
+        <p class="p04__cta--approved-hint" aria-live="polite">
+            잠시 후 주문 완료 화면으로 이동합니다…
+        </p>
+    </footer>
+</div>
+
+<script src="/js/flowP/P04-processing.js" defer></script>
+</body>
+</html>
