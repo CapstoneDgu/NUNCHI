@@ -1,0 +1,141 @@
+/* ========================================================
+   P02-payment.css — 결제 수단 선택 (Step 2/3)
+   공통 토큰만 사용 (common.css)
+   공통 컴포넌트: .page-bg / .p-topbar / .step-indicator
+                 / .method-card / .btn-cta
+   ======================================================== */
+
+.p02 {
+    position: relative;
+    padding: 20px var(--pad-side) 0;
+}
+
+/* ---- 결제 금액 요약 카드 ---- */
+
+.p02__amount-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 22px 24px;
+    background: linear-gradient(135deg,
+        var(--primary-500) 0%,
+        var(--primary-600) 100%);
+    color: var(--color-text-inverse);
+    border-radius: var(--card-radius);
+    box-shadow: 0 12px 32px rgba(232, 96, 10, 0.22);
+}
+
+.p02__amount-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.p02__amount-label {
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.92;
+}
+
+.p02__amount-count {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-inverse);
+    background-color: rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    backdrop-filter: blur(4px);
+}
+
+.p02__amount-price {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    line-height: 1.1;
+}
+
+/* ---- 섹션 헤딩 ---- */
+
+.p02__heading {
+    margin-top: 28px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text-heading);
+    letter-spacing: -0.3px;
+}
+
+.p02__subheading {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+/* ---- 결제 수단 그리드 ---- */
+
+.p02__methods {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.p02__method {
+    min-height: 196px;
+    padding-bottom: 36px;
+}
+
+.p02__method .method-card__desc {
+    line-height: 1.45;
+}
+
+/* ---- 힌트 (정보 안내) ---- */
+
+.p02__hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background-color: var(--neutral-100);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+    transition: background-color var(--duration-base) var(--ease-out),
+                color var(--duration-base) var(--ease-out);
+}
+
+.p02__hint i {
+    font-size: 16px;
+    color: var(--color-text-tertiary);
+    flex-shrink: 0;
+}
+
+.p02__hint--selected {
+    background-color: var(--primary-50);
+    color: var(--primary-700);
+}
+
+.p02__hint--selected i {
+    color: var(--primary-500);
+}
+
+/* ---- 하단 CTA ---- */
+
+.p02__cta-wrap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 16px var(--pad-side) var(--pad-footer);
+    background: linear-gradient(to top,
+        var(--color-bg-page) 72%,
+        rgba(250, 248, 246, 0) 100%);
+}
+
+.p02__cta {
+    width: 100%;
+}
