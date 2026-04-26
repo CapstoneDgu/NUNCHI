@@ -243,15 +243,22 @@
             </button>
         </div>
 
+        <!--
+            ⚠️ 이 영역의 카피("청취/마이크/LIVE")는 현재 데모용 시뮬레이션 표기입니다.
+            실제 마이크 캡처 / STT 연동 시 다음을 별도 이슈로 함께 처리해야 합니다:
+              · 녹음 시작/종료 토글 가시화 (data-action="toggle-mic" 의 실제 권한·상태 표기)
+              · 음성 데이터 보관 정책(세션 단위 폐기, 서버 전송 여부) 안내 문구
+              · 일시중지 / 마이크 OFF 옵션 노출
+        -->
         <div class="ai-chat-panel__status">
             <div class="ai-chat-panel__status-text">
-                <strong>📝 항상 청취 중</strong>
-                <span>핀 마이크가 항상 켜져 있어요 · MCP AI 에이전트 연결됨</span>
+                <strong>📝 데모: AI 음성 시뮬레이션</strong>
+                <span>실 마이크 미연동 · 화면 시연용 표기입니다</span>
             </div>
-            <span class="ai-chat-panel__live">LIVE</span>
+            <span class="ai-chat-panel__live">DEMO</span>
         </div>
 
-        <p class="ai-chat-panel__memory-note">음성 대화 기록 · 세션당 메모리 저장</p>
+        <p class="ai-chat-panel__memory-note">대화 기록 · 세션 단위 메모리 (브라우저 세션 종료 시 폐기)</p>
 
         <div class="ai-chat-panel__messages" data-chat-messages>
             <!-- JS 동적 -->

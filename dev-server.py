@@ -12,15 +12,15 @@ application-local.yml 의 매핑을 그대로 모사한다:
 즉 두 폴더를 하나의 가상 루트로 합쳐서 서빙한다.
 
 실행:
-    python3 dev-server.py
-    (포트 변경:  python3 dev-server.py 5500)
+    python3 dev-server.py            # 기본 포트 5500
+    python3 dev-server.py 8080       # 다른 포트로 띄우려면 인자로 지정
 
-접속 URL:
-    http://localhost:8080/                       → 홈(index.html)
-    http://localhost:8080/S00-start.html
-    http://localhost:8080/S01-mode.html
-    http://localhost:8080/S02-dine.html
-    http://localhost:8080/flowN/N02-menu.html    ← 이번에 만든 메뉴 페이지
+접속 URL (기본 포트 5500 기준):
+    http://localhost:5500/                       → 홈(index.html)
+    http://localhost:5500/S00-start.html
+    http://localhost:5500/S01-mode.html
+    http://localhost:5500/S02-dine.html
+    http://localhost:5500/flowN/N02-menu.html    ← 메뉴 페이지
 
 종료:
     Ctrl + C
@@ -77,7 +77,7 @@ class MultiRootHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def main():
-    port = 8080
+    port = 5500
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
@@ -99,7 +99,7 @@ def main():
         print(" NUNCHI 프론트 미리보기 서버 시작")
         print("=" * 60)
         print(f" 포트       : {port}")
-        print(f" 정적 루트  :")
+        print(" 정적 루트  :")
         for r in ROOTS:
             print(f"   - {r}")
         print()

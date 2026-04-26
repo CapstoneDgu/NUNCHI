@@ -34,24 +34,28 @@ src/main/resources/
 │   ├── index.html                     # S00 시작 화면
 │   ├── S01-mode.html                  # S01 주문 방식 선택 (일반 / AI)
 │   ├── S02-dine.html                  # S02 매장 / 포장 선택
-│   ├── flowN/                         # (비어있음) N02~N05 일반 주문 플로우
+│   ├── flowN/                         # 일반 주문 플로우 (N02~N05)
+│   │   └── N02-menu.html              # N02 메뉴 선택 + 장바구니 + 메뉴 상세 + AI 채팅 (오버레이 통합)
 │   ├── flowA/                         # (비어있음) A01 아바타 플로우
 │   ├── flowP/                         # (비어있음) P01~P06 결제 플로우
 │   └── layouts/                       # (비어있음) 공통 파셜
 └── static/front/                      # 정적 자원 (URL 루트 = /)
     ├── css/
-    │   ├── common.css                 # 디자인 토큰 + @font-face + reset
-    │   ├── components.css             # 재사용 공통 컴포넌트
+    │   ├── common.css                 # 디자인 토큰 + @font-face + reset + [hidden] 전역 리셋 + 데스크톱 미리보기 프레임
+    │   ├── components.css             # 재사용 공통 컴포넌트 (.app-topbar / .pill-tab / .qty-stepper / .origin-pill / .ai-chat-panel / .ai-chat-bubble 등)
     │   ├── S00-start.css              # S00 전용
     │   ├── S01-mode.css               # S01 전용
     │   ├── S02-dine.css               # S02 전용
-    │   ├── flowN/ flowA/ flowP/       # (비어있음)
+    │   ├── flowN/N02-menu.css         # N02 전용 (장바구니·상세·AI 채팅 오버레이 스타일)
+    │   ├── flowA/ flowP/              # (비어있음)
     ├── js/
     │   ├── common/partials-loader.js  # data-include 파셜 로더
     │   ├── S00-start.js               # 시작 화면 로직 (캐러셀·어트랙션)
     │   ├── S01-mode.js                # 모드 선택
     │   ├── S02-dine.js                # 매장/포장 선택
-    │   └── flowN/ flowA/ flowP/       # (비어있음)
+    │   ├── flowN/menu-data.js         # 상록원 메뉴 데이터 단일 소스 + 카테고리/영양 메타 빌더
+    │   ├── flowN/N02-menu.js          # N02 컨트롤러 (층/매장 전환·장바구니·상세·AI 채팅)
+    │   └── flowA/ flowP/              # (비어있음)
     ├── fonts/                         # Pretendard 9종 + DONGGUK UNIVERSITY
     ├── images/
     │   ├── avatars/                   # 할머니 이미지 + 통장님/이웃사촌 mp4
@@ -488,6 +492,10 @@ border: 1px solid var(--glass-border);
 | `currentStep` | 각 페이지 진입/이탈 시 | `"S00" \| "S01" \| "S02" \| ...` |
 | `mode` | S01 카드 클릭 | `"normal" \| "avatar"` |
 | `dineOption` | S02 카드 클릭 | `"dine_in" \| "take_out"` |
+| `cart` | N02 장바구니 변경 시 | `JSON.stringify(CartItem[])` — `{ id, name, price, qty, storeId, storeName, floorId }` |
+| `currentFloor` | N02 층 탭 클릭 | `"F1" \| "F2" \| "F3"` |
+| `currentStore` | N02 매장 칩 클릭 | 매장 id (예: `"sotn-noodle"`, `"ilpum"`) |
+| `aiSessionId` | N02 진입 시 자동 생성 (없으면) | 짧은 랜덤 토큰 (AI 채팅 컨텍스트 식별자) |
 
 > 새 키를 추가할 때는 이 표를 함께 업데이트 해주세요.
 
@@ -724,5 +732,5 @@ Object.fromEntries(Object.entries(sessionStorage));
 
 ---
 
-**문서 버전**: 2026-04-22 기준 (S00·S01·S02 구현 완료 시점)
+**문서 버전**: 2026-04-26 기준 (S00·S01·S02·N02 구현 완료 시점)
 **다음 업데이트 트리거**: 새 페이지 추가, `components.css` 변경, 디자인 토큰 추가/변경, `sessionStorage` 키 추가
