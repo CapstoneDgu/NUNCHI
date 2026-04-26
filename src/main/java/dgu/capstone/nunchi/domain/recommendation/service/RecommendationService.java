@@ -2,12 +2,14 @@ package dgu.capstone.nunchi.domain.recommendation.service;
 
 import dgu.capstone.nunchi.domain.menu.entity.Menu;
 import dgu.capstone.nunchi.domain.menu.repository.MenuRepository;
+import dgu.capstone.nunchi.domain.order.repository.OrderItemRepository;
 import dgu.capstone.nunchi.domain.recommendation.dto.response.RecommendationMenuResponse;
 import dgu.capstone.nunchi.domain.recommendation.dto.response.RecommendationResponse;
 import dgu.capstone.nunchi.domain.recommendation.entity.RecommendType;
 import dgu.capstone.nunchi.domain.recommendation.errorcode.RecommendationErrorCode;
 import dgu.capstone.nunchi.domain.recommendation.exception.RecommendationException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,7 @@ import java.util.List;
 public class RecommendationService {
 
     private final MenuRepository menuRepository;
+    private final OrderItemRepository orderItemRepository;
 
     public RecommendationResponse getRecommendations(RecommendType type, Long categoryId) {
         List<Menu> menus = switch (type) {
@@ -31,7 +34,15 @@ public class RecommendationService {
                 yield menuRepository.findByCategory_CategoryIdAndIsSoldOutFalse(categoryId);
             }
 
-            case POPULAR -> menuRepository.findByIsRecommendedTrueAndIsSoldOutFalse(); // 임시 fallback
+            case POPULAR -> {
+                List<Menu> popularMenus = orderItemRepository.findPopularMenus(PageRequest.of(0, 5));
+
+                if (popularMenus.isEmpty()) {
+                    yield menuRepository.findByIsRecommendedTrueAndIsSoldOutFalse();
+                }
+
+                yield popularMenus;
+            }
         };
 
         if (menus.isEmpty()) {

@@ -1,34 +1,20 @@
 package dgu.capstone.nunchi.global.config;
 
-import dgu.capstone.nunchi.domain.menu.entity.Menu;
-import dgu.capstone.nunchi.domain.menu.entity.MenuCategory;
-import dgu.capstone.nunchi.domain.menu.entity.MenuOption;
-import dgu.capstone.nunchi.domain.menu.entity.MenuOptionGroup;
-import dgu.capstone.nunchi.domain.menu.entity.NutritionInfo;
-import dgu.capstone.nunchi.domain.menu.entity.SalesDaily;
+import dgu.capstone.nunchi.domain.menu.entity.*;
 import dgu.capstone.nunchi.domain.menu.entity.enums.AllergyType;
 import dgu.capstone.nunchi.domain.menu.entity.enums.Season;
 import dgu.capstone.nunchi.domain.menu.entity.enums.TemperatureType;
 import dgu.capstone.nunchi.domain.menu.entity.enums.VegetarianType;
-import dgu.capstone.nunchi.domain.menu.repository.MenuCategoryRepository;
-import dgu.capstone.nunchi.domain.menu.repository.MenuOptionGroupRepository;
-import dgu.capstone.nunchi.domain.menu.repository.MenuOptionRepository;
-import dgu.capstone.nunchi.domain.menu.repository.MenuRepository;
-import dgu.capstone.nunchi.domain.menu.repository.SalesDailyRepository;
+import dgu.capstone.nunchi.domain.menu.repository.*;
 import dgu.capstone.nunchi.domain.order.entity.Order;
 import dgu.capstone.nunchi.domain.order.entity.OrderItem;
-import dgu.capstone.nunchi.domain.order.entity.OrderItemOption;
 import dgu.capstone.nunchi.domain.order.repository.OrderItemOptionRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderItemRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderRepository;
 import dgu.capstone.nunchi.domain.payment.entity.Payment;
 import dgu.capstone.nunchi.domain.payment.entity.PaymentMethod;
 import dgu.capstone.nunchi.domain.payment.repository.PaymentRepository;
-import dgu.capstone.nunchi.domain.session.entity.AiToolCallLog;
-import dgu.capstone.nunchi.domain.session.entity.ConversationMessage;
-import dgu.capstone.nunchi.domain.session.entity.KioskSession;
-import dgu.capstone.nunchi.domain.session.entity.MessageRole;
-import dgu.capstone.nunchi.domain.session.entity.SessionMode;
+import dgu.capstone.nunchi.domain.session.entity.*;
 import dgu.capstone.nunchi.domain.session.repository.AiToolCallLogRepository;
 import dgu.capstone.nunchi.domain.session.repository.ConversationMessageRepository;
 import dgu.capstone.nunchi.domain.session.repository.KioskSessionRepository;
@@ -89,7 +75,7 @@ public class DataInitializer implements CommandLineRunner {
         // ===== 밥류 =====
         Menu teriyakiChicken = menuRepository.save(Menu.builder()
                 .name("데리야끼치킨솥밥").price(7500).imageUrl("/images/menu/teriyaki_chicken.jpg")
-                .category(catBap).isSoldOut(false)
+                .category(catBap).isSoldOut(false).isRecommended(true)
                 .nutrition(nutrition(650, 28.0, 90.0, 14.0, 820, 8.0, 0.1, 75, 3.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.CHICKEN, AllergyType.EGG))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
