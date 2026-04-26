@@ -214,3 +214,547 @@
         transform: translateY(0);
     }
 }
+
+/* ========================================================
+   .app-topbar — 공통 상단바 (좌: 뒤로/매장명, 우: 액션 버튼들)
+   flowN 모든 페이지 + 향후 flowA/P 에서 재사용
+   ======================================================== */
+
+.app-topbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    z-index: 5;
+}
+
+.app-topbar__left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+/* 상단바 안의 뒤로가기 버튼 (좌하단 .btn-back 과 별개, 좌상단용) */
+.app-topbar__back {
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg-heavy);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    color: var(--color-text-body);
+    font-size: 22px;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out);
+}
+
+.app-topbar__back:active {
+    transform: scale(0.94);
+    background: var(--neutral-0);
+}
+
+.app-topbar__store {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.app-topbar__store-sub {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    letter-spacing: -0.2px;
+    line-height: 1;
+}
+
+.app-topbar__store-name {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--color-text-heading);
+    letter-spacing: -0.6px;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 360px;
+}
+
+.app-topbar__right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* 알약 액션 (예: "대화 기록") */
+.app-topbar__action-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 44px;
+    padding: 0 18px;
+    background: var(--glass-bg-heavy);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+    color: var(--color-text-body);
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.app-topbar__action-pill i {
+    font-size: 16px;
+    color: var(--primary-500);
+}
+
+.app-topbar__action-pill:active {
+    transform: scale(0.96);
+}
+
+/* 원형 액션 (예: 마이크) */
+.app-topbar__action-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg-heavy);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    color: var(--color-text-body);
+    font-size: 20px;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out);
+}
+
+.app-topbar__action-icon:active {
+    transform: scale(0.94);
+}
+
+/* 마이크 활성 상태 (펄스 + 주황) */
+.app-topbar__action-icon--mic-active {
+    background: var(--primary-500);
+    border-color: var(--primary-500);
+    color: var(--color-text-inverse);
+    animation: mic-pulse 1.4s var(--ease-out) infinite;
+}
+
+@keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(232, 96, 10, 0.45); }
+    50%      { box-shadow: 0 0 0 12px rgba(232, 96, 10, 0); }
+}
+
+/* ========================================================
+   .pill-tab — 알약형 탭 (예: 1층 / 2층 / 3층)
+   ======================================================== */
+
+.pill-tab-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pill-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    height: 44px;
+    padding: 0 22px;
+    background: var(--glass-bg-heavy);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+    color: var(--color-text-body);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    box-shadow: var(--shadow-sm);
+    transition: background-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+}
+
+.pill-tab:active {
+    transform: scale(0.96);
+}
+
+.pill-tab--active {
+    background: var(--primary-500);
+    border-color: var(--primary-500);
+    color: var(--color-text-inverse);
+    box-shadow: 0 6px 16px rgba(232, 96, 10, 0.3);
+}
+
+/* ========================================================
+   .qty-stepper — 수량 카운터 (- N +)
+   ======================================================== */
+
+.qty-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qty-stepper__btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--primary-500);
+    color: var(--color-text-inverse);
+    font-size: 16px;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(232, 96, 10, 0.3);
+    transition: transform var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out);
+}
+
+.qty-stepper__btn:active {
+    transform: scale(0.9);
+    background: var(--primary-600);
+}
+
+.qty-stepper__btn--minus {
+    background: var(--neutral-100);
+    color: var(--neutral-700);
+    box-shadow: none;
+}
+
+.qty-stepper__btn--minus:active {
+    background: var(--neutral-200);
+}
+
+.qty-stepper__value {
+    min-width: 22px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-text-heading);
+    font-feature-settings: "tnum";
+}
+
+/* ========================================================
+   .origin-pill — 원산지 알약 (●국내산 / ●수입산)
+   ======================================================== */
+
+.origin-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 26px;
+    padding: 0 11px;
+    background: var(--semantic-success-bg);
+    border-radius: 9999px;
+    color: var(--semantic-success);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+.origin-pill::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.origin-pill--imported {
+    background: var(--semantic-warning-bg);
+    color: var(--semantic-warning);
+}
+
+/* ========================================================
+   .ai-chat-panel — 우측 슬라이드 오버레이 (AI 대화 기록)
+   ======================================================== */
+
+/* .page-bg 내부에 고정되려면 부모가 position:relative 여야 함.
+   .page-bg 자체가 이미 position:relative 이므로 아래 absolute 는
+   키오스크 프레임(720×1280) 기준으로 배치된다. */
+.ai-chat-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 360px;
+    height: 100%;
+    background: var(--neutral-0);
+    box-shadow: -16px 0 48px rgba(30, 25, 21, 0.18);
+    transform: translateX(100%);
+    transition: transform var(--duration-base) var(--ease-out);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-chat-panel--open {
+    transform: translateX(0);
+}
+
+/* dim 배경 (오버레이 dimmer) */
+.ai-chat-dim {
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg-overlay);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-base) var(--ease-out);
+    z-index: 99;
+}
+
+.ai-chat-dim--open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ai-chat-panel__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--neutral-100);
+}
+
+.ai-chat-panel__header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.ai-chat-panel__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-text-heading);
+    letter-spacing: -0.3px;
+}
+
+.ai-chat-panel__title i {
+    color: var(--primary-500);
+    font-size: 18px;
+}
+
+.ai-chat-panel__session {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    letter-spacing: -0.1px;
+}
+
+.ai-chat-panel__close {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--neutral-100);
+    color: var(--neutral-600);
+    font-size: 16px;
+    transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.ai-chat-panel__close:active {
+    background: var(--neutral-200);
+}
+
+.ai-chat-panel__status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 12px 16px 0;
+    padding: 10px 14px;
+    background: var(--primary-50);
+    border: 1px solid var(--primary-100);
+    border-radius: 10px;
+}
+
+.ai-chat-panel__status-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12px;
+    color: var(--neutral-700);
+    letter-spacing: -0.2px;
+    line-height: 1.3;
+}
+
+.ai-chat-panel__status-text strong {
+    font-weight: 700;
+    color: var(--neutral-800);
+    font-size: 12.5px;
+}
+
+.ai-chat-panel__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    background: var(--semantic-error);
+    border-radius: 9999px;
+    color: var(--color-text-inverse);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.ai-chat-panel__live::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-text-inverse);
+    animation: live-pulse 1.2s var(--ease-out) infinite;
+}
+
+@keyframes live-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.35; }
+}
+
+.ai-chat-panel__memory-note {
+    margin: 14px 16px 6px;
+    padding: 8px 12px;
+    background: var(--neutral-50);
+    border-radius: 8px;
+    color: var(--neutral-500);
+    font-size: 11px;
+    text-align: center;
+    letter-spacing: -0.2px;
+}
+
+.ai-chat-panel__messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ai-chat-bubble {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 85%;
+}
+
+.ai-chat-bubble__body {
+    padding: 11px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.45;
+    letter-spacing: -0.2px;
+    word-break: keep-all;
+}
+
+.ai-chat-bubble__time {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--color-text-secondary);
+}
+
+.ai-chat-bubble__time i {
+    font-size: 11px;
+    color: var(--primary-500);
+}
+
+/* 시스템 메시지 (AI) — 우측 정렬, 주황 배경 */
+.ai-chat-bubble--system {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.ai-chat-bubble--system .ai-chat-bubble__body {
+    background: var(--primary-500);
+    color: var(--color-text-inverse);
+    border-bottom-right-radius: 4px;
+}
+
+.ai-chat-bubble--system .ai-chat-bubble__time {
+    flex-direction: row-reverse;
+}
+
+/* 사용자 메시지 — 좌측 정렬, 회색 배경 */
+.ai-chat-bubble--user {
+    align-self: flex-start;
+}
+
+.ai-chat-bubble--user .ai-chat-bubble__body {
+    background: var(--neutral-100);
+    color: var(--neutral-800);
+    border-bottom-left-radius: 4px;
+}
+
+/* 툴 호출 로그 — 좌측 정렬, primary outline 박스 */
+.ai-chat-bubble--tool {
+    align-self: flex-start;
+}
+
+.ai-chat-bubble--tool .ai-chat-bubble__body {
+    background: var(--primary-50);
+    border: 1px solid var(--primary-200);
+    color: var(--primary-700);
+    font-weight: 600;
+}
+
+.ai-chat-panel__footer {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--neutral-100);
+}
+
+.ai-chat-panel__footer-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+.ai-chat-panel__footer-btn--save {
+    background: var(--neutral-100);
+    color: var(--neutral-700);
+}
+
+.ai-chat-panel__footer-btn--reset {
+    background: var(--semantic-error-bg);
+    color: var(--semantic-error);
+    border: 1px solid var(--semantic-error);
+}
+
+.ai-chat-panel__footer-btn:active {
+    transform: scale(0.97);
+}
