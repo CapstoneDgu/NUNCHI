@@ -758,3 +758,292 @@
 .ai-chat-panel__footer-btn:active {
     transform: scale(0.97);
 }
+
+/* ========================================================
+   .p-topbar — 결제 플로우 전용 상단바
+   구조: [뒤로가기 네모버튼] [상점명 소제목 + 페이지 제목]
+   (flowN .app-topbar 와 충돌 없는 별도 이름)
+   ======================================================== */
+
+.p-topbar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px var(--pad-side) 16px;
+}
+
+.p-topbar__back {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--neutral-100);
+    border-radius: var(--btn-radius);
+    color: var(--color-text-body);
+    font-size: 28px;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+}
+
+.p-topbar__back:active {
+    background-color: var(--neutral-200);
+    transform: scale(0.94);
+}
+
+.p-topbar__titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.p-topbar__eyebrow {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.p-topbar__title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-text-heading);
+    line-height: 1.1;
+}
+
+/* ========================================================
+   .step-indicator — 3-step 원형 프로그레스
+   구조: <ol> > <li class="step-indicator__item" data-state="done|active|pending">
+   상태: done(체크), active(번호 강조), pending(번호 희미)
+   ======================================================== */
+
+.step-indicator {
+    display: grid;
+    grid-template-columns: repeat(var(--steps, 3), 1fr);
+    align-items: center;
+    padding: 20px var(--pad-side);
+    background-color: var(--neutral-0);
+    border-top: 1px solid var(--color-border-default);
+    border-bottom: 1px solid var(--color-border-default);
+}
+
+.step-indicator__item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.step-indicator__dot {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 18px;
+    font-weight: 700;
+    background-color: var(--neutral-100);
+    color: var(--color-text-disabled);
+    transition: background-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.step-indicator__item[data-state="done"] .step-indicator__dot,
+.step-indicator__item[data-state="active"] .step-indicator__dot {
+    background-color: var(--primary-500);
+    color: var(--color-text-inverse);
+}
+
+.step-indicator__label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.step-indicator__item[data-state="active"] .step-indicator__label {
+    color: var(--primary-700);
+    font-weight: 700;
+}
+
+.step-indicator__item[data-state="done"] .step-indicator__label {
+    color: var(--color-text-body);
+}
+
+/* 연결선: 아이템 사이의 가로줄 */
+.step-indicator__item + .step-indicator__item::before {
+    content: "";
+    position: absolute;
+    top: 20px;
+    right: calc(50% + 24px);
+    width: calc(100% - 48px);
+    height: 2px;
+    background-color: var(--neutral-200);
+}
+
+.step-indicator__item[data-state="active"]::before,
+.step-indicator__item[data-state="done"]::before {
+    background-color: var(--primary-500);
+}
+
+/* ========================================================
+   .method-card — 결제 수단 선택 카드 (IC카드 / 정맥인증)
+   선택 시 var(--tint, --primary-500) 으로 보더·체크 색 변경
+   ======================================================== */
+
+.method-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 28px 16px 24px;
+    background-color: var(--neutral-0);
+    border: 2px solid transparent;
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+}
+
+.method-card:active {
+    transform: scale(0.98);
+}
+
+.method-card[aria-pressed="true"],
+.method-card.is-selected {
+    border-color: var(--tint, var(--primary-500));
+    box-shadow: 0 8px 24px rgba(232, 96, 10, 0.18);
+    background-color: var(--primary-50);
+}
+
+.method-card__icon {
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background-color: var(--neutral-100);
+    color: var(--color-text-secondary);
+    font-size: 36px;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.method-card[aria-pressed="true"] .method-card__icon,
+.method-card.is-selected .method-card__icon {
+    background-color: var(--tint, var(--primary-500));
+    color: var(--color-text-inverse);
+}
+
+.method-card__title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--color-text-heading);
+}
+
+.method-card__desc {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+.method-card__check {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--tint, var(--primary-500));
+    color: var(--color-text-inverse);
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.method-card[aria-pressed="true"] .method-card__check,
+.method-card.is-selected .method-card__check {
+    opacity: 1;
+}
+
+/* ========================================================
+   .status-screen — 중앙 상태 화면 (성공 · 실패 · 대기)
+   P03 vein(success/fail), P04 processing, P05 complete, P06 fail 에서 공용
+   ======================================================== */
+
+.status-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 48px 32px;
+    text-align: center;
+}
+
+.status-screen__icon {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--primary-500);
+    color: var(--color-text-inverse);
+    font-size: 64px;
+    box-shadow: 0 12px 32px rgba(232, 96, 10, 0.28);
+}
+
+.status-screen[data-variant="success"] .status-screen__icon {
+    background-color: var(--semantic-success);
+    box-shadow: 0 12px 32px rgba(22, 163, 74, 0.28);
+}
+
+.status-screen[data-variant="error"] .status-screen__icon {
+    background-color: var(--semantic-error);
+    box-shadow: 0 12px 32px rgba(220, 53, 69, 0.28);
+}
+
+.status-screen[data-variant="warning"] .status-screen__icon {
+    background-color: var(--semantic-warning);
+    box-shadow: 0 12px 32px rgba(245, 158, 11, 0.28);
+}
+
+.status-screen[data-variant="vein"] .status-screen__icon {
+    background-color: var(--secondary-500);
+    box-shadow: 0 12px 32px rgba(212, 179, 10, 0.32);
+}
+
+.status-screen__title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-text-heading);
+}
+
+.status-screen__subtitle {
+    font-size: 16px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    max-width: 440px;
+}
+
+.status-screen__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 440px;
+    margin-top: 12px;
+}
+

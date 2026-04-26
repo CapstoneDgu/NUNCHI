@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=720, initial-scale=1.0, user-scalable=no">
+    <title>주문 확인 · 눈치 키오스크</title>
+
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/flowP/P01-summary.css">
+</head>
+<body>
+<div class="page-bg">
+
+    <!-- 상단바 -->
+    <header class="p-topbar">
+        <button type="button" class="p-topbar__back" data-action="back" aria-label="뒤로가기">
+            <i class="xi-angle-left-thin" aria-hidden="true"></i>
+        </button>
+        <div class="p-topbar__titles">
+            <span class="p-topbar__eyebrow" data-bind="storeName">상록원</span>
+            <h1 class="p-topbar__title">결제</h1>
+        </div>
+    </header>
+
+    <!-- 3-step 진행 표시 -->
+    <ol class="step-indicator" aria-label="결제 단계" style="--steps: 3;">
+        <li class="step-indicator__item" data-state="active">
+            <span class="step-indicator__dot" aria-hidden="true">1</span>
+            <span class="step-indicator__label">주문 확인</span>
+        </li>
+        <li class="step-indicator__item" data-state="pending">
+            <span class="step-indicator__dot" aria-hidden="true">2</span>
+            <span class="step-indicator__label">결제 수단</span>
+        </li>
+        <li class="step-indicator__item" data-state="pending">
+            <span class="step-indicator__dot" aria-hidden="true">3</span>
+            <span class="step-indicator__label">결제</span>
+        </li>
+    </ol>
+
+    <!-- 주문 요약 영역 -->
+    <section class="p01" aria-label="주문 요약">
+        <div class="p01__card">
+            <header class="p01__card-header">
+                <h2 class="p01__card-title">주문 내역</h2>
+                <span class="p01__card-count" data-bind="count">0개</span>
+            </header>
+
+            <ul class="p01__items" data-bind="items">
+                <!-- JS 로 동적 렌더 -->
+            </ul>
+
+            <footer class="p01__footer">
+                <span class="p01__total-label">합계</span>
+                <span class="p01__total-price" data-bind="total">₩0</span>
+            </footer>
+        </div>
+    </section>
+
+    <!-- 하단 CTA -->
+    <footer class="p01__cta-wrap">
+        <button type="button" class="btn-cta btn-cta--primary btn-cta--lg btn-cta--block p01__cta"
+                data-action="next">
+            주문 확인 완료 →
+        </button>
+    </footer>
+</div>
+
+<!-- 아이템 템플릿 -->
+<template id="tpl-p01-item">
+    <li class="p01__item" data-item>
+        <div class="p01__thumb" data-thumb>
+            <i class="xi-image-o" aria-hidden="true"></i>
+        </div>
+        <div class="p01__info">
+            <span class="p01__name" data-name></span>
+            <span class="p01__price" data-price></span>
+        </div>
+        <div class="p01__qty" role="group" aria-label="수량">
+            <button type="button" class="p01__qty-btn" data-qty-dec aria-label="수량 감소">
+                <i class="xi-minus" aria-hidden="true"></i>
+            </button>
+            <span class="p01__qty-value" data-qty-value>1</span>
+            <button type="button" class="p01__qty-btn" data-qty-inc aria-label="수량 증가">
+                <i class="xi-plus" aria-hidden="true"></i>
+            </button>
+        </div>
+        <button type="button" class="p01__del" data-del aria-label="삭제">
+            <i class="xi-trash" aria-hidden="true"></i>
+        </button>
+    </li>
+</template>
+
+<script src="/js/flowP/P01-summary.js" defer></script>
+</body>
+</html>
