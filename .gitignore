@@ -47,6 +47,10 @@ reference/
 ### Figma raw export (변환 후 삭제) ###
 src/main/resources/static/_figma-raw/
 
+### macOS ###
+.DS_Store
+**/.DS_Store
+
 .env
 .env.*
 !.env.example
