@@ -72,7 +72,10 @@
     function nowHHMM() {
         const d = new Date();
         const pad = (n) => String(n).padStart(2, "0");
-        return "오후 " + pad((d.getHours() + 11) % 12 + 1) + ":" + pad(d.getMinutes());
+        const h24 = d.getHours();
+        const period = h24 < 12 ? "오전" : "오후";
+        const h12 = pad(((h24 + 11) % 12) + 1);
+        return period + " " + h12 + ":" + pad(d.getMinutes());
     }
 
     function generateSessionId() {
@@ -163,6 +166,7 @@
                     data-store="${s.id}">
                     <span class="n02__store-name">${s.name}</span>
                     <span class="n02__store-hours">${s.hours}</span>
+                    ${s.dailyDate ? `<span class="n02__store-daily">오늘 (${s.dailyDate})</span>` : ""}
                     <span class="n02__store-status ${open ? "" : "n02__store-status--closed"}">
                         ${open ? "운영중" : "마감"}
                     </span>
