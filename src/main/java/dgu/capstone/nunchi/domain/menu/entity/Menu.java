@@ -34,6 +34,10 @@ public class Menu extends BaseEntity {
     @Builder.Default
     private Boolean isSoldOut = false;
 
+    @Column(name = "is_recommended")
+    @Builder.Default
+    private Boolean isRecommended = false;
+
     @Column(name = "image_url", length = 255)
     private String imageUrl;
 
