@@ -132,6 +132,11 @@ img, svg {
     max-width: 100%;
 }
 
+/* [hidden] 속성이 page CSS 의 display:flex/grid 등에 의해 무시되지 않도록 강제 */
+[hidden] {
+    display: none !important;
+}
+
 /* ========================================================
    Design Tokens
    ======================================================== */
