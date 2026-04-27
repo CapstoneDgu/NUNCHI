@@ -21,7 +21,8 @@
 
 .a01 {
     display: grid;
-    grid-template-rows: 56px 720px 44px 200px 140px 120px;
+    /* 상단바 64 + 아바타 720 + 인디 44 + 로그 196 + 퀵바 140 + 입력바 116 = 1280 */
+    grid-template-rows: 64px 720px 44px 196px 140px 116px;
     height: 100%;
 }
 
@@ -32,7 +33,7 @@
 .a01__topbar {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     padding: 0 var(--pad-side);
     border-bottom: 1px solid var(--color-border-default);
     background: var(--glass-bg);
@@ -40,25 +41,38 @@
     -webkit-backdrop-filter: var(--glass-blur);
 }
 
-.a01__topbar-back {
-    width: 40px;
-    height: 40px;
-    display: flex;
+/* 상단바 모든 컨트롤 공통 높이 — 38px 로 통일하면 시각적 베이스라인이 맞음 */
+.a01__topbar-back,
+.a01__topbar-action {
+    height: 38px;
+    border-radius: 19px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    color: var(--color-text-heading);
-    font-size: 24px;
     flex-shrink: 0;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
 }
-.a01__topbar-back:active { transform: scale(0.92); background: var(--neutral-100); }
+
+.a01__topbar-back {
+    width: 38px;
+    color: var(--color-text-heading);
+    font-size: 22px;
+    background: transparent;
+}
+.a01__topbar-back:active {
+    transform: scale(0.92);
+    background: var(--neutral-100);
+}
 
 .a01__topbar-title {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 2px;
-    line-height: 1.1;
+    line-height: 1.15;
 }
 .a01__topbar-status {
     display: inline-flex;
@@ -76,11 +90,15 @@
     background: var(--secondary-500);
     box-shadow: 0 0 0 0 var(--secondary-500);
     animation: a01-pulse-dot 1.6s var(--ease-out) infinite;
+    flex-shrink: 0;
 }
 .a01__topbar-name {
     font-size: 18px;
     font-weight: 700;
     color: var(--color-text-heading);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .a01__topbar-actions {
@@ -89,12 +107,8 @@
     gap: 8px;
 }
 .a01__topbar-action {
-    display: inline-flex;
-    align-items: center;
     gap: 6px;
-    height: 36px;
     padding: 0 14px;
-    border-radius: 18px;
     border: 1px solid var(--color-border-default);
     background: var(--color-bg-card);
     font-size: 13px;
@@ -102,9 +116,8 @@
     color: var(--color-text-body);
 }
 .a01__topbar-action--icon {
-    width: 36px;
+    width: 38px;
     padding: 0;
-    justify-content: center;
     font-size: 18px;
 }
 .a01__topbar-action:active { transform: scale(0.96); background: var(--neutral-100); }
@@ -144,6 +157,8 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* 머리 위쪽 잘림 방지 — 콘텐츠를 아래쪽으로 정렬 (캐릭터 머리가 화면 위에 더 보이도록) */
+    object-position: center 22%;
     opacity: 0;
     transition: opacity var(--duration-base) var(--ease-out);
     pointer-events: none;

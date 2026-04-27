@@ -1,5 +1,5 @@
 // ========================================================
-// A01-avatar.js — 아바타 모드(크롱이) 통합 로직
+// A01-avatar.js — 아바타 모드(동대맘) 통합 로직
 //
 // 책임:
 //   1) 기승전결 FSM (opening → recommend → addmore → confirm)
@@ -25,7 +25,7 @@
     // ========================================================
     const SCRIPTS = {
         opening: {
-            greeting: "안녕하세요! 저는 크롱이에요 🐸",
+            greeting: "안녕하세요! 동대맘이에요. 오늘 뭐 드시고 싶으세요?",
             askDine:  "오늘은 매장에서 드시나요, 포장하시나요?",
             confirmedDineIn:  "매장에서 드시는군요! 천천히 골라봐요.",
             confirmedTakeOut: "포장이시군요! 따끈할 때 가져갈 수 있게 도와드릴게요.",
@@ -228,7 +228,7 @@
         $card.innerHTML = ''
             + '<div class="a01__msg-menu-head">'
             +   '<i class="xi xi-restaurant" aria-hidden="true"></i>'
-            +   '<span>크롱이의 추천</span>'
+            +   '<span>동대맘의 추천</span>'
             + '</div>'
             + '<div class="a01__msg-menu-body">'
             +   '<div class="a01__msg-menu-thumb"><i class="xi xi-restaurant" aria-hidden="true"></i></div>'
@@ -660,7 +660,7 @@
         state.speech.listening = false;
         $micBtn.classList.remove('a01__btn-mic--listening');
         $micBtn.setAttribute('aria-pressed', 'false');
-        $input.placeholder = '크롱이에게 말하거나 입력해보세요';
+        $input.placeholder = '동대맘에게 말하거나 입력해보세요';
     }
 
     function onMicClick() {
