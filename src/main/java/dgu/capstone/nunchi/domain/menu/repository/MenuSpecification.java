@@ -7,6 +7,7 @@ import dgu.capstone.nunchi.domain.menu.entity.enums.TemperatureType;
 import dgu.capstone.nunchi.domain.menu.entity.enums.VegetarianType;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
@@ -18,6 +19,16 @@ public class MenuSpecification {
     // 항상 적용: 품절 메뉴 제외
     public static Specification<Menu> notSoldOut() {
         return (root, query, cb) -> cb.equal(root.get("isSoldOut"), false);
+    }
+
+    // category N+1 방지: FETCH JOIN (COUNT 쿼리 시에는 생략)
+    public static Specification<Menu> fetchCategory() {
+        return (root, query, cb) -> {
+            if (Long.class != query.getResultType()) {
+                root.fetch("category", JoinType.LEFT);
+            }
+            return cb.conjunction();
+        };
     }
 
     public static Specification<Menu> maxCalorie(Integer max) {

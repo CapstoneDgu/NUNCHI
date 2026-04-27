@@ -10,6 +10,7 @@ import dgu.capstone.nunchi.domain.menu.entity.Menu;
 import dgu.capstone.nunchi.domain.menu.entity.MenuOption;
 import dgu.capstone.nunchi.domain.menu.entity.MenuOptionGroup;
 import dgu.capstone.nunchi.domain.menu.entity.enums.AllergyType;
+import dgu.capstone.nunchi.domain.menu.entity.enums.Season;
 import dgu.capstone.nunchi.domain.menu.entity.enums.TemperatureType;
 import dgu.capstone.nunchi.domain.menu.repository.MenuCategoryRepository;
 import dgu.capstone.nunchi.domain.menu.repository.MenuOptionGroupRepository;
@@ -67,7 +68,8 @@ public class MenuService {
 
     // 동적 필터 조회 (AI 추천 에이전트용)
     public List<MenuFilterResponse> filterMenus(MenuFilterRequest req) {
-        Specification<Menu> spec = Specification.where(MenuSpecification.notSoldOut());
+        Specification<Menu> spec = Specification.where(MenuSpecification.notSoldOut())
+                .and(MenuSpecification.fetchCategory());
 
         if (req.maxCalorie() != null) spec = spec.and(MenuSpecification.maxCalorie(req.maxCalorie()));
         if (req.minCalorie() != null) spec = spec.and(MenuSpecification.minCalorie(req.minCalorie()));
@@ -79,12 +81,21 @@ public class MenuService {
             spec = spec.and(MenuSpecification.temperatureType(req.temperatureType()));
         }
         if (req.vegetarianType() != null) spec = spec.and(MenuSpecification.vegetarianType(req.vegetarianType()));
-        if (req.season() != null) spec = spec.and(MenuSpecification.season(req.season()));
+        // season=ALL 전달 시 필터 없음 (전체 반환)
+        if (req.season() != null && req.season() != Season.ALL) {
+            spec = spec.and(MenuSpecification.season(req.season()));
+        }
         if (req.categoryId() != null) spec = spec.and(MenuSpecification.categoryId(req.categoryId()));
         if (req.excludeAllergies() != null && !req.excludeAllergies().isBlank()) {
             List<AllergyType> allergyList = Arrays.stream(req.excludeAllergies().split(","))
                     .map(String::trim)
-                    .map(AllergyType::valueOf)
+                    .map(s -> {
+                        try {
+                            return AllergyType.valueOf(s);
+                        } catch (IllegalArgumentException e) {
+                            throw new MenuException(MenuErrorCode.INVALID_ALLERGY_TYPE);
+                        }
+                    })
                     .toList();
             spec = spec.and(MenuSpecification.excludeAllergies(allergyList));
         }
