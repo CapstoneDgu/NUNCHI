@@ -3,6 +3,8 @@ package dgu.capstone.nunchi.domain.order.repository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dgu.capstone.nunchi.domain.order.dto.cart.CartItem;
+import dgu.capstone.nunchi.global.exception.domainException.OrderException;
+import dgu.capstone.nunchi.global.exception.errorcode.OrderErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -47,7 +49,7 @@ public class CartRedisRepository {
             String json = objectMapper.writeValueAsString(items);
             redisTemplate.opsForValue().set(key(sessionId), json, CART_TTL_SECONDS, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new RuntimeException("장바구니 저장 실패", e);
+            throw new OrderException(OrderErrorCode.CART_SAVE_FAILED);
         }
     }
 
