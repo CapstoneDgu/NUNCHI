@@ -56,6 +56,11 @@
         sessionId: null,
         recommendedIds: [],      // 이미 추천한 메뉴 id (중복 회피)
         muted: false,
+        speech: {
+            recognizer: null,    // SpeechRecognition 인스턴스
+            supported: false,
+            listening: false,
+        },
     };
 
     const STEP_ORDER = ['opening', 'recommend', 'addmore', 'confirm'];
@@ -386,7 +391,18 @@
                 if (state.fsm !== 'recommend') enterState('recommend');
                 return;
             }
+            // 이미 confirm 단계면 → 결제 화면으로 진행
+            if (state.fsm === 'confirm') {
+                aiSpeak(SCRIPTS.confirm.agree).then(() => goToPayment());
+                return;
+            }
             enterState('confirm');
+            return;
+        }
+
+        // 3-1) confirm 단계에서 수정/취소 → addmore 로 복귀
+        if (state.fsm === 'confirm' && matchAny(t, ['수정', '바꿔', '잠깐'])) {
+            aiSpeak('알겠어요. 더 추가하거나 빼실 수 있어요.').then(() => enterState('addmore'));
             return;
         }
 
@@ -552,6 +568,11 @@
         location.href = '/flowN/N02-menu.html';
     }
 
+    function goToPayment() {
+        sessionStorage.setItem('currentStep', 'P01');
+        location.href = '/flowP/P01-summary.html';
+    }
+
     function onToggleMute() {
         state.muted = !state.muted;
         $muteBtn.setAttribute('aria-pressed', String(state.muted));
@@ -566,17 +587,123 @@
         // 비디오 음소거 (현재는 muted=true 고정이라 표시만)
     }
 
-    function onMicClick() {
-        // 1차에선 placeholder — 2차 커밋에서 Web Speech API 연결
-        $micBtn.classList.toggle('a01__btn-mic--listening');
-        const listening = $micBtn.classList.contains('a01__btn-mic--listening');
-        $micBtn.setAttribute('aria-pressed', String(listening));
-        if (listening) {
-            $input.placeholder = '듣고 있어요... (음성 입력은 곧 지원됩니다)';
-            $input.focus();
-        } else {
-            $input.placeholder = '크롱이에게 말하거나 입력해보세요';
+    // ---- 음성 입력 (Web Speech API) ----
+    // 후속 PR에서 voice-pipeline.js (FastAPI WebSocket STT) 로 어댑터 swap.
+    // 현재 layer:
+    //   - 지원 브라우저(Chrome/Edge): 실 STT 사용, interim 결과로 입력창 라이브 캡션
+    //   - 미지원/권한거부: 토스트 안내 + 텍스트 입력 폴백 (기존 onSendClick 그대로)
+    function initSpeech() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) {
+            state.speech.supported = false;
+            return null;
         }
+        state.speech.supported = true;
+        const rec = new SR();
+        rec.lang = 'ko-KR';
+        rec.continuous = false;
+        rec.interimResults = true;
+        rec.maxAlternatives = 1;
+
+        let finalText = '';
+        let interimText = '';
+
+        rec.onstart = () => {
+            state.speech.listening = true;
+            $micBtn.classList.add('a01__btn-mic--listening');
+            $micBtn.setAttribute('aria-pressed', 'true');
+            $input.placeholder = '듣고 있어요...';
+            finalText = '';
+            interimText = '';
+            $input.value = '';
+        };
+
+        rec.onresult = (event) => {
+            interimText = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const res = event.results[i];
+                if (res.isFinal) {
+                    finalText += res[0].transcript;
+                } else {
+                    interimText += res[0].transcript;
+                }
+            }
+            // 입력창에 라이브 캡션 (final + interim)
+            $input.value = (finalText + interimText).trim();
+        };
+
+        rec.onerror = (e) => {
+            console.warn('[A01] SpeechRecognition error', e.error);
+            stopListeningUI();
+            if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                showToast('마이크 권한이 필요해요. 텍스트로 입력해주세요.');
+            } else if (e.error === 'no-speech') {
+                showToast('음성을 듣지 못했어요. 다시 시도해주세요.');
+            } else if (e.error === 'audio-capture') {
+                showToast('마이크를 찾을 수 없어요.');
+            }
+        };
+
+        rec.onend = () => {
+            stopListeningUI();
+            const text = (finalText || interimText || '').trim();
+            $input.value = '';
+            if (text) {
+                userSay(text);
+            }
+        };
+
+        return rec;
+    }
+
+    function stopListeningUI() {
+        state.speech.listening = false;
+        $micBtn.classList.remove('a01__btn-mic--listening');
+        $micBtn.setAttribute('aria-pressed', 'false');
+        $input.placeholder = '크롱이에게 말하거나 입력해보세요';
+    }
+
+    function onMicClick() {
+        // 미지원 브라우저: 안내 + 텍스트 입력으로 유도
+        if (!state.speech.supported) {
+            showToast('이 브라우저는 음성 입력을 지원하지 않아요. 텍스트로 입력해주세요.');
+            $input.focus();
+            return;
+        }
+        const rec = state.speech.recognizer;
+        if (!rec) return;
+
+        if (state.speech.listening) {
+            // 사용 중 다시 누르면 즉시 중지 (onend → 결과 처리)
+            try { rec.stop(); } catch (_) {}
+            return;
+        }
+
+        // 사용자 발화 우선 — AI가 말하는 중이면 발화 중단(터치 우선 8-1)
+        // (현재 mock 에선 별도 abort 시그널 없음, 다음 발화부터 멈춤)
+        try {
+            rec.start();
+        } catch (e) {
+            // 이미 시작된 경우 등 — 한 번 stop 후 재시도
+            console.warn('[A01] mic start failed', e);
+            try { rec.stop(); } catch (_) {}
+        }
+    }
+
+    // ---- 가벼운 토스트 (의존성 없이) ----
+    function showToast(msg) {
+        let $t = document.querySelector('.a01__toast');
+        if (!$t) {
+            $t = document.createElement('div');
+            $t.className = 'a01__toast';
+            document.body.appendChild($t);
+        }
+        $t.textContent = msg;
+        $t.classList.add('is-visible');
+        clearTimeout(showToast._timer);
+        showToast._timer = setTimeout(() => {
+            $t.classList.remove('is-visible');
+        }, 2400);
     }
 
     // ========================================================
@@ -605,6 +732,7 @@
         renderChips();
         bind();
         bootVideos();
+        state.speech.recognizer = initSpeech();
 
         // 첫 진입 시나리오 시작
         enterState('opening');

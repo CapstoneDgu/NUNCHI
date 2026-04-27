@@ -705,3 +705,31 @@
     0%, 100% { box-shadow: 0 0 0 0  rgba(220, 53, 69, 0.5);  }
     50%      { box-shadow: 0 0 0 14px rgba(220, 53, 69, 0); }
 }
+
+/* ========================================================
+   ⑦ 토스트 (음성 입력 안내 등)
+   ======================================================== */
+
+.a01__toast {
+    position: fixed;
+    left: 50%;
+    bottom: 160px;
+    transform: translateX(-50%) translateY(8px);
+    max-width: calc(var(--screen-width) - var(--pad-side) * 4);
+    padding: 12px 20px;
+    border-radius: 24px;
+    background: rgba(30, 25, 21, 0.92);
+    color: var(--neutral-0);
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-out);
+}
+.a01__toast.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
