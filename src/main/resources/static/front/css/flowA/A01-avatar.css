@@ -362,7 +362,7 @@
     border-radius: 16px;
     font-size: 15px;
     line-height: 1.45;
-    word-break: break-word;
+    overflow-wrap: anywhere;
     animation: a01-msg-in var(--duration-fast) var(--ease-out) both;
 }
 

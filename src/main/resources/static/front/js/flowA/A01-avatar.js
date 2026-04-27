@@ -56,6 +56,7 @@
         sessionId: null,
         recommendedIds: [],      // 이미 추천한 메뉴 id (중복 회피)
         muted: false,
+        speechAbort: null,       // 현재 단계의 발화 취소용 AbortController
         speech: {
             recognizer: null,    // SpeechRecognition 인스턴스
             supported: false,
@@ -169,35 +170,61 @@
     // ========================================================
     // 7. AI 발화 (typewriter + 로그)
     // ========================================================
-    function sleep(ms) {
-        return new Promise((resolve) => setTimeout(resolve, ms));
+    // sleep 은 AbortSignal 로 중도 취소 가능 (enterState 가 다음 단계 진입 시 abort)
+    function sleep(ms, signal) {
+        return new Promise((resolve, reject) => {
+            if (signal && signal.aborted) {
+                reject(new DOMException('aborted', 'AbortError'));
+                return;
+            }
+            const t = setTimeout(resolve, ms);
+            if (signal) {
+                signal.addEventListener('abort', () => {
+                    clearTimeout(t);
+                    reject(new DOMException('aborted', 'AbortError'));
+                }, { once: true });
+            }
+        });
     }
 
     async function typewriter(text, opts) {
-        const speed = (opts && opts.speed) || 50;
+        const speed  = (opts && opts.speed) || 50;
+        const signal = opts && opts.signal;
         $bubble.classList.add('is-typing', 'is-visible');
         $bubbleText.textContent = '';
-        for (let i = 0; i < text.length; i++) {
-            const ch = text[i];
-            $bubbleText.textContent += ch;
-            // 문장부호 후 살짝 멈춤
-            if (',.!?…'.includes(ch)) {
-                await sleep(220);
-            } else if (ch === ' ') {
-                await sleep(speed * 0.5);
-            } else {
-                await sleep(speed);
+        try {
+            for (let i = 0; i < text.length; i++) {
+                if (signal && signal.aborted) return;
+                const ch = text[i];
+                $bubbleText.textContent += ch;
+                // 문장부호 후 살짝 멈춤
+                if (',.!?…'.includes(ch)) {
+                    await sleep(220, signal);
+                } else if (ch === ' ') {
+                    await sleep(speed * 0.5, signal);
+                } else {
+                    await sleep(speed, signal);
+                }
             }
+        } finally {
+            $bubble.classList.remove('is-typing');
         }
-        $bubble.classList.remove('is-typing');
     }
 
-    async function aiSpeak(text) {
+    async function aiSpeak(text, signal) {
+        if (signal && signal.aborted) return;
         appendLog('ai', text);
         setAvatar('talking');
-        await typewriter(text, { speed: 48 });
-        // 발화 종료 후 짧은 여운
-        await sleep(450);
+        try {
+            await typewriter(text, { speed: 48, signal });
+            // 발화 종료 후 짧은 여운
+            await sleep(450, signal);
+        } catch (e) {
+            if (e && e.name === 'AbortError') {
+                return; // 다음 단계가 이미 시작 — idle 복귀는 새 발화의 setAvatar 가 처리
+            }
+            throw e;
+        }
         setAvatar('idle');
     }
 
@@ -267,58 +294,70 @@
     // ========================================================
     function enterState(name) {
         if (!STEP_ORDER.includes(name)) return;
+        // 진행 중이던 발화/대기 중단 — 단계 전환이 즉시 반영되도록
+        if (state.speechAbort) {
+            try { state.speechAbort.abort(); } catch (_) {}
+        }
+        state.speechAbort = new AbortController();
+        const signal = state.speechAbort.signal;
+
         state.fsm = name;
         renderSteps();
         renderChips();
 
         switch (name) {
             case 'opening':
-                runOpening();
+                runOpening(signal);
                 break;
             case 'recommend':
-                runRecommend();
+                runRecommend(signal);
                 break;
             case 'addmore':
-                runAddmore();
+                runAddmore(signal);
                 break;
             case 'confirm':
-                runConfirm();
+                runConfirm(signal);
                 break;
         }
     }
 
-    async function runOpening() {
-        await aiSpeak(SCRIPTS.opening.greeting);
+    async function runOpening(signal) {
+        await aiSpeak(SCRIPTS.opening.greeting, signal);
+        if (signal.aborted) return;
         const dine = sessionStorage.getItem('dineOption');
         if (dine === 'dine_in') {
-            await aiSpeak(SCRIPTS.opening.confirmedDineIn);
+            await aiSpeak(SCRIPTS.opening.confirmedDineIn, signal);
+            if (signal.aborted) return;
             enterState('recommend');
         } else if (dine === 'take_out') {
-            await aiSpeak(SCRIPTS.opening.confirmedTakeOut);
+            await aiSpeak(SCRIPTS.opening.confirmedTakeOut, signal);
+            if (signal.aborted) return;
             enterState('recommend');
         } else {
-            await aiSpeak(SCRIPTS.opening.askDine);
+            await aiSpeak(SCRIPTS.opening.askDine, signal);
         }
     }
 
-    async function runRecommend() {
-        await aiSpeak(SCRIPTS.recommend.intro);
+    async function runRecommend(signal) {
+        await aiSpeak(SCRIPTS.recommend.intro, signal);
+        if (signal.aborted) return;
         const pick = pickRecommendedMenu();
         if (pick) {
             state.recommendedIds.push(pick.id);
-            await aiSpeak(SCRIPTS.recommend.recPick(pick));
+            await aiSpeak(SCRIPTS.recommend.recPick(pick), signal);
+            if (signal.aborted) return;
             appendMenuCard(pick);
         }
     }
 
-    async function runAddmore() {
-        await aiSpeak(SCRIPTS.addmore.ask);
+    async function runAddmore(signal) {
+        await aiSpeak(SCRIPTS.addmore.ask, signal);
     }
 
-    async function runConfirm() {
+    async function runConfirm(signal) {
         const total = getCartTotal();
         const count = getCartCount();
-        await aiSpeak(SCRIPTS.confirm.summarize(count, total));
+        await aiSpeak(SCRIPTS.confirm.summarize(count, total), signal);
     }
 
     function pickRecommendedMenu() {
@@ -560,6 +599,9 @@
     }
 
     function onInputKey(e) {
+        // 한글(IME) 조합 중 Enter 는 무시 — 미완성 음절이 그대로 전송되는 문제 방지.
+        // keyCode 229 는 일부 IME 가 isComposing 을 안 채워주는 경우의 폴백.
+        if (e.isComposing || e.keyCode === 229) return;
         if (e.key === 'Enter') onSendClick();
     }
 
