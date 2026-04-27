@@ -1,0 +1,707 @@
+/* ========================================================
+   A01-avatar.css — 아바타 모드 (크롱이와 대화)
+   - 720 × 1280 키오스크
+   - common.css / components.css 토큰만 사용 (하드코딩 금지)
+   - 영역 비율: 56 + 720 + 44 + 200 + 140 + 120 = 1280
+   ======================================================== */
+
+/* ========================================================
+   페이지 배경 — Secondary(amber) 블롭 변형
+   .page-bg 의 ::before/::after 색만 오버라이드
+   ======================================================== */
+
+.page-bg--avatar::before {
+    background-color: var(--secondary-100);
+    opacity: 0.55;
+}
+.page-bg--avatar::after {
+    background-color: var(--primary-100);
+    opacity: 0.6;
+}
+
+.a01 {
+    display: grid;
+    grid-template-rows: 56px 720px 44px 200px 140px 120px;
+    height: 100%;
+}
+
+/* ========================================================
+   ① 상단바
+   ======================================================== */
+
+.a01__topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 var(--pad-side);
+    border-bottom: 1px solid var(--color-border-default);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.a01__topbar-back {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--color-text-heading);
+    font-size: 24px;
+    flex-shrink: 0;
+}
+.a01__topbar-back:active { transform: scale(0.92); background: var(--neutral-100); }
+
+.a01__topbar-title {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.1;
+}
+.a01__topbar-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--secondary-700);
+    letter-spacing: 0.04em;
+}
+.a01__topbar-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--secondary-500);
+    box-shadow: 0 0 0 0 var(--secondary-500);
+    animation: a01-pulse-dot 1.6s var(--ease-out) infinite;
+}
+.a01__topbar-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-heading);
+}
+
+.a01__topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.a01__topbar-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 18px;
+    border: 1px solid var(--color-border-default);
+    background: var(--color-bg-card);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-body);
+}
+.a01__topbar-action--icon {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+    font-size: 18px;
+}
+.a01__topbar-action:active { transform: scale(0.96); background: var(--neutral-100); }
+.a01__topbar-action[aria-pressed="true"] {
+    background: var(--neutral-200);
+    color: var(--color-text-secondary);
+}
+
+@keyframes a01-pulse-dot {
+    0%   { box-shadow: 0 0 0 0   rgba(212, 179, 10, 0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(212, 179, 10, 0);    }
+    100% { box-shadow: 0 0 0 0   rgba(212, 179, 10, 0);    }
+}
+
+/* ========================================================
+   ② 아바타 스테이지
+   ======================================================== */
+
+.a01__stage {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(
+        180deg,
+        var(--secondary-50) 0%,
+        var(--neutral-50)   100%
+    );
+}
+
+.a01__stage-canvas {
+    position: absolute;
+    inset: 0;
+}
+
+.a01__avatar-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-out);
+    pointer-events: none;
+}
+.a01__avatar-video.is-active {
+    opacity: 1;
+}
+
+/* 음성 파형 — talking 상태에서 .is-active */
+.a01__waveform {
+    position: absolute;
+    left: 50%;
+    bottom: 26px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 32px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--glass-bg-heavy);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow-sm);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out);
+    pointer-events: none;
+}
+.a01__waveform.is-active { opacity: 1; }
+
+.a01__waveform-bar {
+    width: 4px;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--secondary-500);
+    transform-origin: center;
+    animation: a01-wave 1s var(--ease-out) infinite;
+}
+.a01__waveform-bar:nth-child(1) { animation-delay: 0ms;   }
+.a01__waveform-bar:nth-child(2) { animation-delay: 80ms;  }
+.a01__waveform-bar:nth-child(3) { animation-delay: 160ms; }
+.a01__waveform-bar:nth-child(4) { animation-delay: 240ms; }
+.a01__waveform-bar:nth-child(5) { animation-delay: 320ms; }
+.a01__waveform-bar:nth-child(6) { animation-delay: 400ms; }
+.a01__waveform-bar:nth-child(7) { animation-delay: 480ms; }
+
+@keyframes a01-wave {
+    0%, 100% { transform: scaleY(0.3); }
+    50%      { transform: scaleY(1);   }
+}
+
+/* 말풍선 — 스테이지 하단 floating */
+.a01__bubble {
+    position: absolute;
+    left: 50%;
+    bottom: 80px;
+    transform: translateX(-50%);
+    max-width: calc(100% - var(--pad-side) * 2);
+    min-width: 280px;
+    padding: 18px 24px;
+    border-radius: 22px;
+    background: var(--glass-bg-heavy);
+    border: 1px solid var(--secondary-100);
+    line-height: 1.5;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    text-align: center;
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-out);
+}
+.a01__bubble.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-4px);
+}
+
+/* 말풍선 꼬리 (위쪽으로 — 아바타가 위에 있으므로) */
+.a01__bubble::before {
+    content: "";
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 18px;
+    height: 18px;
+    background: inherit;
+    border-top: 1px solid var(--secondary-100);
+    border-left: 1px solid var(--secondary-100);
+    border-radius: 4px 0 0 0;
+}
+
+.a01__bubble-cursor {
+    display: inline-block;
+    width: 2px;
+    margin-left: 2px;
+    color: var(--primary-500);
+    animation: a01-blink 600ms steps(2) infinite;
+    opacity: 0;
+}
+.a01__bubble.is-typing .a01__bubble-cursor { opacity: 1; }
+
+@keyframes a01-blink {
+    0%   { opacity: 0; }
+    50%  { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* ========================================================
+   ③ 기승전결 인디케이터
+   ======================================================== */
+
+.a01__steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--pad-side);
+}
+
+.a01__steps-list {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 460px;
+}
+
+.a01__step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    transition: transform var(--duration-base) var(--ease-bounce);
+}
+
+.a01__step-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--neutral-200);
+    transition: background-color var(--duration-base) var(--ease-out),
+                box-shadow      var(--duration-base) var(--ease-out);
+}
+.a01__step-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.05em;
+    transition: color var(--duration-base) var(--ease-out);
+}
+
+.a01__step.is-done .a01__step-dot {
+    background: var(--primary-300);
+}
+.a01__step.is-current .a01__step-dot {
+    background: var(--primary-500);
+    box-shadow: 0 0 0 6px rgba(232, 96, 10, 0.18);
+}
+.a01__step.is-current {
+    transform: scale(1.15);
+}
+.a01__step.is-current .a01__step-label {
+    color: var(--primary-700);
+}
+
+.a01__step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--neutral-200);
+    margin: 0 6px;
+    margin-bottom: 16px; /* 라벨 높이 보정 */
+    transition: background-color var(--duration-base) var(--ease-out);
+}
+.a01__step-line.is-done {
+    background: var(--primary-300);
+}
+
+/* ========================================================
+   ④ 대화 로그 (자동 스크롤)
+   ======================================================== */
+
+.a01__log {
+    overflow-y: auto;
+    padding: 12px var(--pad-side);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+.a01__log::-webkit-scrollbar { width: 4px; }
+.a01__log::-webkit-scrollbar-thumb {
+    background: var(--neutral-200);
+    border-radius: 2px;
+}
+
+.a01__msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 15px;
+    line-height: 1.45;
+    word-break: break-word;
+    animation: a01-msg-in var(--duration-fast) var(--ease-out) both;
+}
+
+.a01__msg--ai {
+    align-self: flex-start;
+    background: var(--color-bg-card);
+    color: var(--color-text-body);
+    border: 1px solid var(--neutral-100);
+    border-bottom-left-radius: 4px;
+    box-shadow: var(--shadow-sm);
+}
+
+.a01__msg--user {
+    align-self: flex-end;
+    background: var(--primary-500);
+    color: var(--color-text-inverse);
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 12px rgba(232, 96, 10, 0.25);
+}
+
+/* 메뉴 추천 카드 (인라인 메시지) */
+.a01__msg-menu {
+    align-self: stretch;
+    max-width: 100%;
+    padding: 0;
+    background: var(--color-bg-card);
+    border: 1px solid var(--primary-100);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    animation: a01-msg-in var(--duration-base) var(--ease-out) both;
+}
+.a01__msg-menu-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--primary-50);
+    color: var(--primary-700);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--primary-100);
+}
+.a01__msg-menu-body {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+}
+.a01__msg-menu-thumb {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: var(--neutral-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--neutral-400);
+    font-size: 26px;
+}
+.a01__msg-menu-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.a01__msg-menu-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text-heading);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.a01__msg-menu-meta {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+.a01__msg-menu-price {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-text-price);
+}
+.a01__msg-menu-add {
+    flex-shrink: 0;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 19px;
+    background: var(--color-btn-primary);
+    color: var(--color-text-inverse);
+    font-size: 13px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.a01__msg-menu-add:active { transform: scale(0.96); background: var(--color-btn-press); }
+
+@keyframes a01-msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ========================================================
+   ⑤ 미니 카트 + 빠른응답 칩
+   ======================================================== */
+
+.a01__quickbar {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    gap: 8px;
+    padding: 8px var(--pad-side) 0;
+    border-top: 1px solid var(--color-border-default);
+}
+
+.a01__minicart {
+    display: flex;
+    align-items: center;
+    height: 60px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: var(--glass-bg-heavy);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.a01__minicart-empty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+}
+.a01__minicart-empty i { font-size: 18px; }
+
+.a01__minicart-filled {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 12px;
+}
+.a01__minicart-list {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.a01__minicart-list::-webkit-scrollbar { display: none; }
+
+.a01__minicart-item {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 16px;
+    background: var(--primary-50);
+    border: 1px solid var(--primary-100);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary-700);
+    white-space: nowrap;
+}
+.a01__minicart-item-qty {
+    color: var(--primary-500);
+    font-weight: 800;
+}
+
+.a01__minicart-total {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+    line-height: 1.1;
+}
+.a01__minicart-total-label {
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.04em;
+}
+.a01__minicart-total-value {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-text-price);
+}
+
+/* 빠른응답 칩 행 */
+.a01__chip-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+}
+.a01__chip-row::-webkit-scrollbar { display: none; }
+
+.a01__chip {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 19px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--primary-200);
+    color: var(--primary-700);
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out);
+}
+.a01__chip:active {
+    transform: scale(0.96);
+    background: var(--primary-50);
+}
+.a01__chip--cta {
+    background: var(--primary-500);
+    color: var(--color-text-inverse);
+    border-color: var(--primary-500);
+    box-shadow: 0 4px 12px rgba(232, 96, 10, 0.3);
+}
+.a01__chip--cta:active {
+    background: var(--color-btn-press);
+}
+
+/* ========================================================
+   ⑥ 입력 바
+   ======================================================== */
+
+.a01__inputbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px var(--pad-side) 24px;
+    border-top: 1px solid var(--color-border-default);
+    background: var(--glass-bg-heavy);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.a01__input-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 56px;
+    padding: 0 8px 0 18px;
+    border-radius: 28px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-default);
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+.a01__input-wrap:focus-within {
+    border-color: var(--color-border-active);
+    box-shadow: 0 0 0 3px rgba(232, 96, 10, 0.12);
+}
+
+.a01__input {
+    flex: 1;
+    height: 100%;
+    border: 0;
+    outline: none;
+    background: transparent;
+    font: inherit;
+    font-size: 16px;
+    color: var(--color-text-body);
+}
+.a01__input::placeholder {
+    color: var(--neutral-300);
+}
+
+.a01__input-send {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--primary-500);
+    color: var(--color-text-inverse);
+    font-size: 18px;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                transform        var(--duration-fast) var(--ease-out);
+}
+.a01__input-send:active {
+    background: var(--color-btn-press);
+    transform: scale(0.94);
+}
+.a01__input-send:disabled {
+    background: var(--neutral-200);
+    color: var(--neutral-400);
+    cursor: not-allowed;
+}
+
+/* 큰 마이크 버튼 — ripple 인터랙션의 주역 */
+.a01__btn-mic {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+    color: var(--color-text-inverse);
+    font-size: 26px;
+    box-shadow: 0 8px 20px rgba(232, 96, 10, 0.35);
+    transition: transform var(--duration-fast) var(--ease-out);
+    overflow: visible;
+}
+.a01__btn-mic:active { transform: scale(0.94); }
+
+.a01__btn-mic-icon {
+    position: relative;
+    z-index: 2;
+    display: block;
+}
+
+.a01__btn-mic-ripple {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--primary-500);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* listening 상태: 3겹 ripple + 글로우 */
+.a01__btn-mic--listening {
+    background: linear-gradient(135deg, var(--semantic-error) 0%, #B02A37 100%);
+    animation: a01-mic-glow 1.4s var(--ease-out) infinite;
+}
+.a01__btn-mic--listening .a01__btn-mic-ripple {
+    animation: a01-ripple 1.6s var(--ease-out) infinite;
+}
+.a01__btn-mic--listening .a01__btn-mic-ripple:nth-child(1) { animation-delay: 0ms;   }
+.a01__btn-mic--listening .a01__btn-mic-ripple:nth-child(2) { animation-delay: 400ms; }
+.a01__btn-mic--listening .a01__btn-mic-ripple:nth-child(3) { animation-delay: 800ms; }
+
+@keyframes a01-ripple {
+    0%   { opacity: 0.55; transform: scale(1);   }
+    100% { opacity: 0;    transform: scale(2.4); }
+}
+@keyframes a01-mic-glow {
+    0%, 100% { box-shadow: 0 0 0 0  rgba(220, 53, 69, 0.5);  }
+    50%      { box-shadow: 0 0 0 14px rgba(220, 53, 69, 0); }
+}

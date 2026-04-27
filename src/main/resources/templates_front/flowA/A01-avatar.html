@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=720, initial-scale=1" />
+    <title>크롱이와 대화 · 눈치 키오스크</title>
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/flowA/A01-avatar.css">
+</head>
+<body>
+<main class="page-bg page-bg--avatar a01">
+
+    <!-- ========================================================
+         ① 상단바 (56px) — 뒤로 / 캐릭터명 / 일반주문 전환 / 음소거
+         ======================================================== -->
+    <header class="a01__topbar fade-up" style="--delay: 0ms;">
+        <button class="a01__topbar-back"
+                type="button"
+                aria-label="뒤로 가기"
+                onclick="location.href='/S02-dine.html'">
+            <i class="xi xi-angle-left-thin" aria-hidden="true"></i>
+        </button>
+        <div class="a01__topbar-title">
+            <span class="a01__topbar-status" data-bind="status">
+                <span class="a01__topbar-status-dot"></span>
+                대화중
+            </span>
+            <span class="a01__topbar-name">크롱이</span>
+        </div>
+        <div class="a01__topbar-actions">
+            <button class="a01__topbar-action a01__topbar-action--switch"
+                    type="button"
+                    data-action="switch-normal"
+                    aria-label="일반 주문으로 전환">
+                <i class="xi xi-touch" aria-hidden="true"></i>
+                <span>일반 주문</span>
+            </button>
+            <button class="a01__topbar-action a01__topbar-action--icon"
+                    type="button"
+                    data-action="toggle-mute"
+                    aria-label="소리 끄기/켜기"
+                    aria-pressed="false">
+                <i class="xi xi-volume-up" aria-hidden="true"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ========================================================
+         ② 아바타 스테이지 (720px) — 비디오 cross-fade + 말풍선 + 파형
+         ======================================================== -->
+    <section class="a01__stage fade-up" style="--delay: 80ms;"
+             aria-label="크롱이 아바타">
+        <div class="a01__stage-canvas">
+            <!-- 대기 상태 비디오 (기본 노출) -->
+            <video class="a01__avatar-video a01__avatar-video--idle is-active"
+                   data-avatar="idle"
+                   src="/images/avatars/통장님_대기.mp4"
+                   autoplay loop muted playsinline preload="auto"
+                   aria-hidden="true"></video>
+            <!-- 대화 상태 비디오 (발화 시 cross-fade) -->
+            <video class="a01__avatar-video a01__avatar-video--talking"
+                   data-avatar="talking"
+                   src="/images/avatars/통장님_대화중.mp4"
+                   loop muted playsinline preload="auto"
+                   aria-hidden="true"></video>
+
+            <!-- 음성 파형 (talking 시 표시) -->
+            <div class="a01__waveform" data-waveform aria-hidden="true">
+                <span class="a01__waveform-bar"></span>
+                <span class="a01__waveform-bar"></span>
+                <span class="a01__waveform-bar"></span>
+                <span class="a01__waveform-bar"></span>
+                <span class="a01__waveform-bar"></span>
+                <span class="a01__waveform-bar"></span>
+                <span class="a01__waveform-bar"></span>
+            </div>
+        </div>
+
+        <!-- 말풍선 (현재 발화) -->
+        <div class="a01__bubble glass-card glass-card--heavy" data-bubble role="status" aria-live="polite">
+            <span class="a01__bubble-text" data-bubble-text></span>
+            <span class="a01__bubble-cursor" data-bubble-cursor aria-hidden="true">|</span>
+        </div>
+    </section>
+
+    <!-- ========================================================
+         ③ 기승전결 인디케이터 (44px)
+         ======================================================== -->
+    <nav class="a01__steps fade-up" style="--delay: 160ms;"
+         aria-label="대화 진행 단계">
+        <ol class="a01__steps-list" data-steps>
+            <li class="a01__step is-current" data-step="opening">
+                <span class="a01__step-dot"></span>
+                <span class="a01__step-label">기</span>
+            </li>
+            <li class="a01__step-line"></li>
+            <li class="a01__step" data-step="recommend">
+                <span class="a01__step-dot"></span>
+                <span class="a01__step-label">승</span>
+            </li>
+            <li class="a01__step-line"></li>
+            <li class="a01__step" data-step="addmore">
+                <span class="a01__step-dot"></span>
+                <span class="a01__step-label">전</span>
+            </li>
+            <li class="a01__step-line"></li>
+            <li class="a01__step" data-step="confirm">
+                <span class="a01__step-dot"></span>
+                <span class="a01__step-label">결</span>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- ========================================================
+         ④ 대화 로그 (200px, 자동 스크롤)
+         ======================================================== -->
+    <section class="a01__log fade-up" style="--delay: 240ms;"
+             data-log
+             aria-label="대화 기록"
+             aria-live="polite">
+        <!-- JS 동적 -->
+    </section>
+
+    <!-- ========================================================
+         ⑤ 미니 카트 + 빠른응답 칩 (140px)
+         ======================================================== -->
+    <section class="a01__quickbar fade-up" style="--delay: 320ms;">
+        <!-- 미니 카트 -->
+        <div class="a01__minicart" data-minicart>
+            <div class="a01__minicart-empty" data-minicart-empty>
+                <i class="xi xi-cart" aria-hidden="true"></i>
+                <span>아직 담은 메뉴가 없어요</span>
+            </div>
+            <div class="a01__minicart-filled" data-minicart-filled hidden>
+                <ul class="a01__minicart-list" data-minicart-list>
+                    <!-- JS 동적 -->
+                </ul>
+                <div class="a01__minicart-total">
+                    <span class="a01__minicart-total-label">합계</span>
+                    <span class="a01__minicart-total-value" data-minicart-total>₩ 0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 빠른응답 칩 -->
+        <div class="a01__chip-row" data-chip-row aria-label="빠른 응답">
+            <!-- JS 동적 -->
+        </div>
+    </section>
+
+    <!-- ========================================================
+         ⑥ 입력 바 (120px) — 텍스트 입력 + 큰 마이크 버튼
+         ======================================================== -->
+    <section class="a01__inputbar fade-up" style="--delay: 400ms;">
+        <div class="a01__input-wrap">
+            <input class="a01__input"
+                   type="text"
+                   data-input
+                   placeholder="크롱이에게 말하거나 입력해보세요"
+                   autocomplete="off"
+                   aria-label="크롱이에게 메시지 입력" />
+            <button class="a01__input-send"
+                    type="button"
+                    data-action="send"
+                    aria-label="보내기">
+                <i class="xi xi-send" aria-hidden="true"></i>
+            </button>
+        </div>
+        <button class="a01__btn-mic"
+                type="button"
+                data-action="toggle-mic"
+                aria-label="음성 입력 시작/중지"
+                aria-pressed="false">
+            <span class="a01__btn-mic-ripple"></span>
+            <span class="a01__btn-mic-ripple"></span>
+            <span class="a01__btn-mic-ripple"></span>
+            <i class="xi xi-microphone a01__btn-mic-icon" aria-hidden="true"></i>
+        </button>
+    </section>
+
+</main>
+
+<script src="/lib/jquery-3.7.0.min.js"></script>
+<script src="/js/flowN/menu-data.js"></script>
+<script src="/js/flowA/A01-avatar.js"></script>
+</body>
+</html>
