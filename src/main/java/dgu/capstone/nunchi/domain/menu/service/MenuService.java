@@ -1,25 +1,32 @@
 package dgu.capstone.nunchi.domain.menu.service;
 
+import dgu.capstone.nunchi.domain.menu.dto.request.MenuFilterRequest;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuCategoryResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuDetailResponse;
+import dgu.capstone.nunchi.domain.menu.dto.response.MenuFilterResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.TopMenuResponse;
 import dgu.capstone.nunchi.domain.menu.entity.Menu;
 import dgu.capstone.nunchi.domain.menu.entity.MenuOption;
 import dgu.capstone.nunchi.domain.menu.entity.MenuOptionGroup;
+import dgu.capstone.nunchi.domain.menu.entity.enums.AllergyType;
+import dgu.capstone.nunchi.domain.menu.entity.enums.TemperatureType;
 import dgu.capstone.nunchi.domain.menu.repository.MenuCategoryRepository;
 import dgu.capstone.nunchi.domain.menu.repository.MenuOptionGroupRepository;
 import dgu.capstone.nunchi.domain.menu.repository.MenuOptionRepository;
 import dgu.capstone.nunchi.domain.menu.repository.MenuRepository;
+import dgu.capstone.nunchi.domain.menu.repository.MenuSpecification;
 import dgu.capstone.nunchi.domain.menu.repository.SalesDailyRepository;
 import dgu.capstone.nunchi.global.exception.domainException.MenuException;
 import dgu.capstone.nunchi.global.exception.errorcode.MenuErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,6 +63,35 @@ public class MenuService {
     // 오늘 날짜 기준 판매량 상위 메뉴 조회
     public List<TopMenuResponse> getTopMenus(int limit) {
         return salesDailyRepository.findTopMenusByDate(LocalDate.now(), PageRequest.of(0, limit));
+    }
+
+    // 동적 필터 조회 (AI 추천 에이전트용)
+    public List<MenuFilterResponse> filterMenus(MenuFilterRequest req) {
+        Specification<Menu> spec = Specification.where(MenuSpecification.notSoldOut());
+
+        if (req.maxCalorie() != null) spec = spec.and(MenuSpecification.maxCalorie(req.maxCalorie()));
+        if (req.minCalorie() != null) spec = spec.and(MenuSpecification.minCalorie(req.minCalorie()));
+        if (req.minProtein() != null) spec = spec.and(MenuSpecification.minProtein(req.minProtein()));
+        if (req.maxSodium() != null) spec = spec.and(MenuSpecification.maxSodium(req.maxSodium()));
+        if (req.maxSpicyLevel() != null) spec = spec.and(MenuSpecification.maxSpicyLevel(req.maxSpicyLevel()));
+        if (req.minSpicyLevel() != null) spec = spec.and(MenuSpecification.minSpicyLevel(req.minSpicyLevel()));
+        if (req.temperatureType() != null && req.temperatureType() != TemperatureType.BOTH) {
+            spec = spec.and(MenuSpecification.temperatureType(req.temperatureType()));
+        }
+        if (req.vegetarianType() != null) spec = spec.and(MenuSpecification.vegetarianType(req.vegetarianType()));
+        if (req.season() != null) spec = spec.and(MenuSpecification.season(req.season()));
+        if (req.categoryId() != null) spec = spec.and(MenuSpecification.categoryId(req.categoryId()));
+        if (req.excludeAllergies() != null && !req.excludeAllergies().isBlank()) {
+            List<AllergyType> allergyList = Arrays.stream(req.excludeAllergies().split(","))
+                    .map(String::trim)
+                    .map(AllergyType::valueOf)
+                    .toList();
+            spec = spec.and(MenuSpecification.excludeAllergies(allergyList));
+        }
+
+        return menuRepository.findAll(spec).stream()
+                .map(MenuFilterResponse::from)
+                .toList();
     }
 
     // 메뉴 상세 조회 (옵션그룹 + 옵션 포함, N+1 방지)

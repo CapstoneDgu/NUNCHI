@@ -1,7 +1,9 @@
 package dgu.capstone.nunchi.domain.menu.controller;
 
+import dgu.capstone.nunchi.domain.menu.dto.request.MenuFilterRequest;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuCategoryResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuDetailResponse;
+import dgu.capstone.nunchi.domain.menu.dto.response.MenuFilterResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.TopMenuResponse;
 import dgu.capstone.nunchi.domain.menu.service.MenuService;
@@ -43,6 +45,14 @@ public class MenuController {
             @Parameter(description = "카테고리 ID (선택)") @RequestParam(required = false) Long categoryId
     ) {
         return ResponseEntity.ok(ApiResponse.ok(menuService.getMenus(categoryId)));
+    }
+
+    @Operation(summary = "메뉴 필터 조회", description = "AI 추천 에이전트용 동적 필터. 모든 파라미터 선택사항. excludeAllergies는 AllergyType enum 이름 콤마 구분 (예: MILK,EGG,WHEAT)")
+    @GetMapping("/filter")
+    public ResponseEntity<ApiResponse<List<MenuFilterResponse>>> filterMenus(
+            @ModelAttribute MenuFilterRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(menuService.filterMenus(request)));
     }
 
     @Operation(summary = "메뉴 상세 조회", description = "옵션그룹 및 옵션 포함")
