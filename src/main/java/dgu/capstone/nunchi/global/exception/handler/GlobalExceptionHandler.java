@@ -5,6 +5,7 @@ import dgu.capstone.nunchi.global.exception.errorcode.GlobalErrorCode;
 import dgu.capstone.nunchi.global.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -45,6 +46,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(GlobalErrorCode.REQUEST_BODY_NOT_READABLE.getStatus())
                 .body(ApiResponse.fail(GlobalErrorCode.REQUEST_BODY_NOT_READABLE.getCode(), GlobalErrorCode.REQUEST_BODY_NOT_READABLE.getMsg()));
+    }
+
+    // @ModelAttribute 바인딩 실패 (enum 변환 실패, 숫자 타입 불일치 등)
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBindException(BindException e) {
+        return ResponseEntity
+                .status(GlobalErrorCode.NOT_VALID_EXCEPTION.getStatus())
+                .body(ApiResponse.fail(GlobalErrorCode.NOT_VALID_EXCEPTION.getCode(), GlobalErrorCode.NOT_VALID_EXCEPTION.getMsg()));
     }
 
     // @RequestParam / @ModelAttribute enum 바인딩 실패 (예: temperatureType=INVALID)
