@@ -671,6 +671,9 @@
 /* 큰 마이크 버튼 — ripple 인터랙션의 주역 */
 .a01__btn-mic {
     position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 64px;
     height: 64px;
     flex-shrink: 0;
@@ -678,6 +681,7 @@
     background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
     color: var(--color-text-inverse);
     font-size: 26px;
+    line-height: 1;
     box-shadow: 0 8px 20px rgba(232, 96, 10, 0.35);
     transition: transform var(--duration-fast) var(--ease-out);
     overflow: visible;
@@ -687,7 +691,10 @@
 .a01__btn-mic-icon {
     position: relative;
     z-index: 2;
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .a01__btn-mic-ripple {
