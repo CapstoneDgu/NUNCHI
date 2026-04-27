@@ -15,5 +15,8 @@ public record MenuFilterRequest(
         VegetarianType vegetarianType,
         Season season,
         Long categoryId,
-        String excludeAllergies   // "MILK,EGG,WHEAT" 형태로 전달
+        String excludeAllergies,  // "MILK,EGG,WHEAT" 형태로 전달
+        Integer minPrice,
+        Integer maxPrice,
+        Integer limit             // 반환할 최대 메뉴 수 (null이면 제한 없음)
 ) {}

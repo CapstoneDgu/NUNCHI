@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Transactional(readOnly = true)
@@ -86,6 +87,8 @@ public class MenuService {
             spec = spec.and(MenuSpecification.season(req.season()));
         }
         if (req.categoryId() != null) spec = spec.and(MenuSpecification.categoryId(req.categoryId()));
+        if (req.minPrice() != null) spec = spec.and(MenuSpecification.minPrice(req.minPrice()));
+        if (req.maxPrice() != null) spec = spec.and(MenuSpecification.maxPrice(req.maxPrice()));
         if (req.excludeAllergies() != null && !req.excludeAllergies().isBlank()) {
             List<AllergyType> allergyList = Arrays.stream(req.excludeAllergies().split(","))
                     .map(String::trim)
@@ -100,9 +103,10 @@ public class MenuService {
             spec = spec.and(MenuSpecification.excludeAllergies(allergyList));
         }
 
-        return menuRepository.findAll(spec).stream()
-                .map(MenuFilterResponse::from)
-                .toList();
+        List<Menu> menus = menuRepository.findAll(spec);
+        Stream<Menu> stream = menus.stream();
+        if (req.limit() != null) stream = stream.limit(req.limit());
+        return stream.map(MenuFilterResponse::from).toList();
     }
 
     // 메뉴 상세 조회 (옵션그룹 + 옵션 포함, N+1 방지)

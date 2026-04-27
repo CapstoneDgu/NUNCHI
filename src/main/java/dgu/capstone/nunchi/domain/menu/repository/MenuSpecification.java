@@ -82,6 +82,14 @@ public class MenuSpecification {
         return (root, query, cb) -> cb.equal(root.get("category").get("categoryId"), id);
     }
 
+    public static Specification<Menu> minPrice(Integer min) {
+        return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("price"), min);
+    }
+
+    public static Specification<Menu> maxPrice(Integer max) {
+        return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("price"), max);
+    }
+
     // 지정 알레르기를 하나라도 포함하는 메뉴를 서브쿼리 NOT IN으로 제외
     public static Specification<Menu> excludeAllergies(List<AllergyType> allergyList) {
         return (root, query, cb) -> {
