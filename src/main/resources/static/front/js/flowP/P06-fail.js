@@ -45,7 +45,7 @@
     const FLOW_KEYS_TO_CLEAR = [
         CART_KEY, STORE_KEY, METHOD_KEY, STATUS_KEY, 'orderNumber',
         'mode', 'dineOption', 'currentFloor', 'currentStore',
-        'aiSessionId', 'currentStep'
+        'aiSessionId', 'currentStep', 'orderId', 'paymentId'
     ];
 
     const MOCK_CART = [
@@ -200,6 +200,15 @@
 
     /* ---------- Boot ---------- */
     try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
+
+    // 백엔드 결제 실패 마킹
+    (function failBackendPayment() {
+        const paymentId = Number(sessionStorage.getItem('paymentId'));
+        if (paymentId && window.NunchiApi) {
+            window.NunchiApi.Payments.markFail(paymentId)
+                .catch((e) => console.warn('[P06] markFail 실패', e));
+        }
+    })();
 
     const code = getQuery('reason');
     const config = REASONS[code] || DEFAULT_REASON;

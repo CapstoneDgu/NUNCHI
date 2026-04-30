@@ -134,6 +134,14 @@
         } else if (nextState === 'approved') {
             setProgress(100);
             try { sessionStorage.setItem(STATUS_KEY, 'approved'); } catch (_) {}
+
+            // 백엔드 결제 성공 마킹 (paymentId 가 있을 때만)
+            const paymentId = Number(sessionStorage.getItem('paymentId'));
+            if (paymentId && window.NunchiApi) {
+                window.NunchiApi.Payments.markSuccess(paymentId)
+                    .catch((e) => console.warn('[P04] markSuccess 실패', e));
+            }
+
             approvedTimer = setTimeout(() => {
                 location.href = '/flowP/P05-complete.html';
             }, 2000);

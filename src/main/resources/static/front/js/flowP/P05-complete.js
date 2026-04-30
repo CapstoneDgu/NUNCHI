@@ -34,7 +34,7 @@
     const FLOW_KEYS_TO_CLEAR = [
         CART_KEY, STORE_KEY, METHOD_KEY, STATUS_KEY, ORDERNO_KEY,
         'mode', 'dineOption', 'currentFloor', 'currentStore',
-        'aiSessionId', 'currentStep'
+        'aiSessionId', 'currentStep', 'orderId', 'paymentId'
     ];
 
     const MOCK_CART = [
@@ -150,6 +150,16 @@
     /* ---------- Init ---------- */
     renderAll();
     try { sessionStorage.setItem(STATUS_KEY, 'approved'); } catch (_) {}
+
+    // 세션 종료 — sessionStorage 정리 전에 sessionId 캡처
+    (function completeBackendSession() {
+        const sessionId = Number(sessionStorage.getItem('aiSessionId'));
+        if (sessionId && window.NunchiApi) {
+            window.NunchiApi.Sessions.complete(sessionId)
+                .catch((e) => console.warn('[P05] session.complete 실패', e));
+        }
+    })();
+
     setTimeout(markReceiptDone, 3000);
     startCountdown();
 })();
