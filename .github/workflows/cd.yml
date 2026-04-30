@@ -71,5 +71,5 @@ jobs:
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
             cd /home/ubuntu/nunchi
             export ECR_IMAGE=$ECR_IMAGE
-            docker-compose pull app
-            docker-compose up -d
+            docker compose pull app
+            docker compose up -d
