@@ -90,6 +90,22 @@ public class MenuSpecification {
         return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("price"), max);
     }
 
+    // 식당명 필터: 해당 식당 메뉴 + 공용 메뉴(restaurantName IS NULL) 포함
+    public static Specification<Menu> restaurantName(String name) {
+        return (root, query, cb) -> cb.or(
+                cb.equal(root.get("restaurantName"), name),
+                cb.isNull(root.get("restaurantName"))
+        );
+    }
+
+    // 층 필터: 해당 층 메뉴 + 공용 메뉴(floor IS NULL) 포함
+    public static Specification<Menu> floor(Integer floor) {
+        return (root, query, cb) -> cb.or(
+                cb.equal(root.get("floor"), floor),
+                cb.isNull(root.get("floor"))
+        );
+    }
+
     // 지정 알레르기를 하나라도 포함하는 메뉴를 서브쿼리 NOT IN으로 제외
     public static Specification<Menu> excludeAllergies(List<AllergyType> allergyList) {
         return (root, query, cb) -> {
