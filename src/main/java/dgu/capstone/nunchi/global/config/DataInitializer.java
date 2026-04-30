@@ -79,7 +79,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(650, 28.0, 90.0, 14.0, 820, 8.0, 0.1, 75, 3.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.CHICKEN, AllergyType.EGG))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 닭고기:국내산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 닭고기:국내산").floor(1).restaurantName("솥앤누들").build());
 
         Menu charcoalPork = menuRepository.save(Menu.builder()
                 .name("숯불삼겹솥밥").price(8000).imageUrl("/images/menu/charcoal_pork.jpg")
@@ -87,7 +87,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(780, 25.0, 88.0, 24.0, 760, 3.0, 0.2, 80, 2.5))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.PORK))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:국내산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:국내산").floor(1).restaurantName("솥앤누들").build());
 
         Menu tunaMayo = menuRepository.save(Menu.builder()
                 .name("참치마요솥밥").price(7000).imageUrl("/images/menu/tuna_mayo.jpg")
@@ -95,7 +95,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(620, 22.0, 85.0, 16.0, 680, 4.0, 0.1, 45, 2.0))
                 .allergies(allergies(AllergyType.EGG, AllergyType.SOY))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 참치:원양산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 참치:원양산").floor(1).restaurantName("솥앤누들").build());
 
         Menu cornCheese = menuRepository.save(Menu.builder()
                 .name("콘치즈솥밥").price(7000).imageUrl("/images/menu/corn_cheese.jpg")
@@ -103,7 +103,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(600, 15.0, 92.0, 13.0, 720, 6.0, 0.2, 30, 3.5))
                 .allergies(allergies(AllergyType.MILK, AllergyType.EGG, AllergyType.WHEAT))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGETARIAN)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 옥수수:미국산, 치즈:뉴질랜드산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 옥수수:미국산, 치즈:뉴질랜드산").floor(1).restaurantName("솥앤누들").build());
 
         Menu octopusPork = menuRepository.save(Menu.builder()
                 .name("낙지삼겹솥밥").price(8500).imageUrl("/images/menu/octopus_pork.jpg")
@@ -111,7 +111,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(720, 27.0, 82.0, 22.0, 980, 5.0, 0.2, 120, 2.0))
                 .allergies(allergies(AllergyType.SQUID, AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
                 .spicyLevel(4).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.FALL).originInfo("쌀:국내산, 낙지:국내산, 돼지고기:국내산").build());
+                .seasonRecommended(Season.FALL).originInfo("쌀:국내산, 낙지:국내산, 돼지고기:국내산").floor(1).restaurantName("솥앤누들").build());
 
         Menu spamKimchi = menuRepository.save(Menu.builder()
                 .name("스팸김치솥밥").price(7500).imageUrl("/images/menu/spam_kimchi.jpg")
@@ -119,7 +119,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(700, 20.0, 88.0, 18.0, 1100, 4.0, 0.3, 55, 3.0))
                 .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
                 .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:미국산, 배추:국내산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:미국산, 배추:국내산").floor(1).restaurantName("솥앤누들").build());
 
         Menu jangjorimButter = menuRepository.save(Menu.builder()
                 .name("장조림버터솥밥").price(7500).imageUrl("/images/menu/jangjorim_butter.jpg")
@@ -127,7 +127,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(680, 26.0, 86.0, 16.0, 750, 5.0, 0.2, 85, 2.0))
                 .allergies(allergies(AllergyType.BEEF, AllergyType.MILK, AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.WINTER).originInfo("쌀:국내산, 쇠고기:호주산").build());
+                .seasonRecommended(Season.WINTER).originInfo("쌀:국내산, 쇠고기:호주산").floor(1).restaurantName("솥앤누들").build());
 
         Menu flyingFishBulgogi = menuRepository.save(Menu.builder()
                 .name("날치알김치불고기솥밥").price(8500).imageUrl("/images/menu/flying_fish_bulgogi.jpg")
@@ -135,7 +135,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(740, 29.0, 84.0, 20.0, 920, 6.0, 0.1, 90, 2.5))
                 .allergies(allergies(AllergyType.BEEF, AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
                 .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 쇠고기:국내산, 날치알:러시아산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 쇠고기:국내산, 날치알:러시아산").floor(1).restaurantName("솥앤누들").build());
 
         Menu spamLunchbox = menuRepository.save(Menu.builder()
                 .name("스팸도시락").price(5500).imageUrl("/images/menu/spam_lunchbox.jpg")
@@ -143,7 +143,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(620, 18.0, 82.0, 20.0, 980, 3.0, 0.3, 50, 2.0))
                 .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:미국산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:미국산").floor(1).restaurantName("솥앤누들").build());
 
         // 솥밥 8개 국 선택 + 공기밥 추가 옵션 (스팸도시락 제외)
         for (Menu sotbap : new Menu[]{teriyakiChicken, charcoalPork, tunaMayo, cornCheese, octopusPork, spamKimchi, jangjorimButter, flyingFishBulgogi}) {
@@ -163,7 +163,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(680, 14.0, 108.0, 14.0, 860, 8.0, 0.1, 20, 5.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.MILK))
                 .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGETARIAN)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산").floor(1).restaurantName("솥앤누들").build());
 
         Menu katsudon = menuRepository.save(Menu.builder()
                 .name("가츠동").price(8000).imageUrl("/images/menu/katsudon.jpg")
@@ -171,7 +171,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(820, 34.0, 88.0, 28.0, 920, 6.0, 0.3, 110, 2.5))
                 .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.EGG, AllergyType.SOY))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:국내산, 밀:미국산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:국내산, 밀:미국산").floor(1).restaurantName("솥앤누들").build());
 
         Menu ikura = menuRepository.save(Menu.builder()
                 .name("알밥").price(7500).imageUrl("/images/menu/ikura.jpg")
@@ -179,7 +179,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(720, 22.0, 96.0, 20.0, 980, 5.0, 0.2, 180, 2.0))
                 .allergies(allergies(AllergyType.EGG, AllergyType.WHEAT, AllergyType.SOY, AllergyType.SQUID))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 날치알:러시아산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 날치알:러시아산").floor(1).restaurantName("솥앤누들").build());
 
         Menu mazeDon = menuRepository.save(Menu.builder()
                 .name("마제덮밥").price(8000).imageUrl("/images/menu/maze_don.jpg")
@@ -187,7 +187,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(750, 26.0, 90.0, 24.0, 860, 4.0, 0.2, 95, 3.0))
                 .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
                 .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:국내산").build());
+                .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:국내산").floor(1).restaurantName("솥앤누들").build());
 
         // 덮밥류 계란 추가 옵션
         for (Menu deopbap : new Menu[]{curryRice, katsudon, ikura, mazeDon}) {
@@ -204,7 +204,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(820, 32.0, 65.0, 38.0, 1050, 5.0, 0.3, 95, 4.0))
                 .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
                 .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 배추:국내산").build());
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 배추:국내산").floor(1).restaurantName("솥앤누들").build());
 
         Menu cheeseBuldak = menuRepository.save(Menu.builder()
                 .name("치즈불닭철판").price(9000).imageUrl("/images/menu/cheese_buldak.jpg")
@@ -212,7 +212,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(880, 36.0, 68.0, 35.0, 1300, 6.0, 0.4, 110, 3.0))
                 .allergies(allergies(AllergyType.CHICKEN, AllergyType.MILK, AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
                 .spicyLevel(5).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("닭고기:국내산, 치즈:뉴질랜드산").build());
+                .seasonRecommended(Season.ALL).originInfo("닭고기:국내산, 치즈:뉴질랜드산").floor(1).restaurantName("솥앤누들").build());
 
         Menu cheeseDonkatsu = menuRepository.save(Menu.builder()
                 .name("철판치즈돈가스").price(8000).imageUrl("/images/menu/cheese_donkatsu.jpg")
@@ -220,7 +220,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(850, 35.0, 72.0, 36.0, 980, 4.0, 0.4, 100, 2.5))
                 .allergies(allergies(AllergyType.PORK, AllergyType.MILK, AllergyType.WHEAT, AllergyType.EGG))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산").build());
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산").floor(1).restaurantName("솥앤누들").build());
 
         // 삼겹살김치철판 옵션
         MenuOptionGroup porkEggGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("계란 추가", false, 1, porkKimchiCheolpan));
@@ -261,7 +261,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(480, 18.0, 78.0, 6.0, 720, 10.0, 0.0, 20, 3.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG, AllergyType.BUCKWHEAT))
                 .spicyLevel(0).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산").build());
+                .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산").floor(1).restaurantName("솥앤누들").build());
 
         Menu shrimpUdon = menuRepository.save(Menu.builder()
                 .name("새우튀김우동").price(7500).imageUrl("/images/menu/shrimp_udon.jpg")
@@ -269,7 +269,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(620, 24.0, 82.0, 14.0, 980, 4.0, 0.2, 85, 2.5))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SHRIMP, AllergyType.EGG))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.WINTER).originInfo("새우:베트남산, 밀:미국산").build());
+                .seasonRecommended(Season.WINTER).originInfo("새우:베트남산, 밀:미국산").floor(1).restaurantName("솥앤누들").build());
 
         Menu fishcakeUdon = menuRepository.save(Menu.builder()
                 .name("어묵우동").price(6500).imageUrl("/images/menu/fishcake_udon.jpg")
@@ -277,7 +277,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(520, 20.0, 76.0, 8.0, 1100, 3.0, 0.1, 30, 2.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.WINTER).originInfo("어묵:국내산, 밀:미국산").build());
+                .seasonRecommended(Season.WINTER).originInfo("어묵:국내산, 밀:미국산").floor(1).restaurantName("솥앤누들").build());
 
         Menu bibimUdon = menuRepository.save(Menu.builder()
                 .name("비빔우동").price(7000).imageUrl("/images/menu/bibim_udon.jpg")
@@ -285,7 +285,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(550, 16.0, 88.0, 10.0, 860, 12.0, 0.1, 15, 3.5))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG))
                 .spicyLevel(1).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.SUMMER).originInfo("밀:미국산, 배추:국내산").build());
+                .seasonRecommended(Season.SUMMER).originInfo("밀:미국산, 배추:국내산").floor(1).restaurantName("솥앤누들").build());
 
         Menu seafoodJjambbong = menuRepository.save(Menu.builder()
                 .name("해물짬뽕우동").price(8000).imageUrl("/images/menu/seafood_jjambbong.jpg")
@@ -293,7 +293,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(580, 26.0, 72.0, 12.0, 1400, 4.0, 0.1, 95, 3.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SHRIMP, AllergyType.CRAB, AllergyType.SQUID, AllergyType.CLAM))
                 .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("새우:베트남산, 오징어:국내산, 조개:국내산").build());
+                .seasonRecommended(Season.ALL).originInfo("새우:베트남산, 오징어:국내산, 조개:국내산").floor(1).restaurantName("솥앤누들").build());
 
         // 우동/모밀 면 양 조절 옵션
         for (Menu udon : new Menu[]{naengmomil, shrimpUdon, fishcakeUdon, bibimUdon, seafoodJjambbong}) {
@@ -313,7 +313,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(480, 14.0, 68.0, 14.0, 1600, 2.0, 0.2, 185, 2.5))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.EGG))
                 .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGETARIAN)
-                .seasonRecommended(Season.ALL).originInfo("계란:국내산, 밀:미국산").build());
+                .seasonRecommended(Season.ALL).originInfo("계란:국내산, 밀:미국산").floor(1).restaurantName("솥앤누들").build());
 
         Menu cheeseRamen = menuRepository.save(Menu.builder()
                 .name("치즈라면").price(4500).imageUrl("/images/menu/cheese_ramen.jpg")
@@ -321,7 +321,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(540, 16.0, 70.0, 18.0, 1700, 3.0, 0.3, 195, 2.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.EGG, AllergyType.MILK))
                 .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.VEGETARIAN)
-                .seasonRecommended(Season.WINTER).originInfo("계란:국내산, 밀:미국산, 치즈:뉴질랜드산").build());
+                .seasonRecommended(Season.WINTER).originInfo("계란:국내산, 밀:미국산, 치즈:뉴질랜드산").floor(1).restaurantName("솥앤누들").build());
 
         Menu haejangramen = menuRepository.save(Menu.builder()
                 .name("해장라면").price(4500).imageUrl("/images/menu/haejang_ramen.jpg")
@@ -329,7 +329,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(460, 12.0, 66.0, 12.0, 1800, 2.0, 0.1, 30, 2.5))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.BEEF))
                 .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("밀:미국산, 쇠고기:호주산").build());
+                .seasonRecommended(Season.ALL).originInfo("밀:미국산, 쇠고기:호주산").floor(1).restaurantName("솥앤누들").build());
 
         // 라면 토핑 옵션
         for (Menu ramen : new Menu[]{eggRamen, cheeseRamen, haejangramen}) {
@@ -353,7 +353,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(1330, 53.0, 150.0, 42.0, 1700, 14.0, 0.4, 120, 5.5))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG, AllergyType.PORK, AllergyType.MILK))
                 .spicyLevel(0).temperatureType(TemperatureType.BOTH).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산, 돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산").build());
+                .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산, 돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산").floor(1).restaurantName("솥앤누들").build());
 
         Menu setNaengIkura = menuRepository.save(Menu.builder()
                 .name("냉모밀+알밥 세트").price(12500).imageUrl("/images/menu/set_naeng_ikura.jpg")
@@ -361,7 +361,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(1200, 40.0, 174.0, 26.0, 1700, 15.0, 0.1, 200, 5.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG, AllergyType.SQUID))
                 .spicyLevel(0).temperatureType(TemperatureType.BOTH).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산, 쌀:국내산, 날치알:러시아산").build());
+                .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산, 쌀:국내산, 날치알:러시아산").floor(1).restaurantName("솥앤누들").build());
 
         Menu setDonkatsuCurry = menuRepository.save(Menu.builder()
                 .name("돈가스+카레 세트").price(13500).imageUrl("/images/menu/set_donkatsu_curry.jpg")
@@ -369,7 +369,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(1530, 49.0, 180.0, 50.0, 1840, 12.0, 0.5, 120, 7.5))
                 .allergies(allergies(AllergyType.PORK, AllergyType.MILK, AllergyType.WHEAT, AllergyType.EGG, AllergyType.SOY))
                 .spicyLevel(1).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산, 쌀:국내산").build());
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산, 쌀:국내산").floor(1).restaurantName("솥앤누들").build());
 
         Menu setUdonKatsudon = menuRepository.save(Menu.builder()
                 .name("우동+가츠동 세트").price(13000).imageUrl("/images/menu/set_udon_katsudon.jpg")
@@ -377,7 +377,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(1440, 58.0, 170.0, 42.0, 1900, 10.0, 0.5, 195, 5.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SHRIMP, AllergyType.EGG, AllergyType.PORK, AllergyType.SOY))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.WINTER).originInfo("새우:베트남산, 밀:미국산, 쌀:국내산, 돼지고기:국내산").build());
+                .seasonRecommended(Season.WINTER).originInfo("새우:베트남산, 밀:미국산, 쌀:국내산, 돼지고기:국내산").floor(1).restaurantName("솥앤누들").build());
 
         // 돈가스+카레 세트만 국 선택 옵션
         MenuOptionGroup setSoupGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("국 선택", false, 1, setDonkatsuCurry));

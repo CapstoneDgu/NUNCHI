@@ -81,6 +81,12 @@ public class Menu extends BaseEntity {
     @Column(name = "origin_info", length = 500)
     private String originInfo;
 
+    @Column(name = "floor")
+    private Integer floor;
+
+    @Column(name = "restaurant_name", length = 100)
+    private String restaurantName;
+
     // 정적 팩토리 메서드
     public static Menu create(String name, Integer price, String imageUrl, MenuCategory category) {
         return Menu.builder()
