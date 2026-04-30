@@ -18,5 +18,7 @@ public record MenuFilterRequest(
         String excludeAllergies,  // "MILK,EGG,WHEAT" 형태로 전달
         Integer minPrice,
         Integer maxPrice,
+        String restaurantName,    // 식당명 필터 (null이면 전체, 지정 시 해당 식당 + 공용 메뉴 포함)
+        Integer floor,            // 층 필터 (null이면 전체, 지정 시 해당 층 + 공용 메뉴 포함)
         Integer limit             // 반환할 최대 메뉴 수 (null이면 제한 없음)
 ) {}

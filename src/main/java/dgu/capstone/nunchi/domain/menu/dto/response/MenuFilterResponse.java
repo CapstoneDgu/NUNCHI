@@ -22,6 +22,8 @@ public record MenuFilterResponse(
         Season seasonRecommended,
         Set<AllergyType> allergies,
         Boolean isSoldOut,
+        Integer floor,
+        String restaurantName,
         NutritionResponse nutrition
 ) {
 
@@ -65,6 +67,8 @@ public record MenuFilterResponse(
                 menu.getSeasonRecommended(),
                 new HashSet<>(menu.getAllergies()),
                 menu.getIsSoldOut(),
+                menu.getFloor(),
+                menu.getRestaurantName(),
                 NutritionResponse.from(menu.getNutrition())
         );
     }

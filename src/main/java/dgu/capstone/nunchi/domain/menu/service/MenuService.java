@@ -89,6 +89,8 @@ public class MenuService {
         if (req.categoryId() != null) spec = spec.and(MenuSpecification.categoryId(req.categoryId()));
         if (req.minPrice() != null) spec = spec.and(MenuSpecification.minPrice(req.minPrice()));
         if (req.maxPrice() != null) spec = spec.and(MenuSpecification.maxPrice(req.maxPrice()));
+        if (req.restaurantName() != null && !req.restaurantName().isBlank()) spec = spec.and(MenuSpecification.restaurantName(req.restaurantName()));
+        if (req.floor() != null) spec = spec.and(MenuSpecification.floor(req.floor()));
         if (req.excludeAllergies() != null && !req.excludeAllergies().isBlank()) {
             List<AllergyType> allergyList = Arrays.stream(req.excludeAllergies().split(","))
                     .map(String::trim)
