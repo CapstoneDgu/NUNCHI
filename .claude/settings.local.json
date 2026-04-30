@@ -12,7 +12,25 @@
       "Bash(./gradlew compileJava --stacktrace)",
       "Bash(./gradlew compileTestJava)",
       "Bash(./gradlew bootRun)",
-      "Bash(./gradlew bootRun --args='--spring.profiles.active=local')"
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=local')",
+      "Bash(ls build/resources/main/static/*.html)",
+      "Bash(ls *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(rm src/main/resources/static/front/css/base.css src/main/resources/static/front/css/components.css src/main/resources/static/front/css/order-mode.css src/main/resources/static/front/css/splash.css src/main/resources/static/front/css/variables.css src/main/resources/static/front/images/common/icons/ai-robot.svg src/main/resources/static/front/images/common/icons/arrow-back.svg src/main/resources/static/front/images/common/icons/card-cta.svg src/main/resources/static/front/images/common/icons/help.svg src/main/resources/static/front/images/common/icons/touch-tap.svg src/main/resources/static/front/images/common/icons/voice-mic.svg src/main/resources/static/front/images/common/splash-featured.jpg src/main/resources/templates_front/layouts/_help-button.html src/main/resources/templates_front/order-mode.html src/main/resources/templates_front/splash.html)",
+      "Bash(rm -f \"src/main/resources/static/front/images/common/dongguk-logo.ai\" \"src/main/resources/static/front/images/common/dongguk-logo.png\")",
+      "Bash(rm -rf src/main/resources/static/front/css src/main/resources/static/front/images src/main/resources/templates_front)",
+      "Bash(mkdir -p src/main/resources/static/front/css/flowN src/main/resources/static/front/css/flowA src/main/resources/static/front/css/flowP src/main/resources/static/front/js/flowN src/main/resources/static/front/js/flowA src/main/resources/static/front/js/flowP src/main/resources/static/front/images/avatars src/main/resources/static/front/images/categories src/main/resources/static/front/images/menu src/main/resources/static/front/images/icons src/main/resources/static/front/images/bg src/main/resources/static/front/images/logos src/main/resources/static/front/lib src/main/resources/templates_front/layouts src/main/resources/templates_front/flowN src/main/resources/templates_front/flowA src/main/resources/templates_front/flowP)",
+      "Bash(touch src/main/resources/static/front/css/.gitkeep src/main/resources/static/front/css/flowN/.gitkeep src/main/resources/static/front/css/flowA/.gitkeep src/main/resources/static/front/css/flowP/.gitkeep src/main/resources/static/front/js/flowN/.gitkeep src/main/resources/static/front/js/flowA/.gitkeep src/main/resources/static/front/js/flowP/.gitkeep src/main/resources/static/front/images/avatars/.gitkeep src/main/resources/static/front/images/categories/.gitkeep src/main/resources/static/front/images/menu/.gitkeep src/main/resources/static/front/images/icons/.gitkeep src/main/resources/static/front/images/bg/.gitkeep src/main/resources/static/front/images/logos/.gitkeep src/main/resources/static/front/lib/.gitkeep src/main/resources/templates_front/layouts/.gitkeep src/main/resources/templates_front/flowN/.gitkeep src/main/resources/templates_front/flowA/.gitkeep src/main/resources/templates_front/flowP/.gitkeep)",
+      "Bash(mv src/main/resources/static/front/images/logos/.gitkeep src/main/resources/static/front/images/logos/.gitkeep)",
+      "Bash(cp src/main/resources/static/front/fonts/.gitkeep_dummy)",
+      "Bash(curl -sSL -o src/main/resources/static/front/lib/xeicon.min.css \"https://cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css\")",
+      "Bash(git rm *)",
+      "Bash(grep *)",
+      "Bash(perl -i -0pe 's/if\\\\\\(\"undefined\"!=typeof window&&\\\\/\\\\^ru\\\\\\\\b\\\\/\\\\.test\\\\\\(navigator\\\\.language\\\\\\).*?localStorage\\\\.setItem\\\\\\(\"swal-initiation\",`\\\\$\\\\{e\\\\}`\\\\\\)\\\\}//s' src/main/resources/static/front/lib/swal2/swal.js)",
+      "Bash(perl -i -0pe 's/if\\\\\\(\"undefined\"!=typeof window&&\\\\/\\\\^ru\\\\\\\\b\\\\/\\\\.test\\\\\\(navigator\\\\.language\\\\\\).*?localStorage\\\\.setItem\\\\\\(\"swal-initiation\",`\\\\$\\\\{e\\\\}`\\\\\\)\\\\}//s' ./src/main/resources/static/front/lib/swal2/swal.js)",
+      "Bash(python3 *)",
+      "Bash(node *)"
     ]
   }
 }
