@@ -18,7 +18,12 @@ public enum OrderErrorCode implements ErrorCode {
      * 404 NOT_FOUND
      */
     NOT_FOUND_ORDER(HttpStatus.NOT_FOUND, 404, "존재하지 않는 주문입니다."),
-    NOT_FOUND_ORDER_ITEM(HttpStatus.NOT_FOUND, 404, "존재하지 않는 주문 항목입니다.");
+    NOT_FOUND_ORDER_ITEM(HttpStatus.NOT_FOUND, 404, "존재하지 않는 주문 항목입니다."),
+
+    /**
+     * 500 INTERNAL_SERVER_ERROR
+     */
+    CART_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "장바구니 저장에 실패했습니다.");
 
     private final HttpStatus status;
     private final int code;

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=720, initial-scale=1.0, user-scalable=no">
+    <title>결제 수단 선택 · 눈치 키오스크</title>
+
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/flowP/P02-payment.css">
+</head>
+<body>
+<div class="page-bg">
+
+    <!-- 상단바 -->
+    <header class="p-topbar">
+        <button type="button" class="p-topbar__back" data-action="back" aria-label="뒤로가기">
+            <i class="xi-angle-left-thin" aria-hidden="true"></i>
+        </button>
+        <div class="p-topbar__titles">
+            <span class="p-topbar__eyebrow" data-bind="storeName">상록원</span>
+            <h1 class="p-topbar__title">결제 수단 선택</h1>
+        </div>
+    </header>
+
+    <!-- 3-step 진행 표시 -->
+    <ol class="step-indicator" aria-label="결제 단계" style="--steps: 3;">
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true">
+                <i class="xi-check-min"></i>
+            </span>
+            <span class="step-indicator__label">주문 확인</span>
+        </li>
+        <li class="step-indicator__item" data-state="active">
+            <span class="step-indicator__dot" aria-hidden="true">2</span>
+            <span class="step-indicator__label">결제 수단</span>
+        </li>
+        <li class="step-indicator__item" data-state="pending">
+            <span class="step-indicator__dot" aria-hidden="true">3</span>
+            <span class="step-indicator__label">결제</span>
+        </li>
+    </ol>
+
+    <!-- 본문 -->
+    <section class="p02" aria-label="결제 수단 선택">
+
+        <!-- 결제 금액 요약 카드 -->
+        <div class="p02__amount-card">
+            <div class="p02__amount-row">
+                <span class="p02__amount-label">총 결제 금액</span>
+                <span class="p02__amount-count" data-bind="count">0개</span>
+            </div>
+            <strong class="p02__amount-price" data-bind="total">₩0</strong>
+        </div>
+
+        <!-- 섹션 안내 -->
+        <h2 class="p02__heading">결제 수단을 선택해주세요</h2>
+        <p class="p02__subheading">원하시는 결제 방법으로 진행할 수 있습니다</p>
+
+        <!-- 결제 수단 그리드 -->
+        <div class="p02__methods" role="radiogroup" aria-label="결제 수단">
+
+            <!-- IC카드 -->
+            <button type="button"
+                    class="method-card p02__method"
+                    role="radio"
+                    aria-pressed="false"
+                    aria-checked="false"
+                    data-method="ic">
+                <span class="method-card__icon" aria-hidden="true">
+                    <i class="xi-credit-card"></i>
+                </span>
+                <span class="method-card__title">IC카드</span>
+                <span class="method-card__desc">신용·체크카드를<br>투입구에 넣어주세요</span>
+                <span class="method-card__check" aria-hidden="true">
+                    <i class="xi-check-min"></i>
+                </span>
+            </button>
+
+            <!-- 정맥인증 -->
+            <button type="button"
+                    class="method-card p02__method"
+                    role="radio"
+                    aria-pressed="false"
+                    aria-checked="false"
+                    data-method="vein"
+                    style="--tint: var(--primary-600);">
+                <span class="method-card__icon p02__method-icon--vein" aria-hidden="true">
+                    <!-- 손바닥 정맥인증 아이콘 (커스텀 SVG)
+                         - 손가락 4개 + 엄지 실루엣
+                         - 내부 2줄의 정맥 라인(곡선) 으로 "정맥" 은유
+                         - stroke="currentColor" : method-card 의 color(tint) 를 상속
+                    -->
+                    <svg viewBox="0 0 48 48" width="40" height="40"
+                         fill="none" stroke="currentColor"
+                         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 22V11a2.5 2.5 0 0 1 5 0v11"/>
+                        <path d="M23 22V9a2.5 2.5 0 0 1 5 0v13"/>
+                        <path d="M28 22V10a2.5 2.5 0 0 1 5 0v12"/>
+                        <path d="M33 22v-4a2.5 2.5 0 0 1 5 0v16.5C38 39.5 34 43.5 28.5 43.5h-4c-2.6 0-5-1-6.7-2.9l-6.2-7c-1.3-1.5-1-3.3.5-4.2 1.5-.8 3.2-.3 4.2.9L18 32"/>
+                        <path d="M20 32c2 1.6 5.5 1.6 8 0" opacity=".6"/>
+                        <path d="M22 36.5c1.6 1 3.4 1 5 0" opacity=".45"/>
+                    </svg>
+                </span>
+                <span class="method-card__title">정맥인증</span>
+                <span class="method-card__desc">등록된 손바닥 정맥으로<br>간편하게 결제합니다</span>
+                <span class="method-card__check" aria-hidden="true">
+                    <i class="xi-check-min"></i>
+                </span>
+            </button>
+
+        </div>
+
+        <!-- 힌트 영역 -->
+        <div class="p02__hint" data-bind="hint">
+            <i class="xi-info-o" aria-hidden="true"></i>
+            <span>결제 수단을 선택하면 다음 단계로 진행할 수 있어요</span>
+        </div>
+
+    </section>
+
+    <!-- 하단 CTA -->
+    <footer class="p02__cta-wrap">
+        <button type="button"
+                class="btn-cta btn-cta--primary btn-cta--lg btn-cta--block p02__cta"
+                data-action="next"
+                disabled>
+            결제 수단 선택 →
+        </button>
+    </footer>
+</div>
+
+<script src="/js/flowP/P02-payment.js" defer></script>
+</body>
+</html>

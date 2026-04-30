@@ -1,0 +1,341 @@
+/* ========================================================
+   P05-complete.css — 주문 완료 (결제 성공 후 대기번호 화면)
+   공통 토큰 + .p-topbar / .step-indicator / .btn-cta 재사용
+   ======================================================== */
+
+/* ===========================
+   상단바 (완료 단계 전용: 뒤로가기 대신 X)
+   =========================== */
+.p05__topbar {
+    justify-content: space-between;
+}
+.p05__topbar-spacer {
+    width: 44px;
+    height: 44px;
+}
+.p05__topbar-close {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--neutral-100);
+    color: var(--color-text-heading);
+    font-size: 18px;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+}
+.p05__topbar-close:active {
+    background-color: var(--neutral-200);
+    transform: scale(0.95);
+}
+
+/* ===========================
+   본문
+   =========================== */
+.p05 {
+    position: relative;
+    padding: 8px var(--pad-side) 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+}
+
+/* ===========================
+   성공 hero (체크 + 링 + 컨페티)
+   =========================== */
+.p05__hero {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.p05__hero-ring {
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    border: 2px solid var(--semantic-success, #16A34A);
+    opacity: 0.18;
+    animation: p05-ring-pulse 2s var(--ease-out) infinite;
+}
+
+.p05__hero-circle {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg,
+        var(--semantic-success, #16A34A) 0%,
+        #0F8A45 100%);
+    color: var(--color-text-inverse);
+    font-size: 78px;
+    font-weight: 800;
+    box-shadow: 0 16px 40px rgba(22, 163, 74, 0.35);
+    animation: p05-check-pop 0.6s var(--ease-bounce) 1;
+}
+
+/* ---- 컨페티 닷 ---- */
+.p05__confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    opacity: 0;
+    animation: p05-confetti 1.4s var(--ease-out) 0.2s forwards;
+}
+.p05__confetti--1 { top: 20%;  left: 26%;  background: var(--primary-500); animation-delay: 0.20s; }
+.p05__confetti--2 { top: 12%;  left: 58%;  background: var(--semantic-success, #16A34A); animation-delay: 0.30s; }
+.p05__confetti--3 { top: 30%;  left: 78%;  background: var(--primary-400); animation-delay: 0.40s; width: 8px; height: 8px; border-radius: 50%; }
+.p05__confetti--4 { top: 68%;  left: 18%;  background: #FFC048;                             animation-delay: 0.25s; width: 6px; height: 6px; border-radius: 50%; }
+.p05__confetti--5 { top: 74%;  left: 70%;  background: var(--primary-600);                  animation-delay: 0.45s; width: 12px; height: 12px; }
+.p05__confetti--6 { top: 56%;  left: 86%;  background: var(--semantic-success, #16A34A);    animation-delay: 0.55s; width: 8px; height: 8px; border-radius: 50%; }
+
+/* ===========================
+   대기번호 카드
+   =========================== */
+.p05__order-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 22px 20px 20px;
+    background: linear-gradient(180deg, var(--primary-50) 0%, var(--neutral-0) 100%);
+    border: 2px solid var(--primary-200);
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.p05__order-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-700);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.p05__order-number {
+    font-size: 72px;
+    font-weight: 800;
+    color: var(--primary-600);
+    letter-spacing: -2px;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 0 rgba(232, 96, 10, 0.08);
+}
+
+.p05__order-store {
+    margin-top: 4px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-inverse);
+    background-color: var(--primary-500);
+    border-radius: 999px;
+}
+
+.p05__order-hint {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* ===========================
+   주문 요약 카드
+   =========================== */
+.p05__summary {
+    padding: 14px 18px;
+    background-color: var(--color-bg-card);
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border-default);
+}
+
+.p05__summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--color-border-default);
+}
+.p05__summary-row:last-child {
+    border-bottom: none;
+}
+
+.p05__summary-key {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.p05__summary-val {
+    font-size: 14px;
+    color: var(--color-text-heading);
+    font-weight: 600;
+    text-align: right;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.p05__summary-row--total {
+    padding-top: 14px;
+    margin-top: 4px;
+    border-top: 1px solid var(--color-border-default);
+    border-bottom: none;
+}
+.p05__summary-row--total .p05__summary-key {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text-heading);
+}
+.p05__summary-val--price {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--color-text-price);
+    letter-spacing: -0.3px;
+}
+
+/* ===========================
+   영수증 출력 안내
+   =========================== */
+.p05__receipt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: var(--primary-50);
+    border-radius: 12px;
+    border: 1px dashed var(--primary-200);
+}
+.p05__receipt > i {
+    font-size: 22px;
+    color: var(--primary-600);
+    flex-shrink: 0;
+    animation: p05-print-wiggle 1.2s ease-in-out infinite;
+}
+.p05__receipt-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+.p05__receipt-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-700);
+}
+.p05__receipt-progress {
+    display: block;
+    height: 4px;
+    border-radius: 999px;
+    background-color: var(--primary-100);
+    overflow: hidden;
+}
+.p05__receipt-progress-bar {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary-400), var(--primary-600));
+    border-radius: inherit;
+    animation: p05-receipt-fill 3s ease-out forwards;
+}
+.p05__receipt--done > i { animation: none; }
+.p05__receipt--done .p05__receipt-title::after {
+    content: ' · 완료';
+    color: var(--semantic-success, #16A34A);
+}
+
+/* ===========================
+   하단 CTA
+   =========================== */
+.p05__cta-wrap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px var(--pad-side) var(--pad-footer);
+    background: linear-gradient(to top,
+        var(--color-bg-page) 72%,
+        rgba(250, 248, 246, 0) 100%);
+}
+
+.p05__autoreset {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: 8px 0 12px;
+}
+.p05__autoreset span {
+    font-weight: 700;
+    color: var(--primary-600);
+    font-variant-numeric: tabular-nums;
+}
+
+.p05__cta {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.p05__cta i {
+    font-size: 18px;
+}
+
+/* ===========================
+   keyframes
+   =========================== */
+@keyframes p05-ring-pulse {
+    0%   { transform: scale(0.85); opacity: 0.28; }
+    70%  { transform: scale(1.25); opacity: 0;    }
+    100% { transform: scale(1.3);  opacity: 0;    }
+}
+
+@keyframes p05-check-pop {
+    0%   { transform: scale(0.2);  opacity: 0; }
+    60%  { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }
+}
+
+@keyframes p05-confetti {
+    0%   { transform: translateY(8px)  scale(0.2) rotate(0deg);    opacity: 0;   }
+    40%  { opacity: 1; }
+    100% { transform: translateY(-40px) scale(1)   rotate(240deg);  opacity: 0;   }
+}
+
+@keyframes p05-print-wiggle {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-2px); }
+}
+
+@keyframes p05-receipt-fill {
+    from { width: 0%;  }
+    to   { width: 100%; }
+}
+
+/* 접근성 */
+@media (prefers-reduced-motion: reduce) {
+    .p05__hero-ring,
+    .p05__hero-circle,
+    .p05__confetti,
+    .p05__receipt > i,
+    .p05__receipt-progress-bar {
+        animation: none !important;
+    }
+    .p05__confetti { opacity: 0; }
+    .p05__receipt-progress-bar { width: 100%; }
+}

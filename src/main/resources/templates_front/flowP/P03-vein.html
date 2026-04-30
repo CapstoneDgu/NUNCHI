@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=720, initial-scale=1.0, user-scalable=no">
+    <title>정맥 인증 · 눈치 키오스크</title>
+
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/flowP/P03-vein.css">
+</head>
+<body>
+<div class="page-bg">
+
+    <!-- 상단바 -->
+    <header class="p-topbar">
+        <button type="button" class="p-topbar__back" data-action="back" aria-label="뒤로가기">
+            <i class="xi-angle-left-thin" aria-hidden="true"></i>
+        </button>
+        <div class="p-topbar__titles">
+            <span class="p-topbar__eyebrow" data-bind="storeName">상록원</span>
+            <h1 class="p-topbar__title">정맥 인증</h1>
+        </div>
+    </header>
+
+    <!-- 3-step 진행 표시 -->
+    <ol class="step-indicator" aria-label="결제 단계" style="--steps: 3;">
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">주문 확인</span>
+        </li>
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">결제 수단</span>
+        </li>
+        <li class="step-indicator__item" data-state="active">
+            <span class="step-indicator__dot" aria-hidden="true">3</span>
+            <span class="step-indicator__label">결제</span>
+        </li>
+    </ol>
+
+    <!-- 본문 : data-state 로 4상태 전환 -->
+    <section class="p03" data-state="prepare" aria-live="polite">
+
+        <!-- 스캐너 비주얼 -->
+        <div class="p03__scanner" aria-hidden="true">
+
+            <!-- 바깥 펄스 링 (prepare/scanning 에서 애니메이션) -->
+            <span class="p03__pulse p03__pulse--1"></span>
+            <span class="p03__pulse p03__pulse--2"></span>
+            <span class="p03__pulse p03__pulse--3"></span>
+
+            <!-- 원형 스캐너 프레임 -->
+            <div class="p03__frame">
+
+                <!-- 손바닥 SVG (정맥 라인 포함) -->
+                <svg class="p03__palm" viewBox="0 0 200 200"
+                     fill="none" stroke="currentColor"
+                     stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- 손가락 4개 + 엄지 + 손바닥 아웃라인 -->
+                    <path d="M72 92V44a11 11 0 0 1 22 0v48"/>
+                    <path d="M94 92V36a11 11 0 0 1 22 0v56"/>
+                    <path d="M116 92V42a11 11 0 0 1 22 0v50"/>
+                    <path d="M138 92V74a11 11 0 0 1 22 0v72c0 24-18 42-42 42h-18c-11 0-21-4-29-12l-28-30c-5-6-4-14 2-18 6-4 14-2 18 3l9 9"/>
+                    <!-- 정맥 라인 (곡선 3개) -->
+                    <path class="p03__vein p03__vein--1" d="M82 130c10 7 28 7 38 0"/>
+                    <path class="p03__vein p03__vein--2" d="M92 150c7 4 16 4 23 0"/>
+                    <path class="p03__vein p03__vein--3" d="M98 168c5 2.5 10 2.5 15 0"/>
+                </svg>
+
+                <!-- 스캔 라인 (scanning 상태일 때만 표시·왕복) -->
+                <span class="p03__scanline" aria-hidden="true"></span>
+
+                <!-- 상태 오버레이 아이콘 (success / fail) -->
+                <span class="p03__status-icon p03__status-icon--success" aria-hidden="true">
+                    <i class="xi-check"></i>
+                </span>
+                <span class="p03__status-icon p03__status-icon--fail" aria-hidden="true">
+                    <i class="xi-close"></i>
+                </span>
+            </div>
+        </div>
+
+        <!-- 상태 텍스트 -->
+        <div class="p03__text">
+            <h2 class="p03__title" data-bind="title">손바닥을 올려주세요</h2>
+            <p class="p03__desc" data-bind="desc">센서 위 15cm 높이에 손바닥을 펴서 올려주세요</p>
+
+            <!-- 진행 프로그레스 (scanning 에서만 표시) -->
+            <div class="p03__progress" role="progressbar"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <span class="p03__progress-bar" data-bind="progressBar"></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 하단 액션 영역 : 상태별 버튼 -->
+    <footer class="p03__cta-wrap">
+
+        <!-- prepare / scanning : 취소 (결제 수단 변경) -->
+        <button type="button"
+                class="btn-cta btn-cta--secondary btn-cta--lg btn-cta--block p03__cta p03__cta--cancel"
+                data-action="cancel">
+            다른 결제 수단으로 변경
+        </button>
+
+        <!-- fail : 다시 시도 / 결제 수단 변경 -->
+        <div class="p03__cta-row p03__cta--fail-actions">
+            <button type="button"
+                    class="btn-cta btn-cta--secondary btn-cta--lg p03__cta-ghost"
+                    data-action="switch">
+                다른 결제 수단
+            </button>
+            <button type="button"
+                    class="btn-cta btn-cta--primary btn-cta--lg p03__cta-primary"
+                    data-action="retry">
+                다시 시도 →
+            </button>
+        </div>
+
+        <!-- success : 자동 이동 안내 -->
+        <p class="p03__cta--success-hint" aria-live="polite">
+            잠시 후 주문 완료 화면으로 이동합니다…
+        </p>
+    </footer>
+</div>
+
+<script src="/js/flowP/P03-vein.js" defer></script>
+</body>
+</html>

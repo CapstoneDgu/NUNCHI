@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=720, initial-scale=1.0, user-scalable=no">
+    <title>결제 실패 · 눈치 키오스크</title>
+
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/flowP/P06-fail.css">
+</head>
+<body>
+<div class="page-bg">
+
+    <!-- 상단바 -->
+    <header class="p-topbar">
+        <button type="button" class="p-topbar__back" data-action="back" aria-label="뒤로가기">
+            <i class="xi-angle-left-thin" aria-hidden="true"></i>
+        </button>
+        <div class="p-topbar__titles">
+            <span class="p-topbar__eyebrow" data-bind="storeName">상록원</span>
+            <h1 class="p-topbar__title">결제 실패</h1>
+        </div>
+    </header>
+
+    <!-- 3-step : 3단계 error -->
+    <ol class="step-indicator" aria-label="결제 단계" style="--steps: 3;">
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">주문 확인</span>
+        </li>
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">결제 수단</span>
+        </li>
+        <li class="step-indicator__item p06__step-error" data-state="active">
+            <span class="step-indicator__dot" aria-hidden="true">
+                <i class="xi-close"></i>
+            </span>
+            <span class="step-indicator__label">결제 실패</span>
+        </li>
+    </ol>
+
+    <!-- 본문 -->
+    <section class="p06" aria-live="polite">
+
+        <!-- 경고 비주얼 -->
+        <div class="p06__hero" aria-hidden="true">
+            <div class="p06__hero-ring"></div>
+            <div class="p06__hero-circle">
+                <i class="xi-close"></i>
+            </div>
+        </div>
+
+        <!-- 사유 카드 -->
+        <div class="p06__reason-card">
+            <span class="p06__reason-pill" data-bind="reasonPill">ERROR</span>
+            <h2 class="p06__reason-title" data-bind="title">결제에 실패했어요</h2>
+            <p class="p06__reason-desc" data-bind="desc">
+                잠시 후 다시 시도하거나 다른 결제 수단을 선택해주세요
+            </p>
+        </div>
+
+        <!-- 도움말 섹션 -->
+        <div class="p06__help">
+            <span class="p06__help-title">
+                <i class="xi-info-o" aria-hidden="true"></i>
+                이런 점을 확인해보세요
+            </span>
+            <ul class="p06__help-list" data-bind="helpList">
+                <!-- JS 로 렌더 -->
+            </ul>
+        </div>
+
+        <!-- 결제 금액 참고 (항상 노출) -->
+        <div class="p06__amount">
+            <span class="p06__amount-key">결제 금액</span>
+            <span class="p06__amount-val" data-bind="total">₩0</span>
+        </div>
+    </section>
+
+    <!-- 하단 CTA -->
+    <footer class="p06__cta-wrap">
+        <div class="p06__cta-row" data-bind="ctaRow">
+            <button type="button"
+                    class="btn-cta btn-cta--secondary btn-cta--lg p06__cta-ghost"
+                    data-action="switch">
+                다른 결제 수단
+            </button>
+            <button type="button"
+                    class="btn-cta btn-cta--primary btn-cta--lg p06__cta-primary"
+                    data-action="retry">
+                다시 시도 →
+            </button>
+        </div>
+
+        <button type="button"
+                class="p06__home-link"
+                data-action="home">
+            주문 취소하고 처음으로 돌아가기
+        </button>
+    </footer>
+</div>
+
+<script src="/js/flowP/P06-fail.js" defer></script>
+</body>
+</html>

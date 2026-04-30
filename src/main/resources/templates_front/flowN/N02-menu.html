@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=720, initial-scale=1" />
+    <title>메뉴 선택 · 눈치 키오스크</title>
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/flowN/N02-menu.css">
+</head>
+<body>
+<main class="page-bg n02">
+
+    <!-- ========================================================
+         ① 상단바 — 좌(뒤로 + 매장/식당명) · 우(대화기록 + 마이크)
+         ======================================================== -->
+    <header class="app-topbar fade-up" style="--delay: 0ms;">
+        <div class="app-topbar__left">
+            <button class="app-topbar__back" type="button"
+                    aria-label="뒤로 가기"
+                    onclick="location.href='/S02-dine.html'">
+                <i class="xi xi-angle-left-thin" aria-hidden="true"></i>
+            </button>
+            <div class="app-topbar__store">
+                <span class="app-topbar__store-sub" data-bind="brand">상록원</span>
+                <span class="app-topbar__store-name" data-bind="storeName">솥앤누들</span>
+            </div>
+        </div>
+        <div class="app-topbar__right">
+            <button class="app-topbar__action-pill" type="button"
+                    data-action="open-chat"
+                    aria-label="AI 대화 기록 열기">
+                <i class="xi xi-message" aria-hidden="true"></i>
+                <span>대화 기록</span>
+            </button>
+            <button class="app-topbar__action-icon" type="button"
+                    data-action="toggle-mic"
+                    aria-label="마이크 토글">
+                <i class="xi xi-microphone" aria-hidden="true"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ========================================================
+         ② 층 탭 — 1층 / 2층 / 3층
+         ======================================================== -->
+    <nav class="n02__floor-tabs fade-up" style="--delay: 80ms;"
+         aria-label="층 선택">
+        <div class="pill-tab-group" data-floor-tabs>
+            <!-- JS 가 동적으로 채움 -->
+        </div>
+    </nav>
+
+    <!-- ========================================================
+         ③ 본문 — 사이드바(식당) + 메뉴 그리드
+         ======================================================== -->
+    <section class="n02__body fade-up" style="--delay: 160ms;">
+        <!-- 좌측: 식당 리스트 -->
+        <aside class="n02__store-list" data-store-list aria-label="식당 목록">
+            <!-- JS 동적 -->
+        </aside>
+
+        <!-- 우측: 메뉴 그리드 -->
+        <div class="n02__menu-area">
+            <ul class="n02__menu-grid" data-menu-grid>
+                <!-- JS 동적 -->
+            </ul>
+            <!-- 빈 상태 (메뉴 없을 때) -->
+            <div class="n02__menu-empty" data-menu-empty hidden>
+                <i class="xi xi-glass" aria-hidden="true"></i>
+                <p>아직 등록된 메뉴가 없어요</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================
+         ④ 하단 카트 바 — 빈 상태 / 채워진 상태 토글
+         ======================================================== -->
+    <section class="n02__cart-bar n02__cart-bar--empty"
+             data-cart-bar
+             aria-label="장바구니">
+        <!-- 빈 상태 -->
+        <div class="n02__cart-empty" data-cart-empty>
+            <div class="n02__cart-empty-head">
+                <i class="xi xi-cart" aria-hidden="true"></i>
+                <span>카트</span>
+            </div>
+            <p class="n02__cart-empty-msg">메뉴를 담으면 여기에 표시됩니다</p>
+            <button class="btn-cta btn-cta--primary btn-cta--block n02__cart-pay-btn"
+                    type="button" disabled>
+                결제하기
+            </button>
+        </div>
+
+        <!-- 채워진 상태 -->
+        <div class="n02__cart-filled" data-cart-filled hidden>
+            <div class="n02__cart-filled-head">
+                <div class="n02__cart-filled-head-left">
+                    <i class="xi xi-cart" aria-hidden="true"></i>
+                    <span>카트</span>
+                    <span class="n02__cart-filled-count" data-cart-count>0</span>
+                </div>
+                <div class="n02__cart-filled-head-right">
+                    <span class="n02__cart-total-label">총 주문금액</span>
+                    <span class="n02__cart-total-value" data-cart-total>₩ 0</span>
+                </div>
+            </div>
+
+            <div class="n02__cart-track-wrap">
+                <button class="n02__cart-arrow n02__cart-arrow--prev"
+                        type="button"
+                        data-cart-arrow="prev"
+                        aria-label="이전 카트 항목"
+                        hidden>
+                    <i class="xi xi-angle-left-thin" aria-hidden="true"></i>
+                </button>
+                <ul class="n02__cart-track" data-cart-track>
+                    <!-- JS 동적 -->
+                </ul>
+                <button class="n02__cart-arrow n02__cart-arrow--next"
+                        type="button"
+                        data-cart-arrow="next"
+                        aria-label="다음 카트 항목"
+                        hidden>
+                    <i class="xi xi-angle-right-thin" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <button class="btn-cta btn-cta--primary btn-cta--block n02__cart-pay-btn"
+                    type="button"
+                    data-action="checkout">
+                <i class="xi xi-cart" aria-hidden="true"></i>
+                <span>결제하기</span>
+                <span class="n02__cart-pay-amount" data-cart-pay-amount>· ₩ 0</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- ========================================================
+         ⑤ 메뉴 상세 풀스크린 오버레이
+         ======================================================== -->
+    <div class="n02__detail" data-detail hidden aria-hidden="true">
+        <article class="n02__detail-panel">
+            <!-- 히어로 (사진 placeholder + 메뉴명/가격 + X) -->
+            <div class="n02__detail-hero" data-detail-hero>
+                <div class="n02__detail-hero-overlay"></div>
+                <button class="n02__detail-close"
+                        type="button"
+                        data-action="close-detail"
+                        aria-label="닫기">
+                    <i class="xi xi-close-thin" aria-hidden="true"></i>
+                </button>
+                <div class="n02__detail-hero-meta">
+                    <span class="n02__detail-name" data-detail-name></span>
+                    <span class="n02__detail-price" data-detail-price></span>
+                </div>
+            </div>
+
+            <!-- 본문 (스크롤) -->
+            <div class="n02__detail-body" data-detail-body>
+                <p class="n02__detail-desc" data-detail-desc></p>
+
+                <section class="n02__detail-section">
+                    <h3 class="n02__detail-section-title">
+                        <i class="xi xi-restaurant" aria-hidden="true"></i>
+                        메뉴 구성
+                    </h3>
+                    <div class="n02__detail-chips" data-detail-components></div>
+                </section>
+
+                <section class="n02__detail-section">
+                    <h3 class="n02__detail-section-title">
+                        <i class="xi xi-list" aria-hidden="true"></i>
+                        원재료 및 원산지
+                    </h3>
+                    <ul class="n02__detail-ingredients" data-detail-ingredients></ul>
+                </section>
+
+                <section class="n02__detail-section">
+                    <h3 class="n02__detail-section-title">
+                        <i class="xi xi-heart" aria-hidden="true"></i>
+                        영양정보 <span class="n02__detail-section-sub">(1인분 기준)</span>
+                    </h3>
+                    <div class="n02__detail-nutrition">
+                        <div class="n02__detail-nutrition-cell n02__detail-nutrition-cell--kcal">
+                            <span class="n02__detail-nutrition-value" data-detail-nut-kcal>0</span>
+                            <span class="n02__detail-nutrition-unit">kcal</span>
+                            <span class="n02__detail-nutrition-label">열량</span>
+                        </div>
+                        <div class="n02__detail-nutrition-cell">
+                            <span class="n02__detail-nutrition-value" data-detail-nut-protein>0</span>
+                            <span class="n02__detail-nutrition-unit">g</span>
+                            <span class="n02__detail-nutrition-label">단백질</span>
+                        </div>
+                        <div class="n02__detail-nutrition-cell">
+                            <span class="n02__detail-nutrition-value" data-detail-nut-carb>0</span>
+                            <span class="n02__detail-nutrition-unit">g</span>
+                            <span class="n02__detail-nutrition-label">탄수화물</span>
+                        </div>
+                        <div class="n02__detail-nutrition-cell">
+                            <span class="n02__detail-nutrition-value" data-detail-nut-fat>0</span>
+                            <span class="n02__detail-nutrition-unit">g</span>
+                            <span class="n02__detail-nutrition-label">지방</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 하단 CTA -->
+            <div class="n02__detail-cta-wrap">
+                <button class="btn-cta btn-cta--primary btn-cta--block btn-cta--lg n02__detail-cta"
+                        type="button"
+                        data-action="add-from-detail">
+                    <i class="xi xi-cart" aria-hidden="true"></i>
+                    <span>장바구니에 담기</span>
+                    <span class="n02__detail-cta-price" data-detail-cta-price>· ₩ 0</span>
+                </button>
+            </div>
+        </article>
+    </div>
+
+    <!-- ========================================================
+         ⑥ AI 대화 기록 패널 (우측 슬라이드)
+         ======================================================== -->
+    <div class="ai-chat-dim" data-chat-dim aria-hidden="true"></div>
+    <aside class="ai-chat-panel" data-chat-panel aria-hidden="true" aria-label="AI 대화 기록">
+        <div class="ai-chat-panel__header">
+            <div class="ai-chat-panel__header-info">
+                <span class="ai-chat-panel__title">
+                    <i class="xi xi-message" aria-hidden="true"></i>
+                    AI 대화 기록
+                </span>
+                <span class="ai-chat-panel__session">
+                    세션 ID: <span data-chat-session>—</span>
+                </span>
+            </div>
+            <button class="ai-chat-panel__close"
+                    type="button"
+                    data-action="close-chat"
+                    aria-label="대화 기록 닫기">
+                <i class="xi xi-close-thin" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <!--
+            ⚠️ 이 영역의 카피("청취/마이크/LIVE")는 현재 데모용 시뮬레이션 표기입니다.
+            실제 마이크 캡처 / STT 연동 시 다음을 별도 이슈로 함께 처리해야 합니다:
+              · 녹음 시작/종료 토글 가시화 (data-action="toggle-mic" 의 실제 권한·상태 표기)
+              · 음성 데이터 보관 정책(세션 단위 폐기, 서버 전송 여부) 안내 문구
+              · 일시중지 / 마이크 OFF 옵션 노출
+        -->
+        <div class="ai-chat-panel__status">
+            <div class="ai-chat-panel__status-text">
+                <strong>📝 데모: AI 음성 시뮬레이션</strong>
+                <span>실 마이크 미연동 · 화면 시연용 표기입니다</span>
+            </div>
+            <span class="ai-chat-panel__live">DEMO</span>
+        </div>
+
+        <p class="ai-chat-panel__memory-note">대화 기록 · 세션 단위 메모리 (브라우저 세션 종료 시 폐기)</p>
+
+        <div class="ai-chat-panel__messages" data-chat-messages>
+            <!-- JS 동적 -->
+        </div>
+
+        <div class="ai-chat-panel__footer">
+            <button class="ai-chat-panel__footer-btn ai-chat-panel__footer-btn--save"
+                    type="button"
+                    data-action="export-chat">
+                <i class="xi xi-download" aria-hidden="true"></i>
+                <span>JSON 저장</span>
+            </button>
+            <button class="ai-chat-panel__footer-btn ai-chat-panel__footer-btn--reset"
+                    type="button"
+                    data-action="reset-chat">
+                <i class="xi xi-trash" aria-hidden="true"></i>
+                <span>세션 초기화</span>
+            </button>
+        </div>
+    </aside>
+
+</main>
+
+<script src="/lib/jquery-3.7.0.min.js"></script>
+<script src="/js/flowN/menu-data.js"></script>
+<script src="/js/flowN/N02-menu.js"></script>
+</body>
+</html>

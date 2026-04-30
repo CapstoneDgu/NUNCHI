@@ -1,0 +1,398 @@
+/* ========================================================
+   P04-processing.css — 카드 결제 처리 (Step 3/3 · 3상태)
+   states: inserting / processing / approved
+   실패 → /flowP/P06-fail.html (페이지 이동)
+   ======================================================== */
+
+.p04 {
+    position: relative;
+    padding: 16px var(--pad-side) 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+/* ===========================
+   1) 결제 금액 요약
+   =========================== */
+.p04__amount {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    background-color: var(--neutral-0);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.p04__amount-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.p04__amount-price {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--color-text-price);
+    letter-spacing: -0.4px;
+}
+
+/* ===========================
+   2) 카드 슬롯 비주얼
+   =========================== */
+.p04__visual {
+    position: relative;
+    width: 320px;
+    height: 360px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+
+/* ---- 유도 화살표 (inserting 상태만) ---- */
+.p04__arrows {
+    position: absolute;
+    top: 12px;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: var(--primary-500);
+    font-size: 32px;
+    line-height: 0.8;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-base) var(--ease-out);
+}
+.p04__arrows i:nth-child(1) { animation: p04-arrow-bob 1.2s ease-in-out infinite; }
+.p04__arrows i:nth-child(2) { animation: p04-arrow-bob 1.2s ease-in-out 0.2s infinite; }
+
+/* ---- 카드 ---- */
+.p04__card {
+    position: absolute;
+    left: 50%;
+    top: 68px;
+    width: 220px;
+    height: 138px;
+    transform: translateX(-50%);
+    border-radius: 14px;
+    background: linear-gradient(135deg, #2D2A27 0%, #4A4540 50%, #2D2A27 100%);
+    color: var(--color-text-inverse);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    transition: transform var(--duration-slow) var(--ease-out),
+                top var(--duration-slow) var(--ease-out),
+                opacity var(--duration-base) var(--ease-out);
+    z-index: 2;
+}
+
+/* 카드 광택 라인 */
+.p04__card::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    left: -20%;
+    width: 60%;
+    height: 180%;
+    background: linear-gradient(105deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.08) 45%,
+        rgba(255, 255, 255, 0.2)  50%,
+        rgba(255, 255, 255, 0.08) 55%,
+        transparent 100%);
+    transform: rotate(18deg);
+    pointer-events: none;
+}
+
+.p04__card-chip {
+    position: absolute;
+    top: 18px;
+    left: 20px;
+    width: 44px;
+    height: 34px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows:    repeat(2, 1fr);
+    gap: 2px;
+    padding: 4px;
+    background: linear-gradient(135deg, #E5B94B 0%, #C79B2B 50%, #8F6E17 100%);
+    border-radius: 5px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.p04__card-chip span {
+    background-color: rgba(0, 0, 0, 0.18);
+    border-radius: 1px;
+}
+
+.p04__card-stripe {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 20px;
+    height: 10px;
+    background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.08) 0 3px,
+        rgba(255, 255, 255, 0.16) 3px 4px
+    );
+}
+
+.p04__card-brand {
+    position: absolute;
+    right: 16px;
+    bottom: 38px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+/* ---- 슬롯 ---- */
+.p04__slot {
+    position: relative;
+    width: 280px;
+    height: 160px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, var(--neutral-100) 0%, var(--neutral-200) 100%);
+    border: 2px solid var(--color-border-default);
+    box-shadow: 0 4px 0 var(--neutral-300, #CFC8C2),
+                0 16px 32px rgba(0, 0, 0, 0.08);
+    z-index: 1;
+    transition: border-color var(--duration-base) var(--ease-out),
+                background var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out);
+}
+
+/* 슬롯 입구 (어두운 가로 띠) */
+.p04__slot-mouth {
+    position: absolute;
+    top: 22px;
+    left: 16px;
+    right: 16px;
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #1C1917 0%, #2D2A27 100%);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.p04__slot-label {
+    position: absolute;
+    bottom: 14px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+}
+
+/* ---- 스피너 (processing 에서만) ---- */
+.p04__spinner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    opacity: 0;
+    pointer-events: none;
+}
+.p04__spinner i {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 4px solid rgba(232, 96, 10, 0.2);
+    border-top-color: var(--primary-500);
+    animation: p04-spin 0.9s linear infinite;
+}
+
+/* ---- 성공 체크 (approved) ---- */
+.p04__check {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 92px;
+    height: 92px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--semantic-success, #16A34A);
+    color: var(--color-text-inverse);
+    font-size: 54px;
+    font-weight: 800;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-bounce);
+    pointer-events: none;
+}
+
+/* ===========================
+   3) 상태 텍스트
+   =========================== */
+.p04__text {
+    text-align: center;
+    padding: 0 12px;
+    max-width: 520px;
+}
+
+.p04__title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--color-text-heading);
+    letter-spacing: -0.5px;
+    line-height: 1.3;
+    transition: color var(--duration-base) var(--ease-out);
+}
+
+.p04__desc {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.p04__progress {
+    margin-top: 16px;
+    height: 6px;
+    border-radius: 999px;
+    background-color: var(--neutral-200);
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-out);
+}
+.p04__progress-bar {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary-400), var(--primary-600));
+    border-radius: inherit;
+    transition: width 120ms linear;
+}
+
+/* ===========================
+   4) 하단 CTA
+   =========================== */
+.p04__cta-wrap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 16px var(--pad-side) var(--pad-footer);
+    background: linear-gradient(to top,
+        var(--color-bg-page) 72%,
+        rgba(250, 248, 246, 0) 100%);
+}
+
+.p04__cta { width: 100%; }
+
+.p04__cta--processing-hint,
+.p04__cta--approved-hint {
+    display: none;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: 12px 0;
+}
+
+.p04__cta--processing-hint {
+    color: var(--primary-700);
+    font-weight: 600;
+}
+.p04__cta--processing-hint i {
+    margin-right: 6px;
+    color: var(--primary-500);
+}
+
+/* ===========================
+   5) 상태별 분기
+   =========================== */
+
+/* ---- inserting ---- */
+.p04[data-state="inserting"] .p04__arrows { opacity: 1; }
+.p04[data-state="inserting"] .p04__card {
+    animation: p04-card-bob 1.4s ease-in-out infinite;
+}
+
+/* ---- processing ---- */
+.p04[data-state="processing"] .p04__card {
+    top: 128px;              /* 슬롯 쪽으로 내려와 절반 삽입된 듯 */
+    transform: translateX(-50%) scale(0.96);
+    opacity: 0.55;
+    animation: none;
+}
+.p04[data-state="processing"] .p04__slot {
+    border-color: var(--primary-500);
+    background: linear-gradient(180deg, var(--primary-50) 0%, var(--neutral-100) 100%);
+    box-shadow: 0 4px 0 var(--primary-200),
+                0 16px 32px rgba(232, 96, 10, 0.18);
+}
+.p04[data-state="processing"] .p04__spinner { opacity: 1; }
+.p04[data-state="processing"] .p04__progress { opacity: 1; }
+.p04[data-state="processing"] .p04__cta--cancel { display: none; }
+.p04[data-state="processing"] .p04__cta--processing-hint { display: block; }
+
+/* ---- approved ---- */
+.p04[data-state="approved"] .p04__card {
+    top: 168px;              /* 완전 삽입 */
+    transform: translateX(-50%) scale(0.9);
+    opacity: 0.15;
+    animation: none;
+}
+.p04[data-state="approved"] .p04__slot {
+    border-color: var(--semantic-success, #16A34A);
+    background: linear-gradient(180deg,
+        var(--semantic-success-bg, #F0FDF4) 0%,
+        var(--neutral-100) 100%);
+    box-shadow: 0 4px 0 #BBF7D0,
+                0 16px 32px rgba(22, 163, 74, 0.22);
+}
+.p04[data-state="approved"] .p04__check {
+    opacity: 1;
+    transform: scale(1);
+}
+.p04[data-state="approved"] .p04__spinner { opacity: 0; }
+.p04[data-state="approved"] .p04__title {
+    color: var(--semantic-success, #16A34A);
+}
+.p04[data-state="approved"] .p04__cta--cancel { display: none; }
+.p04[data-state="approved"] .p04__cta--approved-hint { display: block; }
+
+/* ===========================
+   6) keyframes
+   =========================== */
+@keyframes p04-card-bob {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-10px); }
+}
+
+@keyframes p04-arrow-bob {
+    0%, 100% { transform: translateY(0);    opacity: 0.35; }
+    50%      { transform: translateY(6px);  opacity: 1; }
+}
+
+@keyframes p04-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 접근성 */
+@media (prefers-reduced-motion: reduce) {
+    .p04__card,
+    .p04__arrows i,
+    .p04__spinner i {
+        animation: none !important;
+    }
+}

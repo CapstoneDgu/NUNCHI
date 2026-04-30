@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=720, initial-scale=1.0, user-scalable=no">
+    <title>주문 완료 · 눈치 키오스크</title>
+
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/flowP/P05-complete.css">
+</head>
+<body>
+<div class="page-bg">
+
+    <!-- 상단바 (뒤로가기 없음 · 완료 단계이므로 홈 닫기만) -->
+    <header class="p-topbar p05__topbar">
+        <div class="p05__topbar-spacer" aria-hidden="true"></div>
+        <div class="p-topbar__titles">
+            <span class="p-topbar__eyebrow">결제 완료</span>
+            <h1 class="p-topbar__title">주문이 접수되었어요</h1>
+        </div>
+        <button type="button" class="p05__topbar-close" data-action="home" aria-label="홈으로">
+            <i class="xi-close" aria-hidden="true"></i>
+        </button>
+    </header>
+
+    <!-- 3-step : 전부 done -->
+    <ol class="step-indicator" aria-label="결제 단계" style="--steps: 3;">
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">주문 확인</span>
+        </li>
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">결제 수단</span>
+        </li>
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">결제</span>
+        </li>
+    </ol>
+
+    <!-- 본문 -->
+    <section class="p05" aria-label="주문 완료">
+
+        <!-- 성공 비주얼 -->
+        <div class="p05__hero" aria-hidden="true">
+            <!-- 컨페티 닷 6개 -->
+            <span class="p05__confetti p05__confetti--1"></span>
+            <span class="p05__confetti p05__confetti--2"></span>
+            <span class="p05__confetti p05__confetti--3"></span>
+            <span class="p05__confetti p05__confetti--4"></span>
+            <span class="p05__confetti p05__confetti--5"></span>
+            <span class="p05__confetti p05__confetti--6"></span>
+
+            <div class="p05__hero-ring"></div>
+            <div class="p05__hero-circle">
+                <i class="xi-check"></i>
+            </div>
+        </div>
+
+        <!-- 대기번호 카드 -->
+        <div class="p05__order-card">
+            <span class="p05__order-label">대기번호</span>
+            <strong class="p05__order-number" data-bind="orderNo">A-00</strong>
+            <span class="p05__order-store" data-bind="storeName">상록원</span>
+            <p class="p05__order-hint">주문번호로 호출되면 카운터로 와주세요</p>
+        </div>
+
+        <!-- 주문 요약 카드 -->
+        <div class="p05__summary">
+            <div class="p05__summary-row">
+                <span class="p05__summary-key">주문 일시</span>
+                <span class="p05__summary-val" data-bind="orderTime">-</span>
+            </div>
+            <div class="p05__summary-row">
+                <span class="p05__summary-key">결제 수단</span>
+                <span class="p05__summary-val" data-bind="methodLabel">IC카드</span>
+            </div>
+            <div class="p05__summary-row">
+                <span class="p05__summary-key">주문 내역</span>
+                <span class="p05__summary-val" data-bind="itemsSummary">0건</span>
+            </div>
+            <div class="p05__summary-row p05__summary-row--total">
+                <span class="p05__summary-key">결제 금액</span>
+                <span class="p05__summary-val p05__summary-val--price" data-bind="total">₩0</span>
+            </div>
+        </div>
+
+        <!-- 영수증 출력 안내 -->
+        <div class="p05__receipt" data-bind="receipt">
+            <i class="xi-print" aria-hidden="true"></i>
+            <div class="p05__receipt-body">
+                <span class="p05__receipt-title">영수증이 출력되고 있어요</span>
+                <span class="p05__receipt-progress" aria-hidden="true">
+                    <span class="p05__receipt-progress-bar"></span>
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 하단 CTA -->
+    <footer class="p05__cta-wrap">
+        <p class="p05__autoreset" aria-live="polite">
+            <span data-bind="autoSec">60</span>초 후 자동으로 처음 화면으로 돌아갑니다
+        </p>
+        <button type="button"
+                class="btn-cta btn-cta--primary btn-cta--lg btn-cta--block p05__cta"
+                data-action="home">
+            <i class="xi-redo" aria-hidden="true"></i>
+            <span>처음으로</span>
+        </button>
+    </footer>
+</div>
+
+<script src="/js/flowP/P05-complete.js" defer></script>
+</body>
+</html>
