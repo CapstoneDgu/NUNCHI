@@ -148,20 +148,44 @@
     // ========================================================
     // 5. 세션 영속
     // ========================================================
-    /** sessionStorage 의 aiSessionId 가 Long 형식인지 검사. mock 잔재('a01-...')는 폐기. */
+    /**
+     * sessionStorage 의 aiSessionId 가 Long 형식의 양의 정수인지 엄격 검사.
+     * mock 잔재('a01-...') 또는 소수, 음수, 0 은 폐기.
+     */
     function readStoredSessionId() {
         const raw = sessionStorage.getItem('aiSessionId');
         if (!raw) return null;
+        // 정수 형태가 아니면 무효 (예: 'a01-123', '12.5', '1e5')
+        if (!/^[1-9][0-9]*$/.test(raw)) return null;
         const n = Number(raw);
-        if (!Number.isFinite(n) || n <= 0) return null;
+        if (!Number.isInteger(n) || n <= 0 || !Number.isSafeInteger(n)) return null;
         return n;
+    }
+
+    /**
+     * 저장된 세션 ID 가 서버에 실제로 존재하는지 가벼운 ping 으로 검증.
+     * 별도 GET /sessions/{id} 엔드포인트가 없어 tool-logs 조회로 대체(limit=1).
+     * 200 응답이면 유효, 아니면 invalid 로 간주.
+     */
+    async function verifyStoredSession(sessionId) {
+        try {
+            await window.NunchiApi.Sessions.listToolLogs(sessionId);
+            return true;
+        } catch (e) {
+            return false;
+        }
     }
 
     async function loadOrCreateSession() {
         const stored = readStoredSessionId();
         if (stored) {
-            state.sessionId = stored;
-            return;
+            const ok = await verifyStoredSession(stored);
+            if (ok) {
+                state.sessionId = stored;
+                return;
+            }
+            // 검증 실패 — 폐기 후 새로 생성
+            sessionStorage.removeItem('aiSessionId');
         }
         const res = await callApi('세션 생성', () =>
             window.NunchiApi.Sessions.create('AVATAR', 'ko')
@@ -342,10 +366,13 @@
             await typewriter(text, { speed: 48, signal });
             await sleep(450, signal);
         } catch (e) {
-            if (e && e.name === 'AbortError') return;
-            throw e;
+            if (!e || e.name !== 'AbortError') throw e;
+            // AbortError 는 정상 컷오프 — finally 에서 idle 복귀 처리
+        } finally {
+            // signal 이 abort 되었더라도 비디오는 idle 로 되돌려야 함
+            // (abort 중 다음 발화가 이미 talking 으로 전환했다면 setAvatar 의 동일성 가드로 noop)
+            setAvatar('idle');
         }
-        if (!signal || !signal.aborted) setAvatar('idle');
     }
 
     /**
@@ -932,6 +959,8 @@
             $input.placeholder = '동대맘이 말하고 있어요';
         } else if (next === 'THINKING') {
             $micBtn.classList.add('a01__btn-mic--ai-turn');
+            $micBtn.setAttribute('aria-pressed', 'false');
+            $micBtn.setAttribute('aria-label', 'AI 응답 중, 마이크 비활성');
             $input.placeholder = '잠시만요...';
         } else {
             $micBtn.classList.add('a01__btn-mic--inactive');

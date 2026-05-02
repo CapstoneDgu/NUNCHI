@@ -201,13 +201,22 @@
     /* ---------- Boot ---------- */
     try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
 
-    // 백엔드 결제 실패 마킹
+    // 백엔드 결제 실패 마킹 — 다음 조건을 모두 만족할 때만 호출.
+    //   1) URL 에 명시된 사유(?reason=...) 가 알려진 실패 코드여야 함 (디자인 확인용 진입과 구분)
+    //   2) 동일 paymentId 에 대해 1회만 (페이지 새로고침 시 중복 호출 방지)
     (function failBackendPayment() {
-        const paymentId = Number(sessionStorage.getItem('paymentId'));
-        if (paymentId && window.NunchiApi) {
-            window.NunchiApi.Payments.markFail(paymentId)
-                .catch((e) => console.warn('[P06] markFail 실패', e));
-        }
+        const reason = getQuery('reason');
+        if (!reason || !REASONS[reason]) return;
+
+        const paymentId = sessionStorage.getItem('paymentId');
+        if (!paymentId || !window.NunchiApi) return;
+
+        const guardKey = `paymentFailMarked_${paymentId}`;
+        if (sessionStorage.getItem(guardKey)) return;
+
+        try { sessionStorage.setItem(guardKey, '1'); } catch (_) {}
+        window.NunchiApi.Payments.markFail(paymentId)
+            .catch((e) => console.warn('[P06] markFail 실패', e));
     })();
 
     const code = getQuery('reason');

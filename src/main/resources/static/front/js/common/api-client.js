@@ -15,6 +15,7 @@
     'use strict';
 
     const BASE_URL = window.location.origin;
+    const DEFAULT_TIMEOUT_MS = 8000;  // fetch 타임아웃 기본값
 
     class NunchiApiError extends Error {
         constructor(message, opts) {
@@ -32,8 +33,9 @@
      *  - JSON 직렬화/역직렬화
      *  - ApiResponse 언래핑
      *  - 비-2xx 또는 code !== 200 시 NunchiApiError throw
+     *  - timeoutMs(기본 8초) 경과 시 AbortController 로 중단 → TIMEOUT 에러
      */
-    async function request(method, path, body, query) {
+    async function request(method, path, body, query, opts) {
         const url = new URL(path, BASE_URL);
         if (query) {
             Object.entries(query).forEach(([k, v]) => {
@@ -46,7 +48,11 @@
                 }
             });
         }
-        const init = { method, headers: { 'Accept': 'application/json' } };
+        const controller = new AbortController();
+        const timeoutMs = (opts && Number.isFinite(opts.timeoutMs)) ? opts.timeoutMs : DEFAULT_TIMEOUT_MS;
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+        const init = { method, headers: { 'Accept': 'application/json' }, signal: controller.signal };
         if (body !== undefined && body !== null) {
             init.headers['Content-Type'] = 'application/json';
             init.body = JSON.stringify(body);
@@ -56,10 +62,18 @@
         try {
             res = await fetch(url.toString(), init);
         } catch (networkErr) {
+            clearTimeout(timer);
+            const isAbort = networkErr && (networkErr.name === 'AbortError' || controller.signal.aborted);
+            if (isAbort) {
+                throw new NunchiApiError('요청 시간이 초과되었어요.', {
+                    httpStatus: 0, code: 'TIMEOUT', msg: `timeout ${timeoutMs}ms`
+                });
+            }
             throw new NunchiApiError('네트워크 오류로 요청을 완료하지 못했어요.', {
                 httpStatus: 0, code: 'NETWORK_ERROR', msg: networkErr && networkErr.message
             });
         }
+        clearTimeout(timer);
 
         let payload = null;
         try { payload = await res.json(); } catch (_) { /* 응답이 비어있을 수도 있음 */ }

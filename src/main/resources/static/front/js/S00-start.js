@@ -124,6 +124,7 @@
 
             const $media = $s.querySelector(".s00__slide-media");
             if ($media && data.imageCandidates && data.imageCandidates.length) {
+                const $emblem = $media.querySelector(".s00__slide-emblem");
                 let $img = $media.querySelector(".s00__slide-photo");
                 if (!$img) {
                     $img = document.createElement("img");
@@ -137,11 +138,12 @@
                     if (attempt < data.imageCandidates.length) {
                         $img.src = data.imageCandidates[attempt];
                     } else {
+                        // 모든 후보 실패 — 이미지 제거하고 emblem 을 다시 보여 빈 카드 방지
                         $img.remove();
+                        if ($emblem) $emblem.style.display = "";
                     }
                 });
                 $img.src = data.imageCandidates[0];
-                const $emblem = $media.querySelector(".s00__slide-emblem");
                 if ($emblem) $emblem.style.display = "none";
             }
 

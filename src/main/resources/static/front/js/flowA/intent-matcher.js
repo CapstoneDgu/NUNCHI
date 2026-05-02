@@ -48,14 +48,15 @@
      * 백엔드 minPrice/maxPrice 는 원 단위 정수.
      */
     function extractPriceCap(text) {
-        // "만원 이하", "1만원 이하"
-        const manMatch = text.match(/([0-9]?)\s*만\s*원?/);
+        // "만원 이하", "1만원", "10만원", "1,5만원" 등 다자리수 + 콤마 허용
+        const manMatch = text.match(/([0-9][0-9,]*)?\s*만\s*원?/);
         // "3000원 이하" 류
         const wonMatch = text.match(/([0-9][0-9,]{2,})\s*원/);
         let value = null;
         if (manMatch) {
-            const n = parseInt(manMatch[1] || '1', 10);
-            value = n * 10000;
+            const nStr = (manMatch[1] || '1').replace(/,/g, '');
+            const n = parseInt(nStr, 10);
+            if (Number.isFinite(n)) value = n * 10000;
         } else if (wonMatch) {
             value = parseInt(wonMatch[1].replace(/,/g, ''), 10);
         }
@@ -88,7 +89,8 @@
         if (has(t, ['차가운', '시원한', '아이스', '얼음', '쿨'])) {
             params.temperatureType = 'COLD';
             tags.push('시원한');
-        } else if (has(t, ['따뜻한', '뜨거운', '핫', '따끈', '온'])) {
+        } else if (has(t, ['따뜻한', '뜨거운', '핫', '따끈'])) {
+            // '온'은 단독 매칭 시 오탐(예: "온도가", "온라인")이 너무 많아 제외
             params.temperatureType = 'HOT';
             tags.push('따뜻한');
         }

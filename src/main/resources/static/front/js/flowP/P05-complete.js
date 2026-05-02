@@ -152,8 +152,10 @@
     try { sessionStorage.setItem(STATUS_KEY, 'approved'); } catch (_) {}
 
     // 세션 종료 — sessionStorage 정리 전에 sessionId 캡처
+    // sessionId 는 백엔드 Long. JS Number 정밀도(2^53) 한계로 변환 시 큰 값에서 손실 가능 →
+    // 문자열 그대로 전달 (api-client 의 encodeURIComponent 가 String/Number 둘 다 처리).
     (function completeBackendSession() {
-        const sessionId = Number(sessionStorage.getItem('aiSessionId'));
+        const sessionId = sessionStorage.getItem('aiSessionId');
         if (sessionId && window.NunchiApi) {
             window.NunchiApi.Sessions.complete(sessionId)
                 .catch((e) => console.warn('[P05] session.complete 실패', e));

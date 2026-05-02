@@ -137,12 +137,15 @@
                 ctaEl.disabled = true;
                 try {
                     const payment = await window.NunchiApi.Payments.create(orderId, backendMethod);
-                    if (payment && payment.paymentId) {
-                        sessionStorage.setItem('paymentId', String(payment.paymentId));
+                    if (!payment || !payment.paymentId) {
+                        // paymentId 없는 응답 = 결제 레코드 미생성. 다음 단계로 가지 않는다.
+                        console.warn('[P02] 결제 생성 응답에 paymentId 없음');
+                        return;
                     }
+                    sessionStorage.setItem('paymentId', String(payment.paymentId));
                 } catch (e) {
-                    console.warn('[P02] 결제 생성 실패', e);
-                    // 실패해도 시뮬레이션 흐름으로 진행 (디자인 호환성)
+                    console.warn('[P02] 결제 생성 실패 — 진행 중단', e);
+                    return;
                 } finally {
                     ctaEl.disabled = false;
                 }

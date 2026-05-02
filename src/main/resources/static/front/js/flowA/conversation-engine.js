@@ -102,6 +102,8 @@
                 state.finalAccum = '';
                 state.interimAccum = '';
                 _clearSilenceTimer();
+                // recognition 을 먼저 중단 — onresult 가 같은 턴에서 또 발화 처리하지 않도록
+                _stopRecognition();
                 setMode(MODE.THINKING);
                 if (handlers.onUserUtterance) {
                     try { handlers.onUserUtterance(text); }
@@ -292,6 +294,10 @@
         const t = (text || '').trim();
         if (!t) return;
         _clearSilenceTimer();
+        // 음성 인식기 가동 중이면 즉시 중단 — onresult 중복 발화 방지
+        _stopRecognition();
+        state.finalAccum = '';
+        state.interimAccum = '';
         // 활성 세션이면 모드 전환, 비활성이면 단발 처리
         if (state.wantsRunning) setMode(MODE.THINKING);
         if (handlers.onUserUtterance) {
