@@ -1,27 +1,29 @@
 // ========================================================
-// A01-avatar.js — 아바타 모드(동대맘) 통합 로직
+// A01-avatar.js — 아바타 모드(동대맘) 통합 로직 (백엔드 연결 + 턴테이킹)
 //
-// 책임:
-//   1) 기승전결 FSM (opening → recommend → addmore → confirm)
-//   2) 아바타 비디오 cross-fade (idle ↔ talking)
-//   3) AI 발화: typewriter + 음성 파형 동기화
-//   4) 빠른응답 칩 + 텍스트 입력으로 사용자 발화
-//   5) 메뉴 추천 카드 인라인 + 미니카트
-//   6) 카트 영속 (sessionStorage('cart'), N02 호환)
-//   7) 모드 전환 / 결제 연결
+// 흐름:
+//   1) 진입: backend 세션 생성(POST /api/sessions, mode=AVATAR), 메뉴 prefetch
+//   2) 대기 화면: 인사말만 typewriter 노출, 마이크 버튼이 "대화 시작" 안내
+//   3) 마이크 클릭: ConvEngine.start() → enterState('opening')
+//   4) 사용자 발화 → IntentMatcher → 백엔드 호출 (메뉴 필터 / 카트 / 주문)
+//   5) 결제 의도 → POST /api/orders/confirm → P01 페이지로 인계
+//   6) 정상 모드 전환 → PATCH /api/sessions/{id}/complete
 //
-// 의존: window.MenuData (menu-data.js), jQuery (선택, 미사용)
-// 세션 키: cart, mode, dineOption, aiSessionId, currentStep
+// 의존:
+//   - window.NunchiApi      (api-client.js)
+//   - window.IntentMatcher  (intent-matcher.js)
+//   - window.ConvEngine     (conversation-engine.js)
 //
-// ※ 음성 입력 (Web Speech API) 은 1차 미연동 — 2차 커밋 예정
-// ※ 실 STT/TTS 백엔드 연동은 후속 PR (docs/A01_아바타_구현계획.md 참고)
+// 세션키 호환:
+//   aiSessionId (Long), cart (P-flow 호환 형태로 캐시), currentStep, mode, dineOption,
+//   orderId, currentStoreName
 // ========================================================
 
 (function () {
     'use strict';
 
     // ========================================================
-    // 1. 시나리오 스크립트 (mock)
+    // 1. 상수 / 시나리오 스크립트
     // ========================================================
     const SCRIPTS = {
         opening: {
@@ -29,42 +31,57 @@
             askDine:  "오늘은 매장에서 드시나요, 포장하시나요?",
             confirmedDineIn:  "매장에서 드시는군요! 천천히 골라봐요.",
             confirmedTakeOut: "포장이시군요! 따끈할 때 가져갈 수 있게 도와드릴게요.",
+            startHint: "마이크를 눌러서 저랑 대화해 보세요."
         },
         recommend: {
-            intro:   "오늘은 뭐 드시고 싶으세요? 추천해드릴까요?",
-            recPick: (m) => `오늘은 "${m.name}" 어떠세요? 인기 메뉴예요!`,
-            picked:  (m) => `좋은 선택이에요! "${m.name}" 담아드릴게요.`,
+            intro:    "오늘은 뭐 드시고 싶으세요? 추천해드릴까요?",
+            recPick:  (m) => `오늘은 "${m.name}" 어떠세요? 인기 메뉴예요!`,
+            byTags:   (tags, n) => `${tags} 메뉴로 ${n}개 찾았어요. 마음에 드는 거 있으세요?`,
+            empty:    "음... 그 조건에 맞는 메뉴를 찾기 어렵네요. 다른 걸 시도해볼까요?",
+            picked:   (name) => `좋은 선택이에요! "${name}" 담아드릴게요.`
         },
         addmore: {
-            ask:     "더 담으실 메뉴가 있을까요?",
-            another: "또 추천해드릴까요? 아니면 결제하러 갈까요?",
+            ask:      "더 담으실 메뉴가 있을까요?",
+            another:  "또 추천해드릴까요? 아니면 결제하러 갈까요?"
         },
         confirm: {
             summarize: (n, total) => `메뉴 ${n}개, 총 ${fmtPrice(total)} 이에요. 결제하러 갈까요?`,
             agree:     "좋아요! 결제 화면으로 이동할게요.",
+            empty:     "아직 담은 메뉴가 없어요. 한 가지만 골라볼까요?"
         },
+        silence: {
+            opening:   "어떤 메뉴 찾으시나요? 매운 거, 시원한 거 같이 말씀해 주셔도 돼요.",
+            recommend: "추천 메뉴 더 보여드릴까요, 골라드릴까요?",
+            addmore:   "더 담으실 메뉴가 있나요? 아니면 결제로 넘어갈까요?",
+            confirm:   "결제 진행할까요?"
+        }
     };
+
+    const STEP_ORDER = ['opening', 'recommend', 'addmore', 'confirm'];
 
     // ========================================================
     // 2. 상태
     // ========================================================
     const state = {
-        fsm: 'opening',          // opening | recommend | addmore | confirm
-        cart: [],                // [{ menuId, qty }]  (N02 호환)
-        chatLog: [],             // [{ role, text, ts }]
-        avatarMode: 'idle',      // idle | talking
-        sessionId: null,
-        recommendedIds: [],      // 이미 추천한 메뉴 id (중복 회피)
+        fsm: 'opening',
+        sessionId: null,            // 백엔드 Long sessionId
+        cart: { items: [], totalAmount: 0 },  // 서버 CartResponse 미러
+        chatLog: [],
+        avatarMode: 'idle',
+        recommendedIds: [],
         muted: false,
-        speechAbort: null,       // 현재 단계의 발화 취소용 AbortController
-        speech: {
-            recognizer: null,    // SpeechRecognition 인스턴스
-            supported: false,
-            listening: false,
-        },
+        speechAbort: null,
+        engineStarted: false,       // 마이크 첫 클릭 여부
+        greetedOnBoot: false,       // 부트 인사 완료 — 첫 enterState 시 인사 생략
+        // 메뉴 캐시 (백엔드 prefetch)
+        menuCache: {
+            categories: [],
+            top: [],
+            byId: new Map(),
+            categoryNameById: new Map(),  // categoryId → 카테고리명 (이미지 경로 추론용)
+            ready: false
+        }
     };
-
-    const STEP_ORDER = ['opening', 'recommend', 'addmore', 'confirm'];
 
     // ========================================================
     // 3. DOM 캐시
@@ -95,61 +112,178 @@
     // 4. 유틸
     // ========================================================
     function fmtPrice(won) {
-        if (window.MenuData && window.MenuData.formatPrice) {
-            return window.MenuData.formatPrice(won);
-        }
-        return "₩ " + Number(won).toLocaleString("ko-KR");
-    }
-
-    function generateSessionId() {
-        return 'a01-' + Math.random().toString(36).slice(2, 10);
-    }
-
-    function findMenu(id) {
-        if (!window.MenuData) return null;
-        const r = window.MenuData.findMenuById(id);
-        return r ? r.menu : null;
+        return "₩ " + Number(won || 0).toLocaleString("ko-KR");
     }
 
     function getCartCount() {
-        return state.cart.reduce((s, it) => s + it.qty, 0);
+        return state.cart.items.reduce((s, it) => s + (it.quantity || 0), 0);
     }
 
     function getCartTotal() {
-        return state.cart.reduce((sum, it) => {
-            const m = findMenu(it.menuId);
-            return sum + (m ? m.price * it.qty : 0);
-        }, 0);
+        return state.cart.totalAmount || 0;
+    }
+
+    /** API 호출 래퍼 — 에러 토스트 + 로그. 호출부는 try/catch 없이 then/await 가능. */
+    async function callApi(label, fn) {
+        try {
+            return await fn();
+        } catch (e) {
+            const msg = (e && e.msg) || (e && e.message) || '요청 실패';
+            console.warn(`[A01] ${label} 실패`, e);
+            showToast(`${label}: ${msg}`);
+            return null;
+        }
+    }
+
+    /** AI 의도 매칭 결과를 tool-log 로 기록 (fire-and-forget). */
+    function logToolCall(toolName, requestObj, responseObj) {
+        if (!state.sessionId) return;
+        try {
+            window.NunchiApi.Sessions.saveToolLog(
+                state.sessionId, toolName, requestObj, responseObj
+            ).catch(() => { /* 비치명 */ });
+        } catch (_) { /* noop */ }
     }
 
     // ========================================================
-    // 5. 세션 영속 (N02 와 동일 키 사용)
+    // 5. 세션 영속
     // ========================================================
-    function loadSession() {
+    /**
+     * sessionStorage 의 aiSessionId 가 Long 형식의 양의 정수인지 엄격 검사.
+     * mock 잔재('a01-...') 또는 소수, 음수, 0 은 폐기.
+     */
+    function readStoredSessionId() {
+        const raw = sessionStorage.getItem('aiSessionId');
+        if (!raw) return null;
+        // 정수 형태가 아니면 무효 (예: 'a01-123', '12.5', '1e5')
+        if (!/^[1-9][0-9]*$/.test(raw)) return null;
+        const n = Number(raw);
+        if (!Number.isInteger(n) || n <= 0 || !Number.isSafeInteger(n)) return null;
+        return n;
+    }
+
+    /**
+     * 저장된 세션 ID 가 서버에 실제로 존재하는지 가벼운 ping 으로 검증.
+     * 별도 GET /sessions/{id} 엔드포인트가 없어 tool-logs 조회로 대체(limit=1).
+     * 200 응답이면 유효, 아니면 invalid 로 간주.
+     */
+    async function verifyStoredSession(sessionId) {
         try {
-            state.cart      = JSON.parse(sessionStorage.getItem('cart') || '[]');
-            state.sessionId = sessionStorage.getItem('aiSessionId');
-            if (!state.sessionId) {
-                state.sessionId = generateSessionId();
-                sessionStorage.setItem('aiSessionId', state.sessionId);
+            await window.NunchiApi.Sessions.listToolLogs(sessionId);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    async function loadOrCreateSession() {
+        const stored = readStoredSessionId();
+        if (stored) {
+            const ok = await verifyStoredSession(stored);
+            if (ok) {
+                state.sessionId = stored;
+                return;
             }
-            sessionStorage.setItem('currentStep', 'A01');
-            sessionStorage.setItem('mode', 'avatar');
-        } catch (e) {
-            console.warn('[A01] 세션 로드 실패', e);
+            // 검증 실패 — 폐기 후 새로 생성
+            sessionStorage.removeItem('aiSessionId');
+        }
+        const res = await callApi('세션 생성', () =>
+            window.NunchiApi.Sessions.create('AVATAR', 'ko')
+        );
+        if (res && res.sessionId) {
+            state.sessionId = res.sessionId;
+            sessionStorage.setItem('aiSessionId', String(res.sessionId));
         }
     }
 
-    function persistCart() {
+    /** 서버 카트를 P-flow 호환 sessionStorage 형태로 캐시. */
+    function persistCartCache() {
         try {
-            sessionStorage.setItem('cart', JSON.stringify(state.cart));
+            const compat = state.cart.items.map((it) => ({
+                id:        it.itemId,             // P01/P02 가 키로 사용 (UUID)
+                menuId:    it.menuId,
+                name:      it.menuName,
+                price:     it.unitPrice,
+                qty:       it.quantity,
+                itemTotal: it.itemTotal
+            }));
+            sessionStorage.setItem('cart', JSON.stringify(compat));
         } catch (e) {
-            console.warn('[A01] 카트 저장 실패', e);
+            console.warn('[A01] 카트 캐시 실패', e);
         }
     }
 
     // ========================================================
-    // 6. 아바타 비디오 cross-fade
+    // 6. 메뉴 prefetch
+    // ========================================================
+    async function fetchMenuCatalog() {
+        const [categories, top] = await Promise.all([
+            callApi('카테고리 조회', () => window.NunchiApi.Menus.categories()),
+            callApi('인기 메뉴 조회', () => window.NunchiApi.Menus.top(8))
+        ]);
+        state.menuCache.categories = categories || [];
+        state.menuCache.top        = top || [];
+        (categories || []).forEach((c) => {
+            state.menuCache.categoryNameById.set(c.categoryId, c.name);
+        });
+        (top || []).forEach((m) => state.menuCache.byId.set(m.menuId, m));
+
+        // 모든 카테고리의 메뉴 목록을 가져와 풀로 비축 + categoryId 보강
+        const lists = await Promise.all(
+            (categories || []).map((cat) =>
+                callApi(`메뉴 목록(${cat.name}) 조회`, () =>
+                    window.NunchiApi.Menus.list({ categoryId: cat.categoryId })
+                ).then((list) => ({ cat, list: list || [] }))
+            )
+        );
+        lists.forEach(({ cat, list }) => {
+            list.forEach((m) => {
+                // MenuResponse 에 categoryId 가 없을 수 있어 prefetch 시점의 cat 으로 보강
+                if (m.categoryId == null) m.categoryId = cat.categoryId;
+                state.menuCache.byId.set(m.menuId, m);
+            });
+        });
+        state.menuCache.ready = true;
+    }
+
+    /**
+     * 메뉴 이미지 URL 후보를 우선순위대로 반환.
+     * 1) 한글 카테고리/메뉴명 매핑: /images/menu/덮밥류/가츠동.png  (실 파일과 일치)
+     * 2) 백엔드 menu.imageUrl (영문 경로일 수 있음 — 시드 데이터와 불일치 케이스)
+     * 호출부는 1)을 시도하고 onerror 시 2)로 폴백한다.
+     */
+    function resolveMenuImageUrls(menu) {
+        const urls = [];
+        if (menu && menu.name) {
+            const catName = state.menuCache.categoryNameById.get(menu.categoryId);
+            if (catName) {
+                urls.push(encodeURI(`/images/menu/${catName}/${menu.name}.png`));
+            }
+        }
+        if (menu && menu.imageUrl) urls.push(menu.imageUrl);
+        return urls;
+    }
+
+    /** 캐시에 없으면 detail API 로 1회 fetch 후 캐시. */
+    async function ensureMenu(menuId) {
+        if (state.menuCache.byId.has(menuId)) return state.menuCache.byId.get(menuId);
+        const m = await callApi('메뉴 상세 조회', () => window.NunchiApi.Menus.detail(menuId));
+        if (m) state.menuCache.byId.set(menuId, m);
+        return m;
+    }
+
+    /** 추천에 쓸 메뉴 1개 — 인기 메뉴에서 미추천 항목 우선. */
+    function pickRecommendedMenu() {
+        const pool = state.menuCache.top.length
+            ? state.menuCache.top
+            : Array.from(state.menuCache.byId.values());
+        const fresh = pool.filter((m) => !state.recommendedIds.includes(m.menuId) && !m.isSoldOut);
+        const target = (fresh.length ? fresh : pool)[0];
+        return target || null;
+    }
+
+    // ========================================================
+    // 7. 아바타 비디오 cross-fade
     // ========================================================
     function setAvatar(mode) {
         if (state.avatarMode === mode) return;
@@ -168,9 +302,8 @@
     }
 
     // ========================================================
-    // 7. AI 발화 (typewriter + 로그)
+    // 8. AI 발화 (typewriter + 백엔드 메시지 로깅)
     // ========================================================
-    // sleep 은 AbortSignal 로 중도 취소 가능 (enterState 가 다음 단계 진입 시 abort)
     function sleep(ms, signal) {
         return new Promise((resolve, reject) => {
             if (signal && signal.aborted) {
@@ -197,7 +330,6 @@
                 if (signal && signal.aborted) return;
                 const ch = text[i];
                 $bubbleText.textContent += ch;
-                // 문장부호 후 살짝 멈춤
                 if (',.!?…'.includes(ch)) {
                     await sleep(220, signal);
                 } else if (ch === ' ') {
@@ -211,34 +343,59 @@
         }
     }
 
+    /**
+     * AI 발화 — typewriter + 대화 로그 + 백엔드 메시지 저장(fire-and-forget).
+     * signal 은 호출자가 책임지고 전달:
+     *   - run*(signal): FSM 의 state.speechAbort.signal
+     *   - ConvEngine.say 경유: 엔진의 currentSpeakAbort.signal
+     *   - 부트: 자체 bootAbort.signal
+     * 호출자가 신호를 abort 시키면 typewriter 가 즉시 컷된다.
+     */
     async function aiSpeak(text, signal) {
         if (signal && signal.aborted) return;
+
         appendLog('ai', text);
+        if (state.sessionId) {
+            window.NunchiApi.Sessions
+                .saveMessage(state.sessionId, 'ASSISTANT', text)
+                .catch(() => {});
+        }
+
         setAvatar('talking');
         try {
             await typewriter(text, { speed: 48, signal });
-            // 발화 종료 후 짧은 여운
             await sleep(450, signal);
         } catch (e) {
-            if (e && e.name === 'AbortError') {
-                return; // 다음 단계가 이미 시작 — idle 복귀는 새 발화의 setAvatar 가 처리
-            }
-            throw e;
+            if (!e || e.name !== 'AbortError') throw e;
+            // AbortError 는 정상 컷오프 — finally 에서 idle 복귀 처리
+        } finally {
+            // signal 이 abort 되었더라도 비디오는 idle 로 되돌려야 함
+            // (abort 중 다음 발화가 이미 talking 으로 전환했다면 setAvatar 의 동일성 가드로 noop)
+            setAvatar('idle');
         }
-        setAvatar('idle');
     }
 
+    /**
+     * 사용자 발화 처리.
+     * - 로그 + 백엔드 USER 메시지 저장
+     * - silent 옵션 시 의도 처리 생략
+     */
     function userSay(text, opts) {
         const t = (text || '').trim();
         if (!t) return;
         appendLog('user', t);
+        if (state.sessionId) {
+            window.NunchiApi.Sessions
+                .saveMessage(state.sessionId, 'USER', t)
+                .catch(() => {});
+        }
         if (!opts || !opts.silent) {
             handleUserIntent(t);
         }
     }
 
     // ========================================================
-    // 8. 대화 로그 렌더
+    // 9. 대화 로그 + 메뉴 카드 렌더
     // ========================================================
     function appendLog(role, text) {
         state.chatLog.push({ role, text, ts: Date.now() });
@@ -261,7 +418,7 @@
             +   '<div class="a01__msg-menu-thumb"><i class="xi xi-restaurant" aria-hidden="true"></i></div>'
             +   '<div class="a01__msg-menu-info">'
             +     '<span class="a01__msg-menu-name"></span>'
-            +     '<span class="a01__msg-menu-meta">' + (menu.aiPick ? 'AI 추천 · ' : '') + '인기 메뉴</span>'
+            +     '<span class="a01__msg-menu-meta">백엔드 추천</span>'
             +     '<span class="a01__msg-menu-price"></span>'
             +   '</div>'
             +   '<button class="a01__msg-menu-add" type="button" aria-label="장바구니에 담기">'
@@ -270,12 +427,36 @@
             + '</div>';
         $card.querySelector('.a01__msg-menu-name').textContent  = menu.name;
         $card.querySelector('.a01__msg-menu-price').textContent = fmtPrice(menu.price);
+        const imgCandidates = resolveMenuImageUrls(menu);
+        if (imgCandidates.length) {
+            const $thumb = $card.querySelector('.a01__msg-menu-thumb');
+            const $iconFallback = $thumb.innerHTML;
+            $thumb.innerHTML = '';
+            const $img = document.createElement('img');
+            $img.alt = menu.name || '';
+            $img.style.width = '100%';
+            $img.style.height = '100%';
+            $img.style.objectFit = 'cover';
+            $img.style.borderRadius = 'inherit';
+            let attempt = 0;
+            $img.addEventListener('error', () => {
+                attempt += 1;
+                if (attempt < imgCandidates.length) {
+                    $img.src = imgCandidates[attempt];
+                } else {
+                    $thumb.innerHTML = $iconFallback;
+                }
+            });
+            $img.src = imgCandidates[0];
+            $thumb.appendChild($img);
+        }
         $card.querySelector('.a01__msg-menu-add').addEventListener('click', () => {
-            addToCart(menu.id, 1);
-            // 사용자 의사 표시로 처리 → addmore 단계로
-            userSay('이거 담아주세요', { silent: true });
-            aiSpeak(SCRIPTS.recommend.picked(menu)).then(() => {
-                if (state.fsm === 'recommend') enterState('addmore');
+            addToCart(menu.menuId, 1).then((ok) => {
+                if (!ok) return;
+                userSay('이거 담아주세요', { silent: true });
+                aiSpeakChained(SCRIPTS.recommend.picked(menu)).then(() => {
+                    if (state.fsm === 'recommend') enterState('addmore');
+                });
             });
         });
         $log.appendChild($card);
@@ -283,18 +464,27 @@
     }
 
     function scrollLogToBottom() {
-        // requestAnimationFrame 으로 레이아웃 후 스크롤
-        requestAnimationFrame(() => {
-            $log.scrollTop = $log.scrollHeight;
-        });
+        requestAnimationFrame(() => { $log.scrollTop = $log.scrollHeight; });
+    }
+
+    /**
+     * AI 발화 헬퍼 — ConvEngine 활성 시엔 ConvEngine.say 경로(바지인 가능),
+     * 비활성 시엔 직접 aiSpeak(자유 호출, FSM signal 만 사용).
+     */
+    function aiSpeakChained(text) {
+        if (state.engineStarted && window.ConvEngine && window.ConvEngine.isActive()) {
+            return window.ConvEngine.say(text);
+        }
+        // 엔진 비활성 — FSM 신호로 발화 (취소 가능하도록 신호 전달)
+        const sig = state.speechAbort && state.speechAbort.signal;
+        return aiSpeak(text, sig);
     }
 
     // ========================================================
-    // 9. FSM
+    // 10. FSM
     // ========================================================
     function enterState(name) {
         if (!STEP_ORDER.includes(name)) return;
-        // 진행 중이던 발화/대기 중단 — 단계 전환이 즉시 반영되도록
         if (state.speechAbort) {
             try { state.speechAbort.abort(); } catch (_) {}
         }
@@ -305,25 +495,30 @@
         renderSteps();
         renderChips();
 
+        let runner;
         switch (name) {
-            case 'opening':
-                runOpening(signal);
-                break;
-            case 'recommend':
-                runRecommend(signal);
-                break;
-            case 'addmore':
-                runAddmore(signal);
-                break;
-            case 'confirm':
-                runConfirm(signal);
-                break;
+            case 'opening':   runner = runOpening;   break;
+            case 'recommend': runner = runRecommend; break;
+            case 'addmore':   runner = runAddmore;   break;
+            case 'confirm':   runner = runConfirm;   break;
+            default: return;
         }
+        runner(signal).then(() => {
+            // 정상 완료 시: 엔진 활성이면 endTurn → 자동 청취
+            if (signal.aborted) return;
+            if (state.engineStarted && window.ConvEngine && window.ConvEngine.isActive()) {
+                window.ConvEngine.endTurn();
+            }
+        }).catch((e) => {
+            if (!e || e.name !== 'AbortError') console.warn('[A01] FSM runner error', e);
+        });
     }
 
     async function runOpening(signal) {
-        await aiSpeak(SCRIPTS.opening.greeting, signal);
-        if (signal.aborted) return;
+        if (!state.greetedOnBoot) {
+            await aiSpeak(SCRIPTS.opening.greeting, signal);
+            if (signal.aborted) return;
+        }
         const dine = sessionStorage.getItem('dineOption');
         if (dine === 'dine_in') {
             await aiSpeak(SCRIPTS.opening.confirmedDineIn, signal);
@@ -343,7 +538,7 @@
         if (signal.aborted) return;
         const pick = pickRecommendedMenu();
         if (pick) {
-            state.recommendedIds.push(pick.id);
+            state.recommendedIds.push(pick.menuId);
             await aiSpeak(SCRIPTS.recommend.recPick(pick), signal);
             if (signal.aborted) return;
             appendMenuCard(pick);
@@ -357,159 +552,232 @@
     async function runConfirm(signal) {
         const total = getCartTotal();
         const count = getCartCount();
+        if (count === 0) {
+            await aiSpeak(SCRIPTS.confirm.empty, signal);
+            return;
+        }
         await aiSpeak(SCRIPTS.confirm.summarize(count, total), signal);
     }
 
-    function pickRecommendedMenu() {
-        const data = window.MenuData && window.MenuData.data;
-        if (!data) return null;
-        // aiPick=true 우선, 그다음 임의
-        const candidates = [];
-        for (const f of data.floors) {
-            for (const s of f.stores) {
-                for (const m of s.menus) {
-                    if (state.recommendedIds.includes(m.id)) continue;
-                    if (m.soldOut) continue;
-                    candidates.push({ menu: m, score: m.aiPick ? 10 : Math.random() });
-                }
-            }
+    // ========================================================
+    // 11. 사용자 의도 분류 (IntentMatcher 위임 + 백엔드 호출)
+    // ========================================================
+    async function handleUserIntent(text) {
+        // 1) 메뉴 필터 의도 — 가장 풍부한 시나리오. 우선 매칭.
+        const filterIntent = window.IntentMatcher.matchFilter(text);
+        if (filterIntent) {
+            await runFilterFlow(filterIntent);
+            // 청취 재개를 위해 endTurn
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            return;
         }
-        if (!candidates.length) return null;
-        candidates.sort((a, b) => b.score - a.score);
-        return candidates[0].menu;
+
+        // 2) 추천 요청
+        const recType = window.IntentMatcher.matchRecommend(text);
+        if (recType) {
+            await runRecommendFlow(recType);
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            return;
+        }
+
+        // 3) 굵은 네비게이션 의도
+        const nav = window.IntentMatcher.matchNavigation(text);
+        if (nav) {
+            await runNavigationFlow(nav);
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            return;
+        }
+
+        // 4) 메뉴명 직접 언급
+        const direct = matchMenuByName(text);
+        if (direct) {
+            state.recommendedIds.push(direct.menuId);
+            await aiSpeakChained(SCRIPTS.recommend.recPick(direct));
+            appendMenuCard(direct);
+            if (state.fsm === 'opening') enterState('recommend');
+            else if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            return;
+        }
+
+        // 5) 폴백
+        await aiSpeakChained('흠, 다시 한번 말씀해 주실래요?');
+        if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
     }
 
-    // ========================================================
-    // 10. 사용자 의도 분류 (mock 키워드 매칭)
-    // ========================================================
-    const KEYWORDS = {
-        dineIn:   ['매장', '먹고 갈', '먹고갈', '여기서'],
-        takeOut:  ['포장', '가져갈', '테이크'],
-        rec:      ['추천', '뭐 있', '뭐있', '메뉴'],
-        addMore:  ['더', '추가', '하나 더', '또'],
-        done:     ['끝', '그만', '됐어', '충분', '결제', '갈게', '진행'],
-        cancel:   ['취소', '아니', '별로'],
-    };
+    async function runFilterFlow(intent) {
+        const result = await callApi('메뉴 필터', () =>
+            window.NunchiApi.Menus.filter(intent.params)
+        );
+        // 응답 메뉴를 캐시에 적재
+        if (Array.isArray(result)) {
+            result.forEach((m) => state.menuCache.byId.set(m.menuId, m));
+        }
+        // 툴 호출 로그 — 매칭 검증용
+        logToolCall('menu.filter', intent.params, {
+            count: Array.isArray(result) ? result.length : 0,
+            sample: Array.isArray(result) ? result.slice(0, 3).map((m) => m.menuId) : []
+        });
 
-    function matchAny(text, list) {
-        return list.some((kw) => text.includes(kw));
+        if (!result || result.length === 0) {
+            await aiSpeakChained(SCRIPTS.recommend.empty);
+            return;
+        }
+        await aiSpeakChained(SCRIPTS.recommend.byTags(intent.summary, result.length));
+        // 상위 3개 카드 노출
+        result.slice(0, 3).forEach((m) => {
+            state.recommendedIds.push(m.menuId);
+            appendMenuCard(m);
+        });
+        if (state.fsm === 'opening') enterState('recommend');
     }
 
-    function handleUserIntent(text) {
-        const t = text.toLowerCase();
+    async function runRecommendFlow(type) {
+        const res = await callApi('추천 조회', () =>
+            window.NunchiApi.Recommendations.get(type)
+        );
+        logToolCall('recommendation', { type }, {
+            count: res && Array.isArray(res.menus) ? res.menus.length : 0
+        });
+        const menus = (res && res.menus) || [];
+        if (!menus.length) {
+            await aiSpeakChained('지금은 추천 가능한 메뉴를 찾기 어려워요.');
+            return;
+        }
+        await aiSpeakChained(`${menus.length}개 추천드릴게요!`);
+        menus.slice(0, 3).forEach((m) => {
+            // RecommendationMenuResponse 는 menuId/name/price/imageUrl 만 보유
+            state.menuCache.byId.set(m.menuId, m);
+            state.recommendedIds.push(m.menuId);
+            appendMenuCard(m);
+        });
+        if (state.fsm === 'opening') enterState('recommend');
+    }
 
-        // 1) 매장/포장 답변 (opening 단계)
-        if (state.fsm === 'opening') {
-            if (matchAny(t, KEYWORDS.dineIn)) {
+    async function runNavigationFlow(nav) {
+        switch (nav) {
+            case 'dine_in':
                 sessionStorage.setItem('dineOption', 'dine_in');
-                aiSpeak(SCRIPTS.opening.confirmedDineIn).then(() => enterState('recommend'));
-                return;
-            }
-            if (matchAny(t, KEYWORDS.takeOut)) {
+                await aiSpeakChained(SCRIPTS.opening.confirmedDineIn);
+                if (state.fsm === 'opening') enterState('recommend');
+                break;
+            case 'take_out':
                 sessionStorage.setItem('dineOption', 'take_out');
-                aiSpeak(SCRIPTS.opening.confirmedTakeOut).then(() => enterState('recommend'));
-                return;
-            }
-        }
-
-        // 2) 메뉴명 직접 언급 → 카드 추천
-        const directMenu = matchMenuByName(text);
-        if (directMenu) {
-            state.recommendedIds.push(directMenu.id);
-            aiSpeak(SCRIPTS.recommend.recPick(directMenu)).then(() => {
-                appendMenuCard(directMenu);
-            });
-            if (state.fsm === 'opening') enterState('recommend');
-            return;
-        }
-
-        // 3) 결제/완료 의도
-        if (matchAny(t, KEYWORDS.done)) {
-            if (state.cart.length === 0) {
-                aiSpeak('아직 담은 메뉴가 없어요. 한 가지만 골라볼까요?');
-                if (state.fsm !== 'recommend') enterState('recommend');
-                return;
-            }
-            // 이미 confirm 단계면 → 결제 화면으로 진행
-            if (state.fsm === 'confirm') {
-                aiSpeak(SCRIPTS.confirm.agree).then(() => goToPayment());
-                return;
-            }
-            enterState('confirm');
-            return;
-        }
-
-        // 3-1) confirm 단계에서 수정/취소 → addmore 로 복귀
-        if (state.fsm === 'confirm' && matchAny(t, ['수정', '바꿔', '잠깐'])) {
-            aiSpeak('알겠어요. 더 추가하거나 빼실 수 있어요.').then(() => enterState('addmore'));
-            return;
-        }
-
-        // 4) 추천 요청
-        if (matchAny(t, KEYWORDS.rec)) {
-            const pick = pickRecommendedMenu();
-            if (pick) {
-                state.recommendedIds.push(pick.id);
-                aiSpeak(SCRIPTS.recommend.recPick(pick)).then(() => appendMenuCard(pick));
-            } else {
-                aiSpeak('지금은 추천 가능한 메뉴를 찾기 어려워요.');
-            }
-            if (state.fsm === 'opening') enterState('recommend');
-            return;
-        }
-
-        // 5) 더 담기
-        if (matchAny(t, KEYWORDS.addMore)) {
-            if (state.fsm === 'addmore' || state.fsm === 'recommend') {
-                aiSpeak(SCRIPTS.addmore.another);
+                await aiSpeakChained(SCRIPTS.opening.confirmedTakeOut);
+                if (state.fsm === 'opening') enterState('recommend');
+                break;
+            case 'payment':
+                if (state.cart.items.length === 0) {
+                    await aiSpeakChained(SCRIPTS.confirm.empty);
+                    if (state.fsm !== 'recommend') enterState('recommend');
+                } else if (state.fsm === 'confirm') {
+                    await aiSpeakChained(SCRIPTS.confirm.agree);
+                    await goToPayment();
+                } else {
+                    enterState('confirm');
+                }
+                break;
+            case 'cancel':
+                await aiSpeakChained('알겠어요. 천천히 골라봐요.');
+                break;
+            case 'modify':
+                if (state.fsm === 'confirm') {
+                    await aiSpeakChained('알겠어요. 더 추가하거나 빼실 수 있어요.');
+                    enterState('addmore');
+                } else {
+                    await aiSpeakChained('수정하실 메뉴를 말씀해 주세요.');
+                }
+                break;
+            case 'add_more': {
+                await aiSpeakChained(SCRIPTS.addmore.another);
                 const pick = pickRecommendedMenu();
                 if (pick) {
-                    state.recommendedIds.push(pick.id);
+                    state.recommendedIds.push(pick.menuId);
                     appendMenuCard(pick);
                 }
                 if (state.fsm !== 'recommend') enterState('recommend');
-                return;
+                break;
+            }
+            case 'recommend': {
+                const pick = pickRecommendedMenu();
+                if (pick) {
+                    state.recommendedIds.push(pick.menuId);
+                    await aiSpeakChained(SCRIPTS.recommend.recPick(pick));
+                    appendMenuCard(pick);
+                } else {
+                    await aiSpeakChained('지금은 추천 가능한 메뉴를 찾기 어려워요.');
+                }
+                if (state.fsm === 'opening') enterState('recommend');
+                break;
             }
         }
-
-        // 6) 폴백
-        aiSpeak('흠, 다시 한번 말씀해 주실래요?');
     }
 
     function matchMenuByName(text) {
-        const data = window.MenuData && window.MenuData.data;
-        if (!data) return null;
-        for (const f of data.floors) {
-            for (const s of f.stores) {
-                for (const m of s.menus) {
-                    if (m.soldOut) continue;
-                    // 메뉴 이름이 길거나 특수문자 많아서 부분 매칭
-                    const stem = m.name.replace(/[·\s\-,]/g, '');
-                    if (stem.length >= 2 && text.replace(/\s/g, '').includes(stem.slice(0, 3))) {
-                        return m;
-                    }
-                }
+        if (!state.menuCache.byId.size) return null;
+        const stripped = (text || '').replace(/\s/g, '');
+        for (const m of state.menuCache.byId.values()) {
+            if (m.isSoldOut) continue;
+            const stem = (m.name || '').replace(/[·\s\-,]/g, '');
+            if (stem.length >= 2 && stripped.includes(stem.slice(0, 3))) {
+                return m;
             }
         }
         return null;
     }
 
     // ========================================================
-    // 11. 카트
+    // 12. 카트 (백엔드 동기화)
     // ========================================================
-    function addToCart(menuId, qty) {
-        const found = state.cart.find((it) => it.menuId === menuId);
-        if (found) {
-            found.qty += qty;
-        } else {
-            state.cart.push({ menuId, qty });
+    async function addToCart(menuId, qty) {
+        if (!state.sessionId) {
+            showToast('세션을 먼저 생성해야 해요.');
+            return false;
         }
-        persistCart();
+        const result = await callApi('장바구니 담기', () =>
+            window.NunchiApi.Cart.addItem({
+                sessionId: state.sessionId,
+                menuId,
+                quantity: qty || 1,
+                optionIds: []
+            })
+        );
+        if (!result) return false;
+        applyCartResponse(result);
+        logToolCall('cart.addItem', { menuId, quantity: qty || 1 }, {
+            totalItems: state.cart.items.length, totalAmount: state.cart.totalAmount
+        });
+        return true;
+    }
+
+    async function refreshCart() {
+        if (!state.sessionId) return;
+        const result = await callApi('장바구니 조회', () =>
+            window.NunchiApi.Cart.get(state.sessionId)
+        );
+        if (result) applyCartResponse(result);
+    }
+
+    function applyCartResponse(cartResp) {
+        state.cart = {
+            items: cartResp.items || [],
+            totalAmount: cartResp.totalAmount || 0
+        };
+        // 메뉴 캐시에 보강
+        state.cart.items.forEach((it) => {
+            if (!state.menuCache.byId.has(it.menuId)) {
+                state.menuCache.byId.set(it.menuId, {
+                    menuId: it.menuId,
+                    name: it.menuName,
+                    price: it.unitPrice
+                });
+            }
+        });
+        persistCartCache();
         renderMinicart();
     }
 
     function renderMinicart() {
-        if (state.cart.length === 0) {
+        if (!state.cart.items.length) {
             $minicartEmpty.hidden = false;
             $minicartFilled.hidden = true;
             return;
@@ -517,42 +785,41 @@
         $minicartEmpty.hidden = true;
         $minicartFilled.hidden = false;
         $minicartList.innerHTML = '';
-        state.cart.forEach((it) => {
-            const m = findMenu(it.menuId);
-            if (!m) return;
+        state.cart.items.forEach((it) => {
             const $li = document.createElement('li');
             $li.className = 'a01__minicart-item';
             $li.innerHTML = ''
                 + '<span class="a01__minicart-item-name"></span>'
-                + '<span class="a01__minicart-item-qty">×' + it.qty + '</span>';
+                + '<span class="a01__minicart-item-qty">×' + (it.quantity || 1) + '</span>';
+            const display = it.menuName || '';
             $li.querySelector('.a01__minicart-item-name').textContent =
-                m.name.length > 10 ? m.name.slice(0, 10) + '…' : m.name;
+                display.length > 10 ? display.slice(0, 10) + '…' : display;
             $minicartList.appendChild($li);
         });
         $minicartTotal.textContent = fmtPrice(getCartTotal());
     }
 
     // ========================================================
-    // 12. 빠른응답 칩
+    // 13. 빠른응답 칩
     // ========================================================
     const CHIPS = {
         opening:   [
             { label: '매장에서요',  text: '매장에서 먹을게요' },
-            { label: '포장이요',    text: '포장이요' },
+            { label: '포장이요',    text: '포장이요' }
         ],
         recommend: [
             { label: '추천해줘',    text: '추천해주세요' },
             { label: '매콤한 거',   text: '매콤한 메뉴 추천해주세요' },
-            { label: '가벼운 거',   text: '가볍게 먹을 거 추천해주세요' },
+            { label: '가벼운 거',   text: '가볍게 먹을 거 추천해주세요' }
         ],
         addmore:   [
             { label: '하나 더',     text: '하나 더 추천해주세요' },
-            { label: '충분해요',    text: '충분해요. 결제할게요', cta: true },
+            { label: '충분해요',    text: '충분해요. 결제할게요', cta: true }
         ],
         confirm:   [
             { label: '결제할래요',  text: '결제할게요', cta: true },
-            { label: '수정할게요',  text: '수정할래요' },
-        ],
+            { label: '수정할게요',  text: '수정할래요' }
+        ]
     };
 
     function renderChips() {
@@ -563,17 +830,13 @@
             $btn.type = 'button';
             $btn.className = 'a01__chip' + (c.cta ? ' a01__chip--cta' : '');
             $btn.textContent = c.label;
-            $btn.addEventListener('click', () => onChipClick(c));
+            $btn.addEventListener('click', () => userSay(c.text));
             $chipRow.appendChild($btn);
         });
     }
 
-    function onChipClick(chip) {
-        userSay(chip.text);
-    }
-
     // ========================================================
-    // 13. 단계 인디케이터
+    // 14. 단계 인디케이터
     // ========================================================
     function renderSteps() {
         const idx = STEP_ORDER.indexOf(state.fsm);
@@ -589,29 +852,52 @@
     }
 
     // ========================================================
-    // 14. 입력 / 액션 핸들러
+    // 15. 입력 / 액션 핸들러
     // ========================================================
     function onSendClick() {
         const v = ($input.value || '').trim();
         if (!v) return;
         $input.value = '';
-        userSay(v);
+        // 텍스트 입력은 ConvEngine 폴백 경로로도, 직접 userSay 로도 처리 가능.
+        // 엔진이 활성이면 폴백 경로(엔진이 모드 갱신 + onUserUtterance 호출).
+        if (state.engineStarted && window.ConvEngine && window.ConvEngine.isActive()) {
+            window.ConvEngine.submitText(v);
+        } else {
+            userSay(v);
+        }
     }
 
     function onInputKey(e) {
-        // 한글(IME) 조합 중 Enter 는 무시 — 미완성 음절이 그대로 전송되는 문제 방지.
-        // keyCode 229 는 일부 IME 가 isComposing 을 안 채워주는 경우의 폴백.
         if (e.isComposing || e.keyCode === 229) return;
         if (e.key === 'Enter') onSendClick();
     }
 
-    function onSwitchToNormal() {
+    async function onSwitchToNormal() {
+        if (state.sessionId) {
+            await callApi('세션 종료', () => window.NunchiApi.Sessions.complete(state.sessionId));
+        }
+        sessionStorage.removeItem('aiSessionId');
         sessionStorage.setItem('mode', 'normal');
+        if (window.ConvEngine) window.ConvEngine.stop();
         location.href = '/flowN/N02-menu.html';
     }
 
-    function goToPayment() {
+    async function goToPayment() {
+        if (!state.sessionId) {
+            showToast('세션이 없어요. 새로고침 해주세요.');
+            return;
+        }
+        if (!state.cart.items.length) {
+            showToast('장바구니가 비어있어요.');
+            return;
+        }
+        const result = await callApi('주문 확정', () =>
+            window.NunchiApi.Orders.confirm(state.sessionId)
+        );
+        if (!result || !result.orderId) return;
+        sessionStorage.setItem('orderId', String(result.orderId));
         sessionStorage.setItem('currentStep', 'P01');
+        if (window.ConvEngine) window.ConvEngine.stop();
         location.href = '/flowP/P01-summary.html';
     }
 
@@ -626,113 +912,81 @@
             $icon.classList.remove('xi-volume-mute');
             $icon.classList.add('xi-volume-up');
         }
-        // 비디오 음소거 (현재는 muted=true 고정이라 표시만)
     }
 
-    // ---- 음성 입력 (Web Speech API) ----
-    // 후속 PR에서 voice-pipeline.js (FastAPI WebSocket STT) 로 어댑터 swap.
-    // 현재 layer:
-    //   - 지원 브라우저(Chrome/Edge): 실 STT 사용, interim 결과로 입력창 라이브 캡션
-    //   - 미지원/권한거부: 토스트 안내 + 텍스트 입력 폴백 (기존 onSendClick 그대로)
-    function initSpeech() {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) {
-            state.speech.supported = false;
-            return null;
-        }
-        state.speech.supported = true;
-        const rec = new SR();
-        rec.lang = 'ko-KR';
-        rec.continuous = false;
-        rec.interimResults = true;
-        rec.maxAlternatives = 1;
-
-        let finalText = '';
-        let interimText = '';
-
-        rec.onstart = () => {
-            state.speech.listening = true;
-            $micBtn.classList.add('a01__btn-mic--listening');
-            $micBtn.setAttribute('aria-pressed', 'true');
-            $input.placeholder = '듣고 있어요...';
-            finalText = '';
-            interimText = '';
-            $input.value = '';
-        };
-
-        rec.onresult = (event) => {
-            interimText = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const res = event.results[i];
-                if (res.isFinal) {
-                    finalText += res[0].transcript;
-                } else {
-                    interimText += res[0].transcript;
-                }
-            }
-            // 입력창에 라이브 캡션 (final + interim)
-            $input.value = (finalText + interimText).trim();
-        };
-
-        rec.onerror = (e) => {
-            console.warn('[A01] SpeechRecognition error', e.error);
-            stopListeningUI();
-            if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-                showToast('마이크 권한이 필요해요. 텍스트로 입력해주세요.');
-            } else if (e.error === 'no-speech') {
-                showToast('음성을 듣지 못했어요. 다시 시도해주세요.');
-            } else if (e.error === 'audio-capture') {
-                showToast('마이크를 찾을 수 없어요.');
-            }
-        };
-
-        rec.onend = () => {
-            stopListeningUI();
-            const text = (finalText || interimText || '').trim();
-            $input.value = '';
-            if (text) {
-                userSay(text);
-            }
-        };
-
-        return rec;
-    }
-
-    function stopListeningUI() {
-        state.speech.listening = false;
-        $micBtn.classList.remove('a01__btn-mic--listening');
-        $micBtn.setAttribute('aria-pressed', 'false');
-        $input.placeholder = '동대맘에게 말하거나 입력해보세요';
-    }
-
+    // ========================================================
+    // 16. 마이크 버튼 + ConvEngine 통합
+    // ========================================================
     function onMicClick() {
-        // 미지원 브라우저: 안내 + 텍스트 입력으로 유도
-        if (!state.speech.supported) {
+        if (!window.ConvEngine) {
+            showToast('대화 엔진을 불러오지 못했어요.');
+            return;
+        }
+        if (!window.ConvEngine.isSupported()) {
             showToast('이 브라우저는 음성 입력을 지원하지 않아요. 텍스트로 입력해주세요.');
             $input.focus();
             return;
         }
-        const rec = state.speech.recognizer;
-        if (!rec) return;
-
-        if (state.speech.listening) {
-            // 사용 중 다시 누르면 즉시 중지 (onend → 결과 처리)
-            try { rec.stop(); } catch (_) {}
+        if (window.ConvEngine.isActive()) {
+            // 활성 → 종료
+            window.ConvEngine.stop();
+            // 인사말 다시 보여주기 (선택사항)
             return;
         }
+        // 비활성 → 시작
+        window.ConvEngine.start();
+        state.engineStarted = true;
+        // 첫 진입이면 enterState('opening') — 이전에 호출됐어도 abort 후 재시작
+        enterState('opening');
+    }
 
-        // 사용자 발화 우선 — AI가 말하는 중이면 발화 중단(터치 우선 8-1)
-        // (현재 mock 에선 별도 abort 시그널 없음, 다음 발화부터 멈춤)
-        try {
-            rec.start();
-        } catch (e) {
-            // 이미 시작된 경우 등 — 한 번 stop 후 재시도
-            console.warn('[A01] mic start failed', e);
-            try { rec.stop(); } catch (_) {}
+    function onConvModeChange(next) {
+        // 마이크 버튼 시각 상태 갱신
+        $micBtn.classList.remove(
+            'a01__btn-mic--listening',
+            'a01__btn-mic--ai-turn',
+            'a01__btn-mic--inactive'
+        );
+        if (next === 'LISTENING') {
+            $micBtn.classList.add('a01__btn-mic--listening');
+            $micBtn.setAttribute('aria-pressed', 'true');
+            $micBtn.setAttribute('aria-label', '대화 종료');
+            $input.placeholder = '듣고 있어요...';
+        } else if (next === 'AI_SPEAKING') {
+            $micBtn.classList.add('a01__btn-mic--ai-turn');
+            $micBtn.setAttribute('aria-pressed', 'true');
+            $micBtn.setAttribute('aria-label', '대화 종료 (말씀하시면 끼어들 수 있어요)');
+            $input.placeholder = '동대맘이 말하고 있어요';
+        } else if (next === 'THINKING') {
+            $micBtn.classList.add('a01__btn-mic--ai-turn');
+            $micBtn.setAttribute('aria-pressed', 'false');
+            $micBtn.setAttribute('aria-label', 'AI 응답 중, 마이크 비활성');
+            $input.placeholder = '잠시만요...';
+        } else {
+            $micBtn.classList.add('a01__btn-mic--inactive');
+            $micBtn.setAttribute('aria-pressed', 'false');
+            $micBtn.setAttribute('aria-label', '대화 시작');
+            $input.placeholder = '동대맘에게 말하거나 입력해보세요';
         }
     }
 
-    // ---- 가벼운 토스트 (의존성 없이) ----
+    function onConvSilencePrompt() {
+        // 3초 침묵 되물음 비활성화 — 너무 자주 끼어들어서 거슬림.
+        // 사용자 발화 또는 칩 클릭으로만 다음 턴 진행.
+        return null;
+    }
+
+    function onConvBargeIn() {
+        // FSM 의 speechAbort 도 함께 끊어 다음 발화 체인을 정지
+        if (state.speechAbort) {
+            try { state.speechAbort.abort(); } catch (_) {}
+        }
+        setAvatar('idle');
+    }
+
+    // ========================================================
+    // 17. 토스트
+    // ========================================================
     function showToast(msg) {
         let $t = document.querySelector('.a01__toast');
         if (!$t) {
@@ -749,7 +1003,7 @@
     }
 
     // ========================================================
-    // 15. 부트
+    // 18. 부트
     // ========================================================
     function bind() {
         $sendBtn.addEventListener('click', onSendClick);
@@ -760,23 +1014,46 @@
     }
 
     function bootVideos() {
-        // autoplay + muted + playsinline 으로 자동 재생.
-        // 보수적으로 강제 play() 시도 (Safari 일부 케이스).
-        $videos.forEach(($v) => {
-            try { $v.play(); } catch (_) {}
-        });
+        $videos.forEach(($v) => { try { $v.play(); } catch (_) {} });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadSession();
+    document.addEventListener('DOMContentLoaded', async () => {
+        sessionStorage.setItem('currentStep', 'A01');
+        sessionStorage.setItem('mode', 'avatar');
+
         renderMinicart();
         renderSteps();
         renderChips();
         bind();
         bootVideos();
-        state.speech.recognizer = initSpeech();
 
-        // 첫 진입 시나리오 시작
-        enterState('opening');
+        // 의존 모듈 가드
+        if (!window.NunchiApi || !window.IntentMatcher || !window.ConvEngine) {
+            showToast('필수 모듈을 불러오지 못했어요. 새로고침 해주세요.');
+            return;
+        }
+
+        window.ConvEngine.init({
+            speak: aiSpeak,
+            onUserUtterance: userSay,
+            onSilencePrompt: onConvSilencePrompt,
+            onModeChange: onConvModeChange,
+            onBargeIn: onConvBargeIn
+        });
+
+        onConvModeChange('INACTIVE');
+
+        // 세션 + 메뉴 prefetch (병렬 실행 — 둘 다 끝나야 카트 동기화 가능)
+        await Promise.all([loadOrCreateSession(), fetchMenuCatalog()]);
+        if (state.sessionId) await refreshCart();
+
+        // 환영 메시지 — 마이크 클릭 전까지는 청취 비활성. 마이크 클릭이 들어오면
+        // enterState 가 speechAbort 를 abort 하므로 boot 발화도 깔끔히 컷.
+        const bootAbort = new AbortController();
+        state.speechAbort = bootAbort;
+        await aiSpeak(SCRIPTS.opening.greeting, bootAbort.signal);
+        if (bootAbort.signal.aborted) return;
+        state.greetedOnBoot = true;
+        await aiSpeak(SCRIPTS.opening.startHint, bootAbort.signal);
     });
 })();

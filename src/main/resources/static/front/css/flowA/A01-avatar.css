@@ -728,6 +728,28 @@
     50%      { box-shadow: 0 0 0 14px rgba(220, 53, 69, 0); }
 }
 
+/* AI 발화 중: 사용자 끼어들기(barge-in) 가능함을 시각적으로 안내 */
+.a01__btn-mic--ai-turn {
+    background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+    animation: a01-mic-pulse-blue 1.8s var(--ease-out) infinite;
+}
+.a01__btn-mic--ai-turn .a01__btn-mic-ripple { opacity: 0; }
+
+@keyframes a01-mic-pulse-blue {
+    0%, 100% { box-shadow: 0 0 0 0  rgba(59, 130, 246, 0.4); }
+    50%      { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+}
+
+/* INACTIVE: 살짝 호흡(첫 진입 마이크 클릭 유도) */
+.a01__btn-mic--inactive {
+    animation: a01-mic-breathe 2.4s var(--ease-out) infinite;
+}
+@keyframes a01-mic-breathe {
+    0%, 100% { transform: scale(1);    box-shadow: 0 8px 20px rgba(232, 96, 10, 0.35); }
+    50%      { transform: scale(1.03); box-shadow: 0 10px 26px rgba(232, 96, 10, 0.50); }
+}
+
 /* ========================================================
    ⑦ 토스트 (음성 입력 안내 등)
    ======================================================== */
