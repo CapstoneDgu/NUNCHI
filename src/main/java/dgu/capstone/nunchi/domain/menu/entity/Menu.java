@@ -87,6 +87,10 @@ public class Menu extends BaseEntity {
     @Column(name = "restaurant_name", length = 100)
     private String restaurantName;
 
+    // 영업시간. 다중 구간은 콤마로 구분. 예: "11:00-14:00,15:00-16:00"
+    @Column(name = "operating_hours", length = 50)
+    private String operatingHours;
+
     // 정적 팩토리 메서드
     public static Menu create(String name, Integer price, String imageUrl, MenuCategory category) {
         return Menu.builder()
