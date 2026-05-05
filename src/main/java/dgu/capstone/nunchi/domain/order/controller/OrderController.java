@@ -74,7 +74,7 @@ public class OrderController {
             @Parameter(description = "세션 ID") @PathVariable Long sessionId
     ) {
         orderService.clearCart(sessionId);
-        return ResponseEntity.ok(ApiResponse.ok(null));
+        return ResponseEntity.ok(ApiResponse.noContent());
     }
 
     @Operation(summary = "주문 취소", description = "주문을 취소 상태로 변경합니다.")

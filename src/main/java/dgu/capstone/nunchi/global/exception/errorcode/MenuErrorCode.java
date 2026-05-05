@@ -7,9 +7,6 @@ import org.springframework.http.HttpStatus;
 public enum MenuErrorCode implements ErrorCode {
 
     /**
-     * 404 NOT_FOUND
-     */
-    /**
      * 400 BAD_REQUEST
      */
     INVALID_ALLERGY_TYPE(HttpStatus.BAD_REQUEST, 400, "유효하지 않은 알레르기 항목입니다. (예: MILK, EGG, WHEAT)"),

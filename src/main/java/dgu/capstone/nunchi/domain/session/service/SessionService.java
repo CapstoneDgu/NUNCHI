@@ -67,6 +67,7 @@ public class SessionService {
         return SessionResponse.from(session);
     }
 
+    @Transactional(readOnly = true)
     public List<ConversationMessageResponse> getMessages(Long sessionId, int limit) {
         if (!kioskSessionRepository.existsById(sessionId)) {
             throw new SessionException(SessionErrorCode.NOT_FOUND_SESSION);

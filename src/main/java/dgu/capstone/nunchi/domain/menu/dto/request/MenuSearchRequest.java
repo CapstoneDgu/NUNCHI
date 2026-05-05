@@ -1,5 +1,7 @@
 package dgu.capstone.nunchi.domain.menu.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
+
 public record MenuSearchRequest(
-        String name   // 메뉴 이름 부분 검색 (LIKE %name%)
+        @NotBlank(message = "검색어를 입력해주세요.") String name
 ) {}
