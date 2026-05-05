@@ -1,6 +1,7 @@
 package dgu.capstone.nunchi.domain.menu.service;
 
 import dgu.capstone.nunchi.domain.menu.dto.request.MenuFilterRequest;
+import dgu.capstone.nunchi.domain.menu.dto.request.MenuSearchRequest;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuCategoryResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuDetailResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuFilterResponse;
@@ -109,6 +110,19 @@ public class MenuService {
         Stream<Menu> stream = menus.stream();
         if (req.limit() != null) stream = stream.limit(req.limit());
         return stream.map(MenuFilterResponse::from).toList();
+    }
+
+    // 이름 퍼지 검색 (FastAPI NER 결과 → menuId 변환용)
+    public List<MenuResponse> searchMenus(MenuSearchRequest request) {
+        if (request.name() == null || request.name().isBlank()) {
+            throw new MenuException(MenuErrorCode.INVALID_SEARCH_KEYWORD);
+        }
+        Specification<Menu> spec = Specification.where(MenuSpecification.notSoldOut())
+                .and(MenuSpecification.fetchCategory())
+                .and(MenuSpecification.nameContains(request.name()));
+        return menuRepository.findAll(spec).stream()
+                .map(MenuResponse::from)
+                .toList();
     }
 
     // 메뉴 상세 조회 (옵션그룹 + 옵션 포함, N+1 방지)
