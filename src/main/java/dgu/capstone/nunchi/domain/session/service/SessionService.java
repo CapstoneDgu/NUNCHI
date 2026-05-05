@@ -3,6 +3,7 @@ package dgu.capstone.nunchi.domain.session.service;
 import dgu.capstone.nunchi.domain.session.dto.request.AiToolCallLogSaveRequest;
 import dgu.capstone.nunchi.domain.session.dto.request.ConversationMessageSaveRequest;
 import dgu.capstone.nunchi.domain.session.dto.request.SessionCreateRequest;
+import dgu.capstone.nunchi.domain.session.dto.request.SessionStepUpdateRequest;
 import dgu.capstone.nunchi.domain.session.dto.response.AiToolCallLogResponse;
 import dgu.capstone.nunchi.domain.session.dto.response.ConversationMessageResponse;
 import dgu.capstone.nunchi.domain.session.dto.response.SessionResponse;
@@ -51,6 +52,31 @@ public class SessionService {
 
         session.complete();
         return SessionResponse.from(session);
+    }
+
+    @Transactional
+    public SessionResponse updateStep(Long sessionId, SessionStepUpdateRequest request) {
+        KioskSession session = kioskSessionRepository.findByIdWithLock(sessionId)
+                .orElseThrow(() -> new SessionException(SessionErrorCode.NOT_FOUND_SESSION));
+
+        if (session.getSessionStatus() != SessionStatus.ACTIVE) {
+            throw new SessionException(SessionErrorCode.SESSION_ALREADY_ENDED);
+        }
+
+        session.updateStep(request.step().name());
+        return SessionResponse.from(session);
+    }
+
+    public List<ConversationMessageResponse> getMessages(Long sessionId, int limit) {
+        if (!kioskSessionRepository.existsById(sessionId)) {
+            throw new SessionException(SessionErrorCode.NOT_FOUND_SESSION);
+        }
+
+        return conversationMessageRepository
+                .findAllBySession_SessionIdOrderByCreatedAtAsc(sessionId, PageRequest.of(0, limit))
+                .stream()
+                .map(ConversationMessageResponse::from)
+                .toList();
     }
 
     @Transactional

@@ -3,6 +3,7 @@ package dgu.capstone.nunchi.domain.session.controller;
 import dgu.capstone.nunchi.domain.session.dto.request.AiToolCallLogSaveRequest;
 import dgu.capstone.nunchi.domain.session.dto.request.ConversationMessageSaveRequest;
 import dgu.capstone.nunchi.domain.session.dto.request.SessionCreateRequest;
+import dgu.capstone.nunchi.domain.session.dto.request.SessionStepUpdateRequest;
 import dgu.capstone.nunchi.domain.session.dto.response.AiToolCallLogResponse;
 import dgu.capstone.nunchi.domain.session.dto.response.ConversationMessageResponse;
 import dgu.capstone.nunchi.domain.session.dto.response.SessionResponse;
@@ -55,6 +56,26 @@ public class SessionController {
         ConversationMessageResponse response = sessionService.saveMessage(sessionId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(response));
+    }
+
+    @Operation(summary = "세션 스텝 업데이트", description = "FastAPI가 기/승/전/결 단계 판별 후 Spring에 동기화. step: BROWSE(기) / SELECT(승) / CONFIGURE(전) / CHECKOUT(결)")
+    @PatchMapping("/{sessionId}/step")
+    public ResponseEntity<ApiResponse<SessionResponse>> updateStep(
+            @Parameter(description = "세션 ID") @PathVariable Long sessionId,
+            @RequestBody @Valid SessionStepUpdateRequest request
+    ) {
+        SessionResponse response = sessionService.updateStep(sessionId, request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @Operation(summary = "대화 기록 조회", description = "세션에 연결된 대화 메시지를 시간 순으로 조회. FastAPI 세션 복원 시 사용.")
+    @GetMapping("/{sessionId}/messages")
+    public ResponseEntity<ApiResponse<List<ConversationMessageResponse>>> getMessages(
+            @Parameter(description = "세션 ID") @PathVariable Long sessionId,
+            @Parameter(description = "조회 최대 개수") @RequestParam(defaultValue = "100") int limit
+    ) {
+        List<ConversationMessageResponse> response = sessionService.getMessages(sessionId, limit);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @Operation(summary = "AI 툴 호출 로그 저장", description = "FastAPI가 툴 호출 결과를 session 단위로 저장할 때 호출")
