@@ -152,7 +152,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(600, 35.0, 70.0, 18.0, 1700, 5.0, 0.2, 90, 3.0))
                 .allergies(allergies(AllergyType.PORK))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산").floor(2).restaurantName("더진국")
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 대파:국내산, 양파:국내산, 마늘:국내산").floor(2).restaurantName("더진국")
                 .operatingHours("11:00-14:00,15:00-16:00").build());
 
         menuRepository.save(Menu.builder()
@@ -161,7 +161,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(620, 30.0, 75.0, 20.0, 1800, 4.0, 0.3, 100, 3.0))
                 .allergies(allergies(AllergyType.PORK))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산").floor(2).restaurantName("더진국")
+                .seasonRecommended(Season.ALL).originInfo("돼지고기(순대 포함):국내산, 양파:국내산, 마늘:국내산").floor(2).restaurantName("더진국")
                 .operatingHours("11:00-14:00,15:00-16:00").build());
 
         menuRepository.save(Menu.builder()
@@ -170,7 +170,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(580, 28.0, 70.0, 17.0, 1900, 6.0, 0.2, 80, 4.0))
                 .allergies(allergies(AllergyType.BEEF, AllergyType.SOY))
                 .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("쇠고기:국내산").floor(2).restaurantName("더진국")
+                .seasonRecommended(Season.ALL).originInfo("쇠고기:국내산, 콩나물:국내산, 무:국내산, 고춧가루:국내산").floor(2).restaurantName("더진국")
                 .operatingHours("11:00-14:00,15:00-16:00").build());
 
         // 솥밥 8개 국 선택 + 공기밥 추가 옵션 (스팸도시락 제외)
@@ -366,7 +366,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(750, 25.0, 110.0, 20.0, 1000, 12.0, 0.2, 30, 6.0))
                 .allergies(allergies(AllergyType.WHEAT))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("밀:미국산, 토마토:국내산").floor(2).restaurantName("양식")
+                .seasonRecommended(Season.ALL).originInfo("밀:미국산, 토마토:국내산, 마늘:국내산, 버터:뉴질랜드산").floor(2).restaurantName("양식")
                 .operatingHours("11:00-14:00").build());
 
         menuRepository.save(Menu.builder()
@@ -375,7 +375,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(850, 35.0, 95.0, 35.0, 1300, 10.0, 0.4, 75, 5.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.MILK, AllergyType.EGG))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("밀:미국산, 치즈:뉴질랜드산").floor(2).restaurantName("양식")
+                .seasonRecommended(Season.ALL).originInfo("밀:미국산, 치즈:뉴질랜드산, 우유:국내산, 버터:뉴질랜드산").floor(2).restaurantName("양식")
                 .operatingHours("11:00-14:00").build());
 
         // 라면 토핑 옵션
@@ -439,7 +439,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(950, 35.0, 100.0, 35.0, 1500, 15.0, 0.5, 80, 5.0))
                 .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
                 .spicyLevel(2).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 밀:미국산").floor(2).restaurantName("일품")
+                .seasonRecommended(Season.ALL).originInfo("돼지고기(제육·소시지):국내산, 밀:미국산, 양파:국내산, 고춧가루:국내산").floor(2).restaurantName("일품")
                 .operatingHours("11:00-14:00,15:00-16:00").build());
 
         // 2층 양식 (단품) — 영업시간: 점심
@@ -449,7 +449,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(850, 40.0, 70.0, 45.0, 1200, 8.0, 0.3, 100, 3.0))
                 .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.MILK, AllergyType.EGG))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산").floor(2).restaurantName("양식")
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산, 양배추:국내산").floor(2).restaurantName("양식")
                 .operatingHours("11:00-14:00").build());
 
         // 3층 집밥 — 일자별로 메뉴가 변경되는 백반 (현재값은 03/25 기준)
@@ -460,7 +460,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(800, 40.0, 90.0, 28.0, 1800, 7.0, 0.3, 95, 6.0))
                 .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 밀:미국산").floor(3).restaurantName("집밥")
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 밀:미국산, 도토리:국내산, 상추:국내산").floor(3).restaurantName("집밥")
                 .operatingHours("11:00-14:00").build());
 
         menuRepository.save(Menu.builder()
@@ -470,7 +470,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(900, 45.0, 80.0, 40.0, 1700, 12.0, 0.4, 110, 5.0))
                 .allergies(allergies(AllergyType.PORK, AllergyType.CHICKEN, AllergyType.WHEAT, AllergyType.SOY))
                 .spicyLevel(2).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 닭고기:국내산").floor(3).restaurantName("집밥")
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 닭고기:국내산, 미역:국내산, 고추장:국내산").floor(3).restaurantName("집밥")
                 .operatingHours("17:00-19:00").build());
 
         // 3층 한그릇 — 일자별로 메뉴가 변경되는 백반 (현재값은 03/25 기준, 한정판매)
@@ -481,7 +481,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nutrition(nutrition(850, 30.0, 100.0, 30.0, 1500, 18.0, 0.4, 90, 4.0))
                 .allergies(allergies(AllergyType.PORK, AllergyType.SHRIMP, AllergyType.WHEAT, AllergyType.MILK, AllergyType.EGG))
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
-                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 새우:베트남산").floor(3).restaurantName("한그릇")
+                .seasonRecommended(Season.ALL).originInfo("돼지고기(소시지):국내산, 새우:베트남산, 카레가루:인도산, 우유:국내산").floor(3).restaurantName("한그릇")
                 .operatingHours("11:00-14:00").build());
 
         // ===== 추가메뉴 =====
