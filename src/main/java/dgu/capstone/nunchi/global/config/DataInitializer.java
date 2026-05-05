@@ -145,6 +145,34 @@ public class DataInitializer implements CommandLineRunner {
                 .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
                 .seasonRecommended(Season.ALL).originInfo("쌀:국내산, 돼지고기:미국산").floor(1).restaurantName("솥앤누들").build());
 
+        // 2층 더진국 (국밥류) — 영업시간: 점심+오후
+        menuRepository.save(Menu.builder()
+                .name("수육국밥").price(6800).imageUrl("/images/menu/밥류/수육국밥.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(600, 35.0, 70.0, 18.0, 1700, 5.0, 0.2, 90, 3.0))
+                .allergies(allergies(AllergyType.PORK))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산").floor(2).restaurantName("더진국")
+                .operatingHours("11:00-14:00,15:00-16:00").build());
+
+        menuRepository.save(Menu.builder()
+                .name("순대국밥").price(6800).imageUrl("/images/menu/밥류/순대국밥.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(620, 30.0, 75.0, 20.0, 1800, 4.0, 0.3, 100, 3.0))
+                .allergies(allergies(AllergyType.PORK))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산").floor(2).restaurantName("더진국")
+                .operatingHours("11:00-14:00,15:00-16:00").build());
+
+        menuRepository.save(Menu.builder()
+                .name("얼큰국밥").price(7000).imageUrl("/images/menu/밥류/얼큰국밥.jpg")
+                .category(catBap).isSoldOut(false)
+                .nutrition(nutrition(580, 28.0, 70.0, 17.0, 1900, 6.0, 0.2, 80, 4.0))
+                .allergies(allergies(AllergyType.BEEF, AllergyType.SOY))
+                .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("쇠고기:국내산").floor(2).restaurantName("더진국")
+                .operatingHours("11:00-14:00,15:00-16:00").build());
+
         // 솥밥 8개 국 선택 + 공기밥 추가 옵션 (스팸도시락 제외)
         for (Menu sotbap : new Menu[]{teriyakiChicken, charcoalPork, tunaMayo, cornCheese, octopusPork, spamKimchi, jangjorimButter, flyingFishBulgogi}) {
             MenuOptionGroup soupGroup = menuOptionGroupRepository.save(MenuOptionGroup.create("국 선택", true, 1, sotbap));
@@ -331,6 +359,25 @@ public class DataInitializer implements CommandLineRunner {
                 .spicyLevel(3).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
                 .seasonRecommended(Season.ALL).originInfo("밀:미국산, 쇠고기:호주산").floor(1).restaurantName("솥앤누들").build());
 
+        // 2층 양식 (파스타류) — 영업시간: 점심
+        menuRepository.save(Menu.builder()
+                .name("토마토파스타+마늘빵").price(6000).imageUrl("/images/menu/면류/토마토파스타+마늘빵.jpg")
+                .category(catMyeon).isSoldOut(false)
+                .nutrition(nutrition(750, 25.0, 110.0, 20.0, 1000, 12.0, 0.2, 30, 6.0))
+                .allergies(allergies(AllergyType.WHEAT))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("밀:미국산, 토마토:국내산").floor(2).restaurantName("양식")
+                .operatingHours("11:00-14:00").build());
+
+        menuRepository.save(Menu.builder()
+                .name("치즈오븐파스타").price(6500).imageUrl("/images/menu/면류/치즈오븐파스타.jpg")
+                .category(catMyeon).isSoldOut(false)
+                .nutrition(nutrition(850, 35.0, 95.0, 35.0, 1300, 10.0, 0.4, 75, 5.0))
+                .allergies(allergies(AllergyType.WHEAT, AllergyType.MILK, AllergyType.EGG))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("밀:미국산, 치즈:뉴질랜드산").floor(2).restaurantName("양식")
+                .operatingHours("11:00-14:00").build());
+
         // 라면 토핑 옵션
         for (Menu ramen : new Menu[]{eggRamen, cheeseRamen, haejangramen}) {
             MenuOptionGroup ramenEgg = menuOptionGroupRepository.save(MenuOptionGroup.create("계란 추가", false, 1, ramen));
@@ -384,6 +431,58 @@ public class DataInitializer implements CommandLineRunner {
         menuOptionRepository.save(MenuOption.create("없음", 0, setSoupGroup));
         menuOptionRepository.save(MenuOption.create("된장국", 0, setSoupGroup));
         menuOptionRepository.save(MenuOption.create("미역국", 0, setSoupGroup));
+
+        // 2층 일품 — 영업시간: 점심+오후
+        menuRepository.save(Menu.builder()
+                .name("매콤제육덮밥+핫도그").price(4500).imageUrl("/images/menu/세트메뉴/매콤제육덮밥+핫도그.jpg")
+                .category(catSet).isSoldOut(false)
+                .nutrition(nutrition(950, 35.0, 100.0, 35.0, 1500, 15.0, 0.5, 80, 5.0))
+                .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
+                .spicyLevel(2).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 밀:미국산").floor(2).restaurantName("일품")
+                .operatingHours("11:00-14:00,15:00-16:00").build());
+
+        // 2층 양식 (단품) — 영업시간: 점심
+        menuRepository.save(Menu.builder()
+                .name("치즈돈까스").price(6300).imageUrl("/images/menu/세트메뉴/치즈돈까스.jpg")
+                .category(catSet).isSoldOut(false)
+                .nutrition(nutrition(850, 40.0, 70.0, 45.0, 1200, 8.0, 0.3, 100, 3.0))
+                .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.MILK, AllergyType.EGG))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산").floor(2).restaurantName("양식")
+                .operatingHours("11:00-14:00").build());
+
+        // 3층 집밥 — 일자별로 메뉴가 변경되는 백반 (현재값은 03/25 기준)
+        menuRepository.save(Menu.builder()
+                .name("[중식백반] 샤브칼국수+삼겹살수육+도토리묵상추무침").price(7000)
+                .imageUrl("/images/menu/세트메뉴/집밥_중식백반.jpg")
+                .category(catSet).isSoldOut(false)
+                .nutrition(nutrition(800, 40.0, 90.0, 28.0, 1800, 7.0, 0.3, 95, 6.0))
+                .allergies(allergies(AllergyType.PORK, AllergyType.WHEAT, AllergyType.SOY))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 밀:미국산").floor(3).restaurantName("집밥")
+                .operatingHours("11:00-14:00").build());
+
+        menuRepository.save(Menu.builder()
+                .name("[석식백반] 파채고추장삼겹살+치킨너겟+미역줄기볶음").price(7000)
+                .imageUrl("/images/menu/세트메뉴/집밥_석식백반.jpg")
+                .category(catSet).isSoldOut(false)
+                .nutrition(nutrition(900, 45.0, 80.0, 40.0, 1700, 12.0, 0.4, 110, 5.0))
+                .allergies(allergies(AllergyType.PORK, AllergyType.CHICKEN, AllergyType.WHEAT, AllergyType.SOY))
+                .spicyLevel(2).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 닭고기:국내산").floor(3).restaurantName("집밥")
+                .operatingHours("17:00-19:00").build());
+
+        // 3층 한그릇 — 일자별로 메뉴가 변경되는 백반 (현재값은 03/25 기준, 한정판매)
+        menuRepository.save(Menu.builder()
+                .name("[중식백반] 카레&그릴소세지+통새우볼튀김+마시는요플레").price(7000)
+                .imageUrl("/images/menu/세트메뉴/한그릇_중식백반.jpg")
+                .category(catSet).isSoldOut(false)
+                .nutrition(nutrition(850, 30.0, 100.0, 30.0, 1500, 18.0, 0.4, 90, 4.0))
+                .allergies(allergies(AllergyType.PORK, AllergyType.SHRIMP, AllergyType.WHEAT, AllergyType.MILK, AllergyType.EGG))
+                .spicyLevel(0).temperatureType(TemperatureType.HOT).vegetarianType(VegetarianType.NONE)
+                .seasonRecommended(Season.ALL).originInfo("돼지고기:국내산, 새우:베트남산").floor(3).restaurantName("한그릇")
+                .operatingHours("11:00-14:00").build());
 
         // ===== 추가메뉴 =====
         Menu friedEgg = menuRepository.save(Menu.builder()
