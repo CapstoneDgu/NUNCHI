@@ -3,9 +3,11 @@ package dgu.capstone.nunchi.domain.admin.controller;
 import dgu.capstone.nunchi.domain.admin.dto.response.AdminPopularMenuResponse;
 import dgu.capstone.nunchi.domain.admin.dto.response.AdminRecommendedMenuResponse;
 import dgu.capstone.nunchi.domain.admin.service.AdminRecommendationService;
+import dgu.capstone.nunchi.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,8 +25,10 @@ public class AdminRecommendationController {
             description = "관리자가 추천 메뉴로 설정한 메뉴 목록을 조회합니다. 품절 메뉴는 제외됩니다."
     )
     @GetMapping("/default")
-    public List<AdminRecommendedMenuResponse> getDefaultRecommendations() {
-        return adminRecommendationService.getDefaultRecommendations();
+    public ResponseEntity<ApiResponse<List<AdminRecommendedMenuResponse>>> getDefaultRecommendations() {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminRecommendationService.getDefaultRecommendations())
+        );
     }
 
     @Operation(
@@ -32,16 +36,20 @@ public class AdminRecommendationController {
             description = "SalesDaily 통계 데이터를 기준으로 오늘 가장 많이 판매된 메뉴를 조회합니다."
     )
     @GetMapping("/popular/today")
-    public List<AdminPopularMenuResponse> getTodayPopularMenus() {
-        return adminRecommendationService.getTodayPopularMenus();
+    public ResponseEntity<ApiResponse<List<AdminPopularMenuResponse>>> getTodayPopularMenus() {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminRecommendationService.getTodayPopularMenus())
+        );
     }
 
     @Operation(
             summary = "관리자 주문 기반 인기 메뉴 조회",
-            description = "OrderItem 주문 데이터를 기준으로 누적 인기 메뉴를 조회합니다. 판매 수량은 현재 응답에 포함하지 않습니다."
+            description = "OrderItem 주문 데이터를 기준으로 누적 인기 메뉴를 조회합니다."
     )
     @GetMapping("/popular/orders")
-    public List<AdminPopularMenuResponse> getOrderBasedPopularMenus() {
-        return adminRecommendationService.getOrderBasedPopularMenus();
+    public ResponseEntity<ApiResponse<List<AdminPopularMenuResponse>>> getOrderBasedPopularMenus() {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminRecommendationService.getOrderBasedPopularMenus())
+        );
     }
 }

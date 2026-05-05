@@ -7,6 +7,8 @@ import dgu.capstone.nunchi.domain.order.entity.Order;
 import dgu.capstone.nunchi.domain.order.entity.OrderItem;
 import dgu.capstone.nunchi.domain.order.repository.OrderItemRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderRepository;
+import dgu.capstone.nunchi.global.exception.domainException.OrderException;
+import dgu.capstone.nunchi.global.exception.errorcode.OrderErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +57,6 @@ public class AdminOrderService {
 
     private Order findOrder(Long orderId) {
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 주문입니다. orderId=" + orderId));
+                .orElseThrow(() -> new OrderException(OrderErrorCode.NOT_FOUND_ORDER));
     }
 }

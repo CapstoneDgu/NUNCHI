@@ -9,6 +9,8 @@ import dgu.capstone.nunchi.domain.menu.entity.Menu;
 import dgu.capstone.nunchi.domain.menu.entity.MenuCategory;
 import dgu.capstone.nunchi.domain.menu.repository.MenuCategoryRepository;
 import dgu.capstone.nunchi.domain.menu.repository.MenuRepository;
+import dgu.capstone.nunchi.global.exception.domainException.MenuException;
+import dgu.capstone.nunchi.global.exception.errorcode.MenuErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -102,11 +104,11 @@ public class AdminMenuService {
 
     private Menu findMenu(Long menuId) {
         return menuRepository.findById(menuId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메뉴입니다. menuId=" + menuId));
+                .orElseThrow(() -> new MenuException(MenuErrorCode.NOT_FOUND_MENU));
     }
 
     private MenuCategory findCategory(Long categoryId) {
         return menuCategoryRepository.findById(categoryId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다. categoryId=" + categoryId));
+                .orElseThrow(() -> new MenuException(MenuErrorCode.NOT_FOUND_MENU_CATEGORY));
     }
 }

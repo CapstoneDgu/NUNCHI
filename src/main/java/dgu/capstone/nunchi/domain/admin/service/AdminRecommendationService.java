@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -32,7 +33,7 @@ public class AdminRecommendationService {
 
     public List<AdminPopularMenuResponse> getTodayPopularMenus() {
         List<TopMenuResponse> topMenus = salesDailyRepository.findTopMenusByDate(
-                LocalDate.now(),
+                LocalDate.now(ZoneId.of("Asia/Seoul")),
                 PageRequest.of(0, 5)
         );
 

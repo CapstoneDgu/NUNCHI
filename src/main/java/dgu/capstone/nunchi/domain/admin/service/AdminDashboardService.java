@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -27,7 +28,7 @@ public class AdminDashboardService {
     private final MenuRepository menuRepository;
 
     public AdminDashboardResponse getDashboard() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         LocalDateTime startOfDay = LocalDateTime.of(today, LocalTime.MIN);
         LocalDateTime endOfDay = LocalDateTime.of(today, LocalTime.MAX);
 
