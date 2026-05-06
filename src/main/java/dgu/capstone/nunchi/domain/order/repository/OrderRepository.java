@@ -17,6 +17,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
+    long countByCreatedAtBetweenAndOrderStatus(
+            LocalDateTime start,
+            LocalDateTime end,
+            OrderStatus orderStatus
+    );
+
     long countByOrderStatus(OrderStatus orderStatus);
 
     List<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);

@@ -1,7 +1,11 @@
 package dgu.capstone.nunchi.domain.admin.service;
 
+import dgu.capstone.nunchi.domain.admin.dto.response.AdminDailySalesResponse;
+import dgu.capstone.nunchi.domain.admin.dto.response.AdminDashboardAnalyticsResponse;
 import dgu.capstone.nunchi.domain.admin.dto.response.AdminDashboardResponse;
+import dgu.capstone.nunchi.domain.admin.dto.response.AdminHourlySalesResponse;
 import dgu.capstone.nunchi.domain.admin.dto.response.AdminOrderResponse;
+import dgu.capstone.nunchi.domain.admin.dto.response.AdminTopMenuSalesResponse;
 import dgu.capstone.nunchi.domain.menu.repository.MenuRepository;
 import dgu.capstone.nunchi.domain.order.entity.OrderItem;
 import dgu.capstone.nunchi.domain.order.entity.OrderStatus;
@@ -16,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -67,5 +72,83 @@ public class AdminDashboardService {
                 recommendedMenuCount,
                 recentOrders
         );
+    }
+
+    public AdminDashboardAnalyticsResponse getDashboardAnalytics() {
+        ZoneId zoneId = ZoneId.of("Asia/Seoul");
+        LocalDate today = LocalDate.now(zoneId);
+
+        List<AdminDailySalesResponse> dailySales = getDailySales(today);
+        List<AdminHourlySalesResponse> hourlySales = getHourlySales(today);
+        List<AdminTopMenuSalesResponse> topMenus = orderItemRepository.findTopMenuSales(
+                OrderStatus.COMPLETED,
+                PageRequest.of(0, 5)
+        );
+
+        return new AdminDashboardAnalyticsResponse(
+                dailySales,
+                hourlySales,
+                topMenus
+        );
+    }
+
+    private List<AdminDailySalesResponse> getDailySales(LocalDate today) {
+        List<AdminDailySalesResponse> responses = new ArrayList<>();
+
+        for (int i = 6; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+
+            LocalDateTime startOfDay = LocalDateTime.of(date, LocalTime.MIN);
+            LocalDateTime endOfDay = LocalDateTime.of(date, LocalTime.MAX);
+
+            Long orderCount = orderRepository.countByCreatedAtBetweenAndOrderStatus(
+                    startOfDay,
+                    endOfDay,
+                    OrderStatus.COMPLETED
+            );
+
+            Integer salesAmount = orderRepository.sumTotalAmountByCreatedAtBetweenAndOrderStatus(
+                    startOfDay,
+                    endOfDay,
+                    OrderStatus.COMPLETED
+            );
+
+            responses.add(new AdminDailySalesResponse(
+                    date,
+                    orderCount,
+                    salesAmount
+            ));
+        }
+
+        return responses;
+    }
+
+    private List<AdminHourlySalesResponse> getHourlySales(LocalDate today) {
+        List<AdminHourlySalesResponse> responses = new ArrayList<>();
+
+        for (int hour = 0; hour < 24; hour++) {
+            LocalDateTime start = LocalDateTime.of(today, LocalTime.of(hour, 0));
+            LocalDateTime end = start.plusHours(1).minusNanos(1);
+
+            Long orderCount = orderRepository.countByCreatedAtBetweenAndOrderStatus(
+                    start,
+                    end,
+                    OrderStatus.COMPLETED
+            );
+
+            Integer salesAmount = orderRepository.sumTotalAmountByCreatedAtBetweenAndOrderStatus(
+                    start,
+                    end,
+                    OrderStatus.COMPLETED
+            );
+
+            responses.add(new AdminHourlySalesResponse(
+                    hour,
+                    orderCount,
+                    salesAmount
+            ));
+        }
+
+        return responses;
     }
 }
