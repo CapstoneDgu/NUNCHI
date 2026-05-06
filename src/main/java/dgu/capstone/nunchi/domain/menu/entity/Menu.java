@@ -101,6 +101,16 @@ public class Menu extends BaseEntity {
                 .build();
     }
 
+    public void updateMenu(String name, Integer price, String imageUrl, MenuCategory category) {
+        this.name = name;
+        this.price = price;
+        this.imageUrl = imageUrl;
+        this.category = category;
+    }
+
+    public void updateRecommended(Boolean isRecommended) {
+        this.isRecommended = isRecommended;
+    }
     public void markSoldOut() {
         this.isSoldOut = true;
     }
