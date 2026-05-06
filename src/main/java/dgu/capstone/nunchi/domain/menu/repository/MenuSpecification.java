@@ -106,9 +106,13 @@ public class MenuSpecification {
         );
     }
 
-    // 메뉴 이름 부분 검색 (대소문자 무시, LIKE %name%)
+    // 메뉴 이름 부분 검색 (대소문자 무시, LIKE %name% / %, _ 이스케이프 처리)
     public static Specification<Menu> nameContains(String name) {
-        return (root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+        String escaped = name.toLowerCase()
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+        return (root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + escaped + "%", '\\');
     }
 
     // 지정 알레르기를 하나라도 포함하는 메뉴를 서브쿼리 NOT IN으로 제외

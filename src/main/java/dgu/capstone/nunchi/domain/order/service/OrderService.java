@@ -17,13 +17,10 @@ import dgu.capstone.nunchi.domain.order.repository.CartRedisRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderItemOptionRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderItemRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderRepository;
-import dgu.capstone.nunchi.domain.session.repository.KioskSessionRepository;
 import dgu.capstone.nunchi.global.exception.domainException.MenuException;
 import dgu.capstone.nunchi.global.exception.domainException.OrderException;
-import dgu.capstone.nunchi.global.exception.domainException.SessionException;
 import dgu.capstone.nunchi.global.exception.errorcode.MenuErrorCode;
 import dgu.capstone.nunchi.global.exception.errorcode.OrderErrorCode;
-import dgu.capstone.nunchi.global.exception.errorcode.SessionErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +40,6 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderItemOptionRepository orderItemOptionRepository;
-    private final KioskSessionRepository kioskSessionRepository;
 
     /** 장바구니 조회 */
     public CartResponse getCart(Long sessionId) {
@@ -195,12 +191,9 @@ public class OrderService {
         return OrderResponse.from(order, itemResponses);
     }
 
-    /** 장바구니 전체 비우기 */
+    /** 장바구니 전체 비우기 (세션 미존재 시에도 성공 - 멱등성 보장) */
     @Transactional
     public void clearCart(Long sessionId) {
-        if (!kioskSessionRepository.existsById(sessionId)) {
-            throw new SessionException(SessionErrorCode.NOT_FOUND_SESSION);
-        }
         cartRedisRepository.deleteCart(sessionId);
     }
 

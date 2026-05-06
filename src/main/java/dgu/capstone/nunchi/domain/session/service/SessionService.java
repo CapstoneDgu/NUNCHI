@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.data.domain.PageRequest;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -73,9 +74,10 @@ public class SessionService {
             throw new SessionException(SessionErrorCode.NOT_FOUND_SESSION);
         }
 
-        return conversationMessageRepository
-                .findAllBySession_SessionIdOrderByCreatedAtAsc(sessionId, PageRequest.of(0, limit))
-                .stream()
+        List<ConversationMessage> messages = conversationMessageRepository
+                .findAllBySession_SessionIdOrderByCreatedAtDesc(sessionId, PageRequest.of(0, limit));
+        Collections.reverse(messages);
+        return messages.stream()
                 .map(ConversationMessageResponse::from)
                 .toList();
     }

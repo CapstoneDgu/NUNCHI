@@ -13,14 +13,17 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @Tag(name = "Session", description = "세션 관리 API")
+@Validated
 @RestController
 @RequestMapping("/api/sessions")
 @RequiredArgsConstructor
@@ -72,7 +75,7 @@ public class SessionController {
     @GetMapping("/{sessionId}/messages")
     public ResponseEntity<ApiResponse<List<ConversationMessageResponse>>> getMessages(
             @Parameter(description = "세션 ID") @PathVariable Long sessionId,
-            @Parameter(description = "조회 최대 개수") @RequestParam(defaultValue = "100") int limit
+            @Parameter(description = "조회 최대 개수") @Min(1) @RequestParam(defaultValue = "100") int limit
     ) {
         List<ConversationMessageResponse> response = sessionService.getMessages(sessionId, limit);
         return ResponseEntity.ok(ApiResponse.ok(response));
@@ -93,7 +96,7 @@ public class SessionController {
     @GetMapping("/{sessionId}/tool-logs")
     public ResponseEntity<ApiResponse<List<AiToolCallLogResponse>>> getToolCallLogs(
             @Parameter(description = "세션 ID") @PathVariable Long sessionId,
-            @Parameter(description = "조회 최대 개수") @RequestParam(defaultValue = "50") int limit
+            @Parameter(description = "조회 최대 개수") @Min(1) @RequestParam(defaultValue = "50") int limit
     ) {
         List<AiToolCallLogResponse> response = sessionService.getToolCallLogs(sessionId, limit);
         return ResponseEntity.ok(ApiResponse.ok(response));

@@ -114,12 +114,13 @@ public class MenuService {
 
     // 이름 퍼지 검색 (FastAPI NER 결과 → menuId 변환용)
     public List<MenuResponse> searchMenus(MenuSearchRequest request) {
-        if (request.name() == null || request.name().isBlank()) {
+        String keyword = request.name() == null ? "" : request.name().trim();
+        if (keyword.isBlank()) {
             throw new MenuException(MenuErrorCode.INVALID_SEARCH_KEYWORD);
         }
         Specification<Menu> spec = Specification.where(MenuSpecification.notSoldOut())
                 .and(MenuSpecification.fetchCategory())
-                .and(MenuSpecification.nameContains(request.name()));
+                .and(MenuSpecification.nameContains(keyword));
         return menuRepository.findAll(spec).stream()
                 .map(MenuResponse::from)
                 .toList();
