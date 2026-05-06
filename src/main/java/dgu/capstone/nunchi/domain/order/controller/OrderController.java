@@ -68,6 +68,15 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.ok(orderService.confirmOrder(request.sessionId())));
     }
 
+    @Operation(summary = "장바구니 전체 비우기", description = "세션의 Redis 장바구니를 전체 초기화합니다. 루프백 재시작 또는 세션 취소 시 사용.")
+    @DeleteMapping("/cart/{sessionId}")
+    public ResponseEntity<ApiResponse<Void>> clearCart(
+            @Parameter(description = "세션 ID") @PathVariable Long sessionId
+    ) {
+        orderService.clearCart(sessionId);
+        return ResponseEntity.ok(ApiResponse.noContent());
+    }
+
     @Operation(summary = "주문 취소", description = "주문을 취소 상태로 변경합니다.")
     @PatchMapping("/{orderId}/cancel")
     public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
