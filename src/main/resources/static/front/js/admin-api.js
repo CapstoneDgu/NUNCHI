@@ -39,6 +39,10 @@ async function adminFetch(url, options = {}) {
     const hasJson = contentType && contentType.includes("application/json");
     const body = hasJson ? await response.json() : null;
 
+    if (response.status === 204) {
+        return null;
+    }
+
     if (response.status === 401 || response.status === 403) {
         clearAdminToken();
         alert("관리자 인증이 만료되었거나 유효하지 않습니다. 다시 인증해주세요.");
