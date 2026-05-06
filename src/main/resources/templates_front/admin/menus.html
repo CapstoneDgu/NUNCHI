@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NUNCHI 메뉴 관리</title>
+    <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body class="admin-body">
+<header class="admin-header">
+    <div>
+        <h1>NUNCHI 메뉴 관리</h1>
+        <p>키오스크에 노출되는 메뉴 정보를 관리합니다.</p>
+    </div>
+    <div class="header-actions">
+        <a href="/admin/dashboard.html" class="secondary-link">대시보드</a>
+        <button id="logoutButton" class="logout-button">로그아웃</button>
+    </div>
+</header>
+
+<main class="admin-main">
+    <section class="admin-section">
+        <div class="section-title-row">
+            <h2>메뉴 목록</h2>
+            <div class="section-actions">
+                <button id="refreshMenuButton" class="secondary-button">새로고침</button>
+                <button id="openCreateFormButton" class="primary-button">메뉴 등록</button>
+            </div>
+        </div>
+
+        <div id="menuError" class="error-message"></div>
+        <div id="menuLoading" class="loading-text">메뉴 목록을 불러오는 중입니다...</div>
+
+        <div class="table-wrapper">
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>메뉴명</th>
+                    <th>가격</th>
+                    <th>카테고리</th>
+                    <th>품절</th>
+                    <th>추천</th>
+                    <th>관리</th>
+                </tr>
+                </thead>
+                <tbody id="menuTableBody">
+                <tr>
+                    <td colspan="7" class="empty-cell">메뉴가 없습니다.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="menuFormSection" class="admin-section hidden">
+        <div class="section-title-row">
+            <h2 id="menuFormTitle">메뉴 등록</h2>
+            <button id="closeFormButton" class="secondary-button">닫기</button>
+        </div>
+
+        <form id="menuForm" class="admin-form">
+            <input type="hidden" id="menuId" />
+
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="name">메뉴명</label>
+                    <input type="text" id="name" placeholder="예: 제육덮밥" required />
+                </div>
+
+                <div class="form-field">
+                    <label for="price">가격</label>
+                    <input type="number" id="price" placeholder="예: 8500" min="0" required />
+                </div>
+
+                <div class="form-field">
+                    <label for="categoryId">카테고리 ID</label>
+                    <input type="number" id="categoryId" placeholder="예: 1" min="1" required />
+                </div>
+
+                <div class="form-field">
+                    <label for="imageUrl">이미지 URL</label>
+                    <input type="text" id="imageUrl" placeholder="https://example.com/menu.jpg" />
+                </div>
+            </div>
+
+            <div class="checkbox-row">
+                <label>
+                    <input type="checkbox" id="isSoldOut" />
+                    품절 상태로 등록
+                </label>
+
+
+                <label>
+                    <input type="checkbox" id="isRecommended" />
+                    추천 메뉴로 등록
+                </label>
+            </div>
+            <p id="statusEditHint" class="hint-text hidden">
+                품절/추천 상태는 메뉴 목록의 상태 버튼에서 변경할 수 있습니다.
+            </p>
+            <button type="submit" id="submitMenuButton" class="primary-button">저장</button>
+            <p id="menuFormError" class="error-message"></p>
+        </form>
+    </section>
+</main>
+
+<script src="/js/admin-api.js"></script>
+<script src="/js/admin-menu.js"></script>
+</body>
+</html>
