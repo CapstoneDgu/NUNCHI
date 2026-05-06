@@ -20,4 +20,7 @@ public interface MenuRepository extends JpaRepository<Menu, Long>, JpaSpecificat
     // 전체 판매 가능 메뉴 조회
     List<Menu> findByIsSoldOutFalse();
 
+    long countByIsSoldOutTrue();
+
+    long countByIsRecommendedTrue();
 }
