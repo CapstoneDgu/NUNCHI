@@ -33,8 +33,8 @@ public record AdminOrderItemResponse(
                 orderItem.getOrderItemId(),
                 orderItem.getMenuId(),
                 orderItem.getMenuName(),
-                orderItem.getQuantity(),
-                orderItem.getUnitPrice(),
+                quantity,
+                unitPrice,
                 quantity * unitPrice
         );
     }
