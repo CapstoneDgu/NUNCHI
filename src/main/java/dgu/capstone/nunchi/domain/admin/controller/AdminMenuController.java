@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,7 +48,9 @@ public class AdminMenuController {
     public ResponseEntity<ApiResponse<AdminMenuResponse>> createMenu(
             @Valid @RequestBody AdminMenuCreateRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.created(adminMenuService.createMenu(request)));
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.created(adminMenuService.createMenu(request)));
     }
 
     @Operation(summary = "관리자 메뉴 수정", description = "기존 메뉴의 메뉴명, 가격, 이미지 URL, 카테고리를 수정합니다.")
@@ -82,11 +85,11 @@ public class AdminMenuController {
 
     @Operation(summary = "관리자 메뉴 삭제", description = "메뉴 ID를 기준으로 메뉴를 삭제합니다.")
     @DeleteMapping("/{menuId}")
-    public ResponseEntity<ApiResponse<Void>> deleteMenu(
+    public ResponseEntity<Void> deleteMenu(
             @Parameter(description = "삭제할 메뉴 ID", example = "1")
             @PathVariable Long menuId
     ) {
         adminMenuService.deleteMenu(menuId);
-        return ResponseEntity.ok(ApiResponse.noContent());
+        return ResponseEntity.noContent().build();
     }
 }
