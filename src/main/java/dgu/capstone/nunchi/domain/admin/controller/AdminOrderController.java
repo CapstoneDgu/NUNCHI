@@ -7,6 +7,7 @@ import dgu.capstone.nunchi.domain.admin.service.AdminOrderService;
 import dgu.capstone.nunchi.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@SecurityRequirement(name = "Bearer Authentication")
 @Tag(name = "관리자 주문 API", description = "관리자페이지에서 주문 목록, 주문 상세, 주문 상태를 관리하는 API입니다.")
 @RestController
 @RequestMapping("/api/admin/orders")

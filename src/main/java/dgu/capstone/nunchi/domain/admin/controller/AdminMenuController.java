@@ -9,6 +9,7 @@ import dgu.capstone.nunchi.domain.admin.service.AdminMenuService;
 import dgu.capstone.nunchi.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@SecurityRequirement(name = "Bearer Authentication")
 @Tag(name = "관리자 메뉴 API", description = "관리자페이지에서 메뉴를 조회, 등록, 수정, 삭제하고 품절/추천 상태를 관리하는 API입니다.")
 @RestController
 @RequestMapping("/api/admin/menus")
