@@ -1,132 +1,134 @@
 // ========================================================
-// menu-data.js — 상록원 식당 · 메뉴 데이터 단일 소스
+// menu-data.js — 상록원 식당 · 메뉴 데이터 어댑터
 // 사용처: N02-menu (목록 + 상세 오버레이) 및 향후 P01 요약
 //
-// 구조:
-//   window.__MENU_DATA__ = {
-//       brand, floors[ { id, label, stores[ { id, name, hours, menus[] } ] } ]
-//   }
+// 책임:
+//   - GET /api/menus 호출 → floors[ stores[ menus[] ] ] 트리 변환
+//   - 운영시간 문자열 형식 정규화 ("11:00-14:00,15:00-16:00" → "11:00~14:00 / 15:00~16:00")
+//   - 카테고리 키워드 기반 메뉴 메타(설명/구성/원산지/영양) 추정 — 백엔드 메타 보강 전까지 사용
 //
-// 메뉴 객체 필드:
-//   id          숫자 ID
-//   name        메뉴명
-//   price       원
-//   aiPick      (옵션) AI 추천 뱃지
-//   badge       (옵션) "한정판매" 등 추가 뱃지 텍스트
-//   dailyDate   (옵션, store 레벨에서도 사용) "03/25(수)" 등 변동 메뉴 날짜 표기
-//               → store 레벨에 있으면 N02 매장 사이드바에 "오늘 (MM/DD 요일)" 라벨로 표시
-//               → TODO(후속): 백엔드 일별 메뉴 API 연동 후 하드코딩 값 제거
-//   soldOut     (옵션) 품절
-//
-// 상세(메뉴구성/원산지/영양정보)는 buildMenuMeta(menu) 가
-// 메뉴명 키워드를 기반으로 카테고리를 추정해 자동 생성한다.
+// 외부 노출:
+//   await window.MenuData.load();     // 최초 1회 호출
+//   window.MenuData.data              // { brand, floors[] }
+//   window.MenuData.findMenuById(id)  // {menu, store, floor}
+//   window.MenuData.buildMenuMeta(m)  // {description, components, ingredients, nutrition}
+//   window.MenuData.isOpenNow(hours)  // boolean
+//   window.MenuData.formatPrice(won)  // "₩ 5,000"
 // ========================================================
 
 (function () {
     'use strict';
 
-    // -------- 1. 사용자 제공 실제 메뉴 데이터 --------
+    // -------- 1. 빈 데이터 컨테이너 (load() 호출 전) --------
     const DATA = {
         brand: "상록원",
-        floors: [
-            {
-                id: "F1", label: "1층",
-                stores: [
-                    {
-                        id: "sotn-noodle",
-                        name: "솥앤누들",
-                        hours: "11:00~19:00",
-                        menus: [
-                            { id: 101, name: "삼겹살김치철판",  price: 6000 },
-                            { id: 102, name: "치즈불닭철판",    price: 7000, aiPick: true },
-                            { id: 103, name: "데리야끼치킨솥밥", price: 5700 },
-                            { id: 104, name: "숯불삼겹솥밥",    price: 5000 },
-                            { id: 105, name: "우삼겹솥밥",      price: 6500 },
-                            { id: 106, name: "콘치즈솥밥",      price: 5000 },
-                            { id: 107, name: "우동",            price: 5000 },
-                            { id: 108, name: "우동·돈가스 set", price: 6800 },
-                            { id: 109, name: "우동·알밥 set",   price: 6500 },
-                            { id: 110, name: "철판치즈돈가스",  price: 7000 },
-                            { id: 111, name: "낙지삼겹솥밥",    price: 6500 },
-                        ],
-                    },
-                    {
-                        id: "bunsik",
-                        name: "분식당",
-                        hours: "10:00~14:00",
-                        menus: [
-                            { id: 121, name: "추억의도시락", price: 4000 },
-                            { id: 122, name: "계란라면",     price: 3800 },
-                            { id: 123, name: "치즈라면",     price: 4000 },
-                            { id: 124, name: "해장라면",     price: 4000 },
-                            { id: 125, name: "공기밥",       price: 1000 },
-                        ],
-                    },
-                ],
-            },
-            {
-                id: "F2", label: "2층",
-                stores: [
-                    {
-                        id: "ilpum",
-                        name: "일품",
-                        hours: "11:00~14:00 / 15:00~16:00",
-                        dailyDate: "03/25(수)",
-                        menus: [
-                            { id: 201, name: "매콤제육덮밥·핫도그·자율배식·배추김치/단무지", price: 4500 },
-                        ],
-                    },
-                    {
-                        id: "yang",
-                        name: "양식",
-                        hours: "11:00~14:00",
-                        dailyDate: "03/25(수)",
-                        menus: [
-                            { id: 211, name: "치즈돈까스",            price: 6300 },
-                            { id: 212, name: "토마토파스타·마늘빵",   price: 6000 },
-                            { id: 213, name: "치즈오븐파스타",        price: 6500, badge: "한정판매" },
-                        ],
-                    },
-                    {
-                        id: "deojinguk",
-                        name: "더진국",
-                        hours: "11:00~14:00 / 15:00~16:00",
-                        menus: [
-                            { id: 221, name: "수육국밥·순대국밥", price: 6800 },
-                            { id: 222, name: "얼큰국밥",          price: 7000 },
-                        ],
-                    },
-                ],
-            },
-            {
-                id: "F3", label: "3층",
-                stores: [
-                    {
-                        id: "jipbap",
-                        name: "집밥",
-                        hours: "11:00~14:00 / 17:00~19:00",
-                        dailyDate: "03/25(수)",
-                        menus: [
-                            { id: 301, name: "[중식] 샤브칼국수·삼겹살수육·도토리묵상추무침·샐러드·배추김치", price: 7000 },
-                            { id: 302, name: "[석식] 파채고추장삼겹살·치킨너겟·미역줄기볶음·샐러드·배추김치", price: 7000 },
-                        ],
-                    },
-                    {
-                        id: "hangreut",
-                        name: "한그릇",
-                        hours: "12:00~14:00",
-                        dailyDate: "03/25(수)",
-                        menus: [
-                            { id: 311, name: "[중식] 카레&그릴소세지·통새우볼튀김·마시는요플레·배추김치", price: 7000, badge: "한정판매" },
-                        ],
-                    },
-                ],
-            },
-        ],
+        floors: [],
     };
 
-    // -------- 2. 메뉴 카테고리 추정 --------
-    // 가장 먼저 매칭된 카테고리를 사용 (배열 순서 = 우선순위)
+    // -------- 2. 운영시간 형식 변환 (DB → 화면 표기) --------
+    // DB:    "11:00-14:00,15:00-16:00"
+    // 화면:  "11:00~14:00 / 15:00~16:00"
+    function normalizeHours(raw) {
+        if (!raw) return "";
+        return String(raw)
+            .split(",")
+            .map((s) => s.trim().replace(/-/g, "~"))
+            .filter(Boolean)
+            .join(" / ");
+    }
+
+    // -------- 3. 층 라벨 ("1층", "지하1층" 등) --------
+    function floorLabel(floorNum) {
+        if (floorNum == null) return "기타";
+        if (floorNum < 0) return "지하" + Math.abs(floorNum) + "층";
+        return floorNum + "층";
+    }
+
+    function floorId(floorNum) {
+        if (floorNum == null) return "F0";
+        if (floorNum < 0) return "B" + Math.abs(floorNum);
+        return "F" + floorNum;
+    }
+
+    function storeIdFrom(floorNum, restaurantName) {
+        const safe = String(restaurantName || "unknown")
+            .replace(/\s+/g, "-")
+            .toLowerCase();
+        return floorId(floorNum) + "-" + safe;
+    }
+
+    // -------- 4. API 응답 → floors[ stores[ menus[] ] ] 그룹핑 --------
+    // floor / restaurantName 가 null 인 메뉴는 "추가메뉴" 로 분류되어 N02 트리에서 제외.
+    // (추가메뉴는 향후 별도 UI 에서 표시)
+    function groupMenus(apiMenus) {
+        // floor → restaurantName → menus[]
+        const floorMap = new Map();
+
+        for (const m of apiMenus) {
+            if (m.floor == null || !m.restaurantName) continue;
+
+            const fNum  = m.floor;
+            const rName = m.restaurantName;
+            const fKey  = floorId(fNum);
+
+            if (!floorMap.has(fKey)) {
+                floorMap.set(fKey, {
+                    id:     fKey,
+                    num:    fNum,
+                    label:  floorLabel(fNum),
+                    stores: new Map(),
+                });
+            }
+            const floor = floorMap.get(fKey);
+
+            const sKey = storeIdFrom(fNum, rName);
+            if (!floor.stores.has(sKey)) {
+                floor.stores.set(sKey, {
+                    id:    sKey,
+                    name:  rName,
+                    hours: normalizeHours(m.operatingHours),
+                    menus: [],
+                });
+            }
+            const store = floor.stores.get(sKey);
+
+            store.menus.push({
+                id:       m.menuId,
+                name:     m.name,
+                price:    m.price,
+                imageUrl: m.imageUrl,
+                aiPick:   !!m.isRecommended,
+                soldOut:  !!m.isSoldOut,
+                allergies:    m.allergies || [],
+                spicyLevel:   m.spicyLevel,
+                temperature:  m.temperatureType,
+                calorie:      m.calorie,
+            });
+        }
+
+        // Map → 정렬된 배열 (층 번호 오름차순)
+        const floors = Array.from(floorMap.values())
+            .sort((a, b) => (a.num ?? 99) - (b.num ?? 99))
+            .map((f) => ({
+                id:     f.id,
+                label:  f.label,
+                stores: Array.from(f.stores.values()),
+            }));
+
+        return floors;
+    }
+
+    // -------- 5. API 로드 --------
+    async function load() {
+        if (!window.Api || !window.Api.menu) {
+            throw new Error("Api 모듈이 로드되지 않았습니다. api.js 를 먼저 포함해 주세요.");
+        }
+        const apiMenus = await window.Api.menu.list();
+        DATA.floors = groupMenus(apiMenus || []);
+        return DATA;
+    }
+
+    // -------- 6. 메뉴 카테고리 추정 (메뉴명 키워드) --------
     const CATEGORY_RULES = [
         { id: "ramen",       keywords: ["라면"] },
         { id: "udon",        keywords: ["우동"] },
@@ -143,7 +145,7 @@
     ];
 
     function detectCategory(menu) {
-        const name = menu.name;
+        const name = menu.name || "";
         for (const rule of CATEGORY_RULES) {
             if (rule.keywords.some((kw) => name.toLowerCase().indexOf(kw.toLowerCase()) >= 0)) {
                 return rule.id;
@@ -152,10 +154,7 @@
         return "etc";
     }
 
-    // -------- 3. 카테고리별 데모 메타데이터 템플릿 --------
-    // - components: 메뉴구성 칩에 표시될 구성품
-    // - ingredients: 원재료/원산지 (기본 국내산, true면 수입산으로 표시)
-    // - nutritionRatio: 가격에 비례해서 칼로리/영양소 추정에 쓰임 (대략적)
+    // -------- 7. 카테고리별 메타 템플릿 (백엔드 메타 보강 전 임시) --------
     const META_BY_CATEGORY = {
         ramen: {
             description: "얼큰한 국물에 쫄깃한 면발을 즐기는 따끈한 한 그릇",
@@ -309,18 +308,17 @@
         },
     };
 
-    // -------- 4. 메타 빌더 --------
+    // -------- 8. 메타 빌더 --------
     function buildMenuMeta(menu) {
         const cat = detectCategory(menu);
         const tpl = META_BY_CATEGORY[cat] || META_BY_CATEGORY.etc;
 
-        // 가격에 비례해서 영양소를 ±10% 흔들어 다양성 부여 (결정론적)
-        const seed = (menu.id % 7) - 3;          // -3 ~ +3
-        const factor = 1 + (seed * 0.03);        // 0.91 ~ 1.09
-
+        // 영양: 백엔드 calorie 가 있으면 그걸 사용, 없으면 카테고리 베이스에 ID 기반 ±10% 흔들림
+        const seed = (Number(menu.id) % 7) - 3;
+        const factor = 1 + (seed * 0.03);
         const n = tpl.nutritionBase;
         const nutrition = {
-            kcal:    Math.round(n.kcal    * factor / 10) * 10,
+            kcal:    menu.calorie != null ? menu.calorie : Math.round(n.kcal * factor / 10) * 10,
             protein: Math.round(n.protein * factor),
             carb:    Math.round(n.carb    * factor),
             fat:     Math.round(n.fat     * factor),
@@ -335,7 +333,7 @@
         };
     }
 
-    // -------- 5. 운영 시간 파싱 → 현재 운영중 여부 --------
+    // -------- 9. 운영 시간 파싱 → 현재 운영중 여부 --------
     // hours 예: "11:00~19:00", "11:00~14:00 / 15:00~16:00"
     function parseHoursToRanges(hoursStr) {
         if (!hoursStr) return [];
@@ -350,23 +348,26 @@
     }
 
     function isOpenNow(hoursStr, now) {
+        const ranges = parseHoursToRanges(hoursStr);
+        if (ranges.length === 0) return true; // 운영시간 미등록은 일단 운영중으로 표시
         const date = now || new Date();
         const cur = date.getHours() * 60 + date.getMinutes();
-        return parseHoursToRanges(hoursStr).some(function (r) {
+        return ranges.some(function (r) {
             return cur >= r.startMin && cur < r.endMin;
         });
     }
 
-    // -------- 6. 헬퍼 --------
+    // -------- 10. 헬퍼 --------
     function formatPrice(won) {
-        return "₩ " + Number(won).toLocaleString("ko-KR");
+        return "₩ " + Number(won || 0).toLocaleString("ko-KR");
     }
 
     function findMenuById(id) {
+        const target = Number(id);
         for (const f of DATA.floors) {
             for (const s of f.stores) {
                 for (const m of s.menus) {
-                    if (m.id === id) {
+                    if (Number(m.id) === target) {
                         return { menu: m, store: s, floor: f };
                     }
                 }
@@ -375,10 +376,11 @@
         return null;
     }
 
-    // -------- 7. 외부 노출 --------
+    // -------- 11. 외부 노출 --------
     window.__MENU_DATA__ = DATA;
     window.MenuData = {
         data: DATA,
+        load: load,
         buildMenuMeta: buildMenuMeta,
         isOpenNow: isOpenNow,
         formatPrice: formatPrice,
