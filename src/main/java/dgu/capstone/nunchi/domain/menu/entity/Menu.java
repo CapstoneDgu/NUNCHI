@@ -81,6 +81,16 @@ public class Menu extends BaseEntity {
     @Column(name = "origin_info", length = 500)
     private String originInfo;
 
+    @Column(name = "floor")
+    private Integer floor;
+
+    @Column(name = "restaurant_name", length = 100)
+    private String restaurantName;
+
+    // 영업시간. 다중 구간은 콤마로 구분. 예: "11:00-14:00,15:00-16:00"
+    @Column(name = "operating_hours", length = 50)
+    private String operatingHours;
+
     // 정적 팩토리 메서드
     public static Menu create(String name, Integer price, String imageUrl, MenuCategory category) {
         return Menu.builder()
@@ -91,6 +101,16 @@ public class Menu extends BaseEntity {
                 .build();
     }
 
+    public void updateMenu(String name, Integer price, String imageUrl, MenuCategory category) {
+        this.name = name;
+        this.price = price;
+        this.imageUrl = imageUrl;
+        this.category = category;
+    }
+
+    public void updateRecommended(Boolean isRecommended) {
+        this.isRecommended = isRecommended;
+    }
     public void markSoldOut() {
         this.isSoldOut = true;
     }

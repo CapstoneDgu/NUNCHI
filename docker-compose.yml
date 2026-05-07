@@ -36,6 +36,9 @@ services:
       DEV_REDIS_HOST: redis
       DEV_REDIS_PORT: 6379
       DEV_FASTAPI_URL: ${DEV_FASTAPI_URL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
     ports:
       - "8080:8080"
 

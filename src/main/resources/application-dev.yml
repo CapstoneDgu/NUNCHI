@@ -25,6 +25,8 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
+        jdbc:
+          time_zone: Asia/Seoul
     show-sql: false
     open-in-view: false
 
@@ -35,3 +37,10 @@ spring:
 
 fastapi:
   base-url: ${DEV_FASTAPI_URL}
+
+admin:
+  password: ${ADMIN_PASSWORD}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}

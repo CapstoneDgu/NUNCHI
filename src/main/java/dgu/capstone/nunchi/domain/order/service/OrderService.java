@@ -191,6 +191,12 @@ public class OrderService {
         return OrderResponse.from(order, itemResponses);
     }
 
+    /** 장바구니 전체 비우기 (세션 미존재 시에도 성공 - 멱등성 보장) */
+    @Transactional
+    public void clearCart(Long sessionId) {
+        cartRedisRepository.deleteCart(sessionId);
+    }
+
     /** 주문 취소 */
     @Transactional
     public OrderResponse cancelOrder(Long orderId) {

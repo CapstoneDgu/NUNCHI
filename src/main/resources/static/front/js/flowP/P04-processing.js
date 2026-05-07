@@ -96,7 +96,15 @@
     }
 
     /* ---------- State ---------- */
-    function setState(nextState) {
+    /**
+     * @param {string} nextState
+     * @param {object} [opts]
+     * @param {boolean} [opts.transition=false] — 실제 전이 이벤트 여부.
+     *   true 일 때만 백엔드 markSuccess 호출. URL 강제 진입(?state=approved) 같은
+     *   수동 진입에서는 false 라서 markSuccess 가 중복 호출되지 않는다.
+     */
+    function setState(nextState, opts) {
+        const transition = !!(opts && opts.transition);
         clearAllTimers();
         sectionEl.dataset.state = nextState;
 
@@ -106,7 +114,7 @@
 
         if (nextState === 'inserting') {
             setProgress(0);
-            insertTimer = setTimeout(() => setState('processing'), 3000);
+            insertTimer = setTimeout(() => setState('processing', { transition: true }), 3000);
 
         } else if (nextState === 'processing') {
             setProgress(0);
@@ -128,12 +136,23 @@
                     location.href = '/flowP/P06-fail.html?reason=' + encodeURIComponent(forced);
                     return;
                 }
-                setState('approved');
+                setState('approved', { transition: true });
             }, DURATION);
 
         } else if (nextState === 'approved') {
             setProgress(100);
             try { sessionStorage.setItem(STATUS_KEY, 'approved'); } catch (_) {}
+
+            // 실제 전이 이벤트일 때만 백엔드 결제 성공 마킹.
+            // URL 로 강제 진입(?state=approved) 한 디자인 확인 시에는 호출하지 않음.
+            if (transition) {
+                const paymentId = Number(sessionStorage.getItem('paymentId'));
+                if (paymentId && window.NunchiApi) {
+                    window.NunchiApi.Payments.markSuccess(paymentId)
+                        .catch((e) => console.warn('[P04] markSuccess 실패', e));
+                }
+            }
+
             approvedTimer = setTimeout(() => {
                 location.href = '/flowP/P05-complete.html';
             }, 2000);
@@ -171,7 +190,8 @@
     renderStoreAndTotal();
     try { sessionStorage.setItem(METHOD_KEY, 'ic'); } catch (_) {}
 
+    // 초기 진입은 항상 비-전이(transition=false) — markSuccess 중복 호출 방지
     const initial = getQuery('state');
-    if (initial && COPY[initial]) setState(initial);
-    else setState('inserting');
+    if (initial && COPY[initial]) setState(initial, { transition: false });
+    else setState('inserting', { transition: false });
 })();

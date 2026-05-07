@@ -126,9 +126,31 @@
     }
 
     if (ctaEl) {
-        ctaEl.addEventListener('click', () => {
+        ctaEl.addEventListener('click', async () => {
             if (!selectedMethod) return;
             try { sessionStorage.setItem(METHOD_KEY, selectedMethod); } catch (_) {}
+
+            // 백엔드 결제 생성 — orderId 가 있을 때만 (avatar 모드에서 진입한 경우)
+            const orderId = Number(sessionStorage.getItem('orderId'));
+            const backendMethod = (selectedMethod === 'vein') ? 'VEIN_AUTH' : 'IC_CARD';
+            if (orderId && window.NunchiApi) {
+                ctaEl.disabled = true;
+                try {
+                    const payment = await window.NunchiApi.Payments.create(orderId, backendMethod);
+                    if (!payment || !payment.paymentId) {
+                        // paymentId 없는 응답 = 결제 레코드 미생성. 다음 단계로 가지 않는다.
+                        console.warn('[P02] 결제 생성 응답에 paymentId 없음');
+                        return;
+                    }
+                    sessionStorage.setItem('paymentId', String(payment.paymentId));
+                } catch (e) {
+                    console.warn('[P02] 결제 생성 실패 — 진행 중단', e);
+                    return;
+                } finally {
+                    ctaEl.disabled = false;
+                }
+            }
+
             if (selectedMethod === 'ic') {
                 location.href = '/flowP/P04-processing.html';
             } else if (selectedMethod === 'vein') {
