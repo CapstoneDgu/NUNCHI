@@ -84,9 +84,11 @@
             throw new NunchiApiError(msg, { httpStatus: res.status, code, msg, body: payload });
         }
 
-        // 성공 응답이라도 ApiResponse code 가 200 이 아니면 실패로 처리
+        // 성공 응답: ApiResponse.code 가 2xx 이면 통과 (ok=200, created=201, noContent=204 등)
         if (payload && typeof payload === 'object' && 'code' in payload) {
-            if (payload.code !== 200 && payload.code !== '200') {
+            const codeNum = Number(payload.code);
+            const isSuccessCode = Number.isFinite(codeNum) && codeNum >= 200 && codeNum < 300;
+            if (!isSuccessCode) {
                 throw new NunchiApiError(payload.msg || '비즈니스 오류', {
                     httpStatus: res.status, code: payload.code, msg: payload.msg, body: payload
                 });

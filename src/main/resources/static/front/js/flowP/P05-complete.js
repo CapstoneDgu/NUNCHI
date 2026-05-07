@@ -25,29 +25,31 @@
     const homeEls = Array.from(document.querySelectorAll('[data-action="home"]'));
 
     /* ---------- Session ---------- */
-    const CART_KEY    = 'cart';
-    const STORE_KEY   = 'currentStoreName';
-    const METHOD_KEY  = 'paymentMethod';
-    const STATUS_KEY  = 'paymentStatus';
-    const ORDERNO_KEY = 'orderNumber';
+    const SESSION_ID_KEY = 'sessionId';
+    const STORE_KEY      = 'currentStoreName';
+    const METHOD_KEY     = 'paymentMethod';
+    const STATUS_KEY     = 'paymentStatus';
+    const ORDERNO_KEY    = 'orderNumber';
+    const ORDER_SUMMARY_KEY = 'orderSummary';
 
     const FLOW_KEYS_TO_CLEAR = [
-        CART_KEY, STORE_KEY, METHOD_KEY, STATUS_KEY, ORDERNO_KEY,
-        'mode', 'dineOption', 'currentFloor', 'currentStore',
-        'aiSessionId', 'currentStep', 'orderId', 'paymentId'
+        STORE_KEY, METHOD_KEY, STATUS_KEY, ORDERNO_KEY, ORDER_SUMMARY_KEY,
+        SESSION_ID_KEY, 'mode', 'dineOption', 'currentFloor', 'currentStore',
+        'currentStep', 'orderId', 'paymentId'
     ];
 
-    const MOCK_CART = [
-        { id: 'mock-shabu', name: '샤브칼국수 세트', price: 7000, qty: 1, storeName: '상록원' }
-    ];
-
-    function loadCart() {
+    function loadOrderSummary() {
         try {
-            const raw = sessionStorage.getItem(CART_KEY);
-            if (!raw) return MOCK_CART.slice();
-            const parsed = JSON.parse(raw);
-            return (Array.isArray(parsed) && parsed.length) ? parsed : MOCK_CART.slice();
-        } catch (_) { return MOCK_CART.slice(); }
+            const raw = sessionStorage.getItem(ORDER_SUMMARY_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (_) { return null; }
+    }
+
+    function getSessionId() {
+        const raw = sessionStorage.getItem(SESSION_ID_KEY);
+        const n = raw ? Number(raw) : NaN;
+        return Number.isFinite(n) ? n : null;
     }
 
     /* ---------- Utils ---------- */
@@ -89,18 +91,15 @@
         if (orderTimeEl) orderTimeEl.textContent = formatOrderTime();
         if (methodLabelEl) methodLabelEl.textContent = getMethodLabel();
 
-        const cart = loadCart();
-        const totalQty   = cart.reduce((s, it) => s + (it.qty || 0), 0);
-        const totalPrice = cart.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
+        const summary = loadOrderSummary() || { totalAmount: 0, itemCount: 0, firstName: '', totalQty: 0 };
 
         if (itemsSummaryEl) {
-            const firstName = cart[0] ? (cart[0].name || '') : '';
-            const extra = cart.length > 1 ? ` 외 ${cart.length - 1}건` : '';
-            itemsSummaryEl.textContent = firstName
-                ? `${firstName}${extra} (총 ${totalQty}개)`
-                : `${totalQty}개`;
+            const extra = summary.itemCount > 1 ? ` 외 ${summary.itemCount - 1}건` : '';
+            itemsSummaryEl.textContent = summary.firstName
+                ? `${summary.firstName}${extra} (총 ${summary.totalQty}개)`
+                : `${summary.totalQty}개`;
         }
-        if (totalEl) totalEl.textContent = fmtWon(totalPrice);
+        if (totalEl) totalEl.textContent = fmtWon(summary.totalAmount);
     }
 
     /* ---------- Receipt progress done ---------- */
@@ -151,11 +150,9 @@
     renderAll();
     try { sessionStorage.setItem(STATUS_KEY, 'approved'); } catch (_) {}
 
-    // 세션 종료 — sessionStorage 정리 전에 sessionId 캡처
-    // sessionId 는 백엔드 Long. JS Number 정밀도(2^53) 한계로 변환 시 큰 값에서 손실 가능 →
-    // 문자열 그대로 전달 (api-client 의 encodeURIComponent 가 String/Number 둘 다 처리).
+    // 세션 종료 — 정리 전에 sessionId 캡처해서 PATCH /api/sessions/{id}/complete 호출
     (function completeBackendSession() {
-        const sessionId = sessionStorage.getItem('aiSessionId');
+        const sessionId = sessionStorage.getItem(SESSION_ID_KEY);
         if (sessionId && window.NunchiApi) {
             window.NunchiApi.Sessions.complete(sessionId)
                 .catch((e) => console.warn('[P05] session.complete 실패', e));
