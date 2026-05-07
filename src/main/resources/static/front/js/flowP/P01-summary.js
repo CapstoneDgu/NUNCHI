@@ -1,32 +1,21 @@
 /* ========================================================
-   P01-summary.js — 주문 요약/확인 (Step 1/3)
-   - sessionStorage.cart 를 읽어 리스트·합계 렌더
-   - 수량 ± / 삭제 / 주문 확인 완료 → P02
-   - cart 가 비어있으면 데모 mock 데이터로 렌더 (디자인 확인 편의)
-   - cart 아이템 형식: { id, name, price, qty, storeName?, imageUrl? }
+   P01-summary.js — 주문 요약 / 확인 (Step 1/3)
+   - 서버 Redis 장바구니 (GET /api/orders/cart/{sessionId}) 를 진실의 원천으로 사용
+   - 수량 ±  / 삭제 → Cart API 호출 후 응답으로 재렌더
+   - "주문 확인 완료" → POST /api/orders/confirm → orderId 저장 → P02
    ======================================================== */
 
 (function () {
     'use strict';
 
     /* ---------- Session helpers ---------- */
-    const SESSION_KEY = 'cart';
-    const STORE_KEY   = 'currentStoreName';
+    const SESSION_ID_KEY = 'sessionId';
+    const STORE_KEY      = 'currentStoreName';
 
-    const MOCK_CART = [
-        { id: 'mock-shabu', name: '샤브칼국수 세트', price: 7000, qty: 1, storeName: '상록원' }
-    ];
-
-    function loadCart() {
-        try {
-            const raw = sessionStorage.getItem(SESSION_KEY);
-            if (!raw) return null;
-            const parsed = JSON.parse(raw);
-            return Array.isArray(parsed) ? parsed : null;
-        } catch (_) { return null; }
-    }
-    function saveCart(cart) {
-        try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(cart)); } catch (_) {}
+    function getSessionId() {
+        const raw = sessionStorage.getItem(SESSION_ID_KEY);
+        const n = raw ? Number(raw) : NaN;
+        return Number.isFinite(n) ? n : null;
     }
 
     /* ---------- Formatters ---------- */
@@ -34,8 +23,7 @@
     const fmtWon = (n) => '₩' + nf.format(Math.max(0, n | 0));
 
     /* ---------- DOM refs ---------- */
-    const $ = (sel, root = document) => root.querySelector(sel);
-    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+    const $  = (sel, root = document) => root.querySelector(sel);
 
     const listEl   = $('[data-bind="items"]');
     const countEl  = $('[data-bind="count"]');
@@ -45,25 +33,20 @@
     const backEl   = $('[data-action="back"]');
     const itemTpl  = $('#tpl-p01-item');
 
-    /* ---------- State ---------- */
-    let cart = loadCart();
-    if (!cart || cart.length === 0) {
-        cart = MOCK_CART.slice();
-    }
+    /* ---------- State (서버 응답 그대로) ---------- */
+    // items: [{ itemId, menuId, menuName, unitPrice, quantity, itemTotal, options[] }]
+    let items = [];
 
     /* ---------- Render ---------- */
     function renderStoreName() {
-        const storeName =
-            (sessionStorage.getItem(STORE_KEY)) ||
-            (cart[0] && cart[0].storeName) ||
-            '상록원';
+        const storeName = sessionStorage.getItem(STORE_KEY) || '상록원';
         if (storeEl) storeEl.textContent = storeName;
     }
 
     function renderList() {
         listEl.innerHTML = '';
 
-        if (cart.length === 0) {
+        if (!items.length) {
             const empty = document.createElement('li');
             empty.className = 'p01__empty';
             empty.textContent = '장바구니가 비어있어요';
@@ -71,33 +54,24 @@
             return;
         }
 
-        cart.forEach((item, idx) => {
+        items.forEach((it) => {
             const node = itemTpl.content.firstElementChild.cloneNode(true);
-            node.dataset.index = String(idx);
+            node.dataset.itemId = it.itemId;
 
-            $('[data-name]', node).textContent  = item.name || '';
-            $('[data-price]', node).textContent = fmtWon(item.price);
-            $('[data-qty-value]', node).textContent = String(item.qty || 1);
-
-            if (item.imageUrl) {
-                const thumb = $('[data-thumb]', node);
-                thumb.innerHTML = '';
-                const img = document.createElement('img');
-                img.src = item.imageUrl;
-                img.alt = item.name || '';
-                thumb.appendChild(img);
-            }
+            $('[data-name]', node).textContent  = it.menuName || '';
+            $('[data-price]', node).textContent = fmtWon(it.itemTotal);
+            $('[data-qty-value]', node).textContent = String(it.quantity || 1);
 
             const decBtn = $('[data-qty-dec]', node);
-            if ((item.qty || 1) <= 1) decBtn.disabled = true;
+            if ((it.quantity || 1) <= 1) decBtn.disabled = true;
 
             listEl.appendChild(node);
         });
     }
 
     function renderSummary() {
-        const totalQty   = cart.reduce((s, it) => s + (it.qty || 0), 0);
-        const totalPrice = cart.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
+        const totalQty   = items.reduce((s, it) => s + (it.quantity || 0), 0);
+        const totalPrice = items.reduce((s, it) => s + (it.itemTotal || 0), 0);
 
         countEl.textContent = totalQty + '개';
         totalEl.textContent = fmtWon(totalPrice);
@@ -111,31 +85,80 @@
         renderSummary();
     }
 
+    function applyCart(cartResponse) {
+        items = (cartResponse && cartResponse.items) ? cartResponse.items : [];
+        renderAll();
+    }
+
+    function logApiError(label, e) {
+        console.warn('[P01] ' + label + ' 실패', e);
+    }
+
+    /* ---------- API ---------- */
+    async function fetchCart() {
+        const sid = getSessionId();
+        if (!sid) {
+            // 세션이 없으면 N02 부터 다시 시작
+            location.href = '/flowN/N02-menu.html';
+            return;
+        }
+        try {
+            const res = await window.NunchiApi.Cart.get(sid);
+            applyCart(res);
+        } catch (e) {
+            logApiError('카트 조회', e);
+            applyCart({ items: [] });
+        }
+    }
+
+    async function changeQty(itemId, nextQty) {
+        const sid = getSessionId();
+        if (!sid) return;
+        try {
+            const res = await window.NunchiApi.Cart.updateItem(sid, itemId, nextQty);
+            applyCart(res);
+        } catch (e) {
+            logApiError('수량 변경', e);
+        }
+    }
+
+    async function removeItem(itemId) {
+        const sid = getSessionId();
+        if (!sid) return;
+        try {
+            const res = await window.NunchiApi.Cart.removeItem(sid, itemId);
+            applyCart(res);
+        } catch (e) {
+            logApiError('삭제', e);
+        }
+    }
+
+    function goNext() {
+        if (items.length === 0) return;
+        // confirmOrder 는 결제수단 선택 직후 P02 에서 호출 (그래야 P02 까지 카트가 살아있음)
+        location.href = '/flowP/P02-payment.html';
+    }
+
     /* ---------- Events ---------- */
     listEl.addEventListener('click', (e) => {
         const itemEl = e.target.closest('[data-item]');
         if (!itemEl) return;
-        const idx = Number(itemEl.dataset.index);
-        if (Number.isNaN(idx) || !cart[idx]) return;
+        const itemId = itemEl.dataset.itemId;
+        const found = items.find((it) => it.itemId === itemId);
+        if (!found) return;
 
         if (e.target.closest('[data-qty-inc]')) {
-            cart[idx].qty = (cart[idx].qty || 1) + 1;
-            saveCart(cart);
-            renderAll();
+            changeQty(itemId, found.quantity + 1);
             return;
         }
         if (e.target.closest('[data-qty-dec]')) {
-            const nextQty = (cart[idx].qty || 1) - 1;
-            if (nextQty < 1) return;
-            cart[idx].qty = nextQty;
-            saveCart(cart);
-            renderAll();
+            const next = found.quantity - 1;
+            if (next < 1) return;
+            changeQty(itemId, next);
             return;
         }
         if (e.target.closest('[data-del]')) {
-            cart.splice(idx, 1);
-            saveCart(cart);
-            renderAll();
+            removeItem(itemId);
             return;
         }
     });
@@ -145,12 +168,9 @@
         else location.href = '/flowN/N02-menu.html';
     });
 
-    ctaEl.addEventListener('click', () => {
-        if (cart.length === 0) return;
-        saveCart(cart);
-        location.href = '/flowP/P02-payment.html';
-    });
+    ctaEl.addEventListener('click', goNext);
 
     /* ---------- Init ---------- */
     renderAll();
+    fetchCart();
 })();

@@ -91,11 +91,64 @@
         } else if (nextState === 'success') {
             setProgress(100);
             try { sessionStorage.setItem(STATUS_KEY, 'approved'); } catch (_) {}
-            successTimer = setTimeout(() => {
-                location.href = '/flowP/P05-complete.html';
-            }, 2000);
+            finalizePaymentThenGoComplete();
         } else if (nextState === 'fail') {
             try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
+        }
+    }
+
+    /* ---------- 백엔드 결제 확정 (성공 분기 1회 가드) ----------
+       인증 성공 직전까지 confirmOrder/payment.create 를 미뤘다 한 번에 호출:
+         1) POST /api/orders/confirm   → orderId
+         2) POST /api/payments         → paymentId
+         3) PATCH /api/payments/{id}/success
+         4) sessionStorage.orderSummary 저장 후 P05 이동
+       어느 단계든 실패하면 카트는 그대로(아직 confirm 전이거나 markFail 가드) → P06 이동 */
+    let finalizing = false;
+    async function finalizePaymentThenGoComplete() {
+        if (finalizing) return;
+        finalizing = true;
+
+        const sid = Number(sessionStorage.getItem('sessionId'));
+        if (!sid) {
+            location.href = '/flowN/N02-menu.html';
+            return;
+        }
+
+        let orderId = null, paymentId = null;
+        try {
+            const order = await window.NunchiApi.Orders.confirm(sid);
+            if (!order || !order.orderId) throw new Error('confirm 응답에 orderId 없음');
+            orderId = order.orderId;
+            sessionStorage.setItem('orderId', String(orderId));
+
+            // 결제 완료 화면용 요약
+            try {
+                sessionStorage.setItem('orderSummary', JSON.stringify({
+                    totalAmount: order.totalAmount,
+                    itemCount:   (order.items || []).length,
+                    firstName:   (order.items && order.items[0] && order.items[0].menuName) || '',
+                    totalQty:    (order.items || []).reduce((s, it) => s + (it.quantity || 0), 0),
+                }));
+            } catch (_) {}
+
+            const payment = await window.NunchiApi.Payments.create(orderId, 'VEIN_AUTH');
+            if (!payment || !payment.paymentId) throw new Error('payment.create 응답에 paymentId 없음');
+            paymentId = payment.paymentId;
+            sessionStorage.setItem('paymentId', String(paymentId));
+
+            await window.NunchiApi.Payments.markSuccess(paymentId);
+
+            successTimer = setTimeout(() => {
+                location.href = '/flowP/P05-complete.html';
+            }, 1200);
+        } catch (e) {
+            console.warn('[P03] 결제 확정 실패', e);
+            // 결제 레코드까지는 만들어진 경우 markFail
+            if (paymentId) {
+                window.NunchiApi.Payments.markFail(paymentId).catch(() => {});
+            }
+            location.href = '/flowP/P06-fail.html?reason=vein_unregistered';
         }
     }
 
@@ -139,30 +192,20 @@
         if (storeEl) storeEl.textContent = storeName;
     }
 
-    /* ---------- Events ---------- */
-    if (backEl) {
-        backEl.addEventListener('click', () => {
-            clearAllTimers();
-            if (history.length > 1) history.back();
-            else location.href = '/flowP/P02-payment.html';
-        });
+    /* ---------- Events ----------
+       성공 단계에 진입하기 전이라면 confirm 도 하기 전이므로 카트가 그대로 살아있음.
+       모든 복귀(뒤로/취소/결제수단 변경) 는 history.back() 으로 — location.href 로 새 entry 를
+       쌓으면 P02 에서 뒤로가기 시 P03 으로 되돌아오는 문제가 생긴다. */
+    function goPrev() {
+        clearAllTimers();
+        if (history.length > 1) history.back();
+        else location.href = '/flowP/P02-payment.html';
     }
-    if (cancelEl) {
-        cancelEl.addEventListener('click', () => {
-            clearAllTimers();
-            location.href = '/flowP/P02-payment.html';
-        });
-    }
-    if (switchEl) {
-        switchEl.addEventListener('click', () => {
-            clearAllTimers();
-            location.href = '/flowP/P02-payment.html';
-        });
-    }
+    if (backEl)   backEl.addEventListener('click',   goPrev);
+    if (cancelEl) cancelEl.addEventListener('click', goPrev);
+    if (switchEl) switchEl.addEventListener('click', goPrev);
     if (retryEl) {
-        retryEl.addEventListener('click', () => {
-            setState('prepare');
-        });
+        retryEl.addEventListener('click', () => { setState('prepare'); });
     }
 
     window.addEventListener('beforeunload', clearAllTimers);
