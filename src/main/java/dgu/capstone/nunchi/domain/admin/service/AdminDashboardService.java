@@ -113,6 +113,10 @@ public class AdminDashboardService {
                     OrderStatus.COMPLETED
             );
 
+            if (salesAmount == null) {
+                salesAmount = 0;
+            }
+
             responses.add(new AdminDailySalesResponse(
                     date,
                     orderCount,
@@ -141,6 +145,10 @@ public class AdminDashboardService {
                     end,
                     OrderStatus.COMPLETED
             );
+
+            if (salesAmount == null) {
+                salesAmount = 0;
+            }
 
             responses.add(new AdminHourlySalesResponse(
                     hour,

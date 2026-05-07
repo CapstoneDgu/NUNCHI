@@ -21,7 +21,7 @@ async function adminFetch(url, options = {}) {
 
     if (!token) {
         redirectToAdminLogin();
-        return;
+        throw new Error("관리자 인증이 필요합니다.");
     }
 
     const headers = {
@@ -30,24 +30,30 @@ async function adminFetch(url, options = {}) {
         ...(options.headers || {})
     };
 
-    const response = await fetch(url, {
-        ...options,
-        headers
-    });
+    let response;
 
-    const contentType = response.headers.get("content-type");
-    const hasJson = contentType && contentType.includes("application/json");
-    const body = hasJson ? await response.json() : null;
+    try {
+        response = await fetch(url, {
+            ...options,
+            headers
+        });
+    } catch (error) {
+        throw new Error("서버와 통신할 수 없습니다.");
+    }
 
     if (response.status === 204) {
         return null;
     }
 
+    const contentType = response.headers.get("content-type");
+    const hasJson = contentType && contentType.includes("application/json");
+    const body = hasJson ? await response.json() : null;
+
     if (response.status === 401 || response.status === 403) {
         clearAdminToken();
         alert("관리자 인증이 만료되었거나 유효하지 않습니다. 다시 인증해주세요.");
         redirectToAdminLogin();
-        return;
+        throw new Error("관리자 인증이 만료되었습니다.");
     }
 
     if (!response.ok) {

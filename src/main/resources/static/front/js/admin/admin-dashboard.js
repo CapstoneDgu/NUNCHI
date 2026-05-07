@@ -112,12 +112,12 @@ function renderRecentOrders(orders) {
 
     recentOrdersBody.innerHTML = orders.map(order => `
         <tr>
-            <td>${order.orderId}</td>
-            <td>${order.sessionId}</td>
+            <td>${escapeHtml(order.orderId)}</td>
+            <td>${escapeHtml(order.sessionId)}</td>
             <td>${formatCurrency(order.totalAmount)}</td>
-            <td>${order.orderStatus}</td>
-            <td>${order.itemCount}</td>
-            <td>${formatDateTime(order.createdAt)}</td>
+            <td>${escapeHtml(order.orderStatus)}</td>
+            <td>${escapeHtml(order.itemCount)}</td>
+            <td>${escapeHtml(formatDateTime(order.createdAt))}</td>
         </tr>
     `).join("");
 }

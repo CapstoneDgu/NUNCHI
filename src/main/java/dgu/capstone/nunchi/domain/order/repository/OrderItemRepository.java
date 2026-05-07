@@ -29,14 +29,14 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     @Query("""
     SELECT new dgu.capstone.nunchi.domain.admin.dto.response.AdminTopMenuSalesResponse(
         oi.menuId,
-        oi.menuName,
-        COALESCE(SUM(oi.quantity), 0),
-        COALESCE(SUM(oi.quantity * oi.unitPrice), 0)
+        MAX(oi.menuName),
+        SUM(oi.quantity),
+        SUM(oi.quantity * oi.unitPrice)
     )
     FROM OrderItem oi
     JOIN oi.order o
     WHERE o.orderStatus = :orderStatus
-    GROUP BY oi.menuId, oi.menuName
+    GROUP BY oi.menuId
     ORDER BY SUM(oi.quantity) DESC
 """)
     List<AdminTopMenuSalesResponse> findTopMenuSales(
