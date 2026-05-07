@@ -1,11 +1,14 @@
 package dgu.capstone.nunchi.domain.order.repository;
 
+import dgu.capstone.nunchi.domain.admin.dto.response.AdminTopMenuSalesResponse;
 import dgu.capstone.nunchi.domain.menu.entity.Menu;
 import dgu.capstone.nunchi.domain.order.entity.Order;
 import dgu.capstone.nunchi.domain.order.entity.OrderItem;
+import dgu.capstone.nunchi.domain.order.entity.OrderStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -22,4 +25,22 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
         ORDER BY SUM(oi.quantity) DESC
     """)
     List<Menu> findPopularMenus(Pageable pageable);
+
+    @Query("""
+    SELECT new dgu.capstone.nunchi.domain.admin.dto.response.AdminTopMenuSalesResponse(
+        oi.menuId,
+        MAX(oi.menuName),
+        SUM(oi.quantity),
+        SUM(oi.quantity * oi.unitPrice)
+    )
+    FROM OrderItem oi
+    JOIN oi.order o
+    WHERE o.orderStatus = :orderStatus
+    GROUP BY oi.menuId
+    ORDER BY SUM(oi.quantity) DESC
+""")
+    List<AdminTopMenuSalesResponse> findTopMenuSales(
+            @Param("orderStatus") OrderStatus orderStatus,
+            Pageable pageable
+    );
 }

@@ -452,3 +452,92 @@ input {
     font-size: 13px;
     font-weight: 800;
 }
+
+.analytics-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+}
+
+.analytics-card {
+    padding: 20px;
+    border-radius: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.analytics-card h3 {
+    margin: 0 0 16px;
+    font-size: 18px;
+}
+
+.bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 130px;
+    align-items: center;
+    gap: 12px;
+}
+
+.bar-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #374151;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bar-track {
+    height: 14px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: #2563eb;
+}
+
+.bar-value {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    font-size: 13px;
+}
+
+.bar-value strong {
+    color: #111827;
+}
+
+.bar-value span {
+    color: #6b7280;
+}
+
+.empty-chart {
+    padding: 18px;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #9ca3af;
+    text-align: center;
+    border: 1px dashed #d1d5db;
+}
+
+@media (max-width: 760px) {
+    .bar-row {
+        grid-template-columns: 80px 1fr;
+    }
+
+    .bar-value {
+        grid-column: 2;
+        align-items: flex-start;
+    }
+}

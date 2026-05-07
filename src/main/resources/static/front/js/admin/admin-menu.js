@@ -52,7 +52,12 @@ closeFormButton.addEventListener("click", () => {
 menuForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const editingMenuId = menuIdInput.value;
+    const editingMenuId = menuIdInput.value ? Number(menuIdInput.value) : null;
+
+    if (menuIdInput.value && (!Number.isInteger(editingMenuId) || editingMenuId < 1)) {
+        menuFormError.textContent = "유효하지 않은 메뉴 ID입니다.";
+        return;
+    }
 
     const payload = {
         name: nameInput.value.trim(),
@@ -175,6 +180,8 @@ function openCreateForm() {
 }
 
 function openEditForm(menuId) {
+    menuId = validatePositiveId(menuId);
+    if (!menuId) return;
     const menu = menus.find(item => item.menuId === menuId);
 
     if (!menu) {
@@ -215,6 +222,9 @@ function closeMenuForm() {
 }
 
 async function toggleSoldOut(menuId, isSoldOut) {
+    menuId = validatePositiveId(menuId);
+    if (!menuId) return;
+
     try {
         await adminFetch(`/api/admin/menus/${menuId}/sold-out`, {
             method: "PATCH",
@@ -228,6 +238,9 @@ async function toggleSoldOut(menuId, isSoldOut) {
 }
 
 async function toggleRecommended(menuId, isRecommended) {
+    menuId = validatePositiveId(menuId);
+    if (!menuId) return;
+
     try {
         await adminFetch(`/api/admin/menus/${menuId}/recommended`, {
             method: "PATCH",
@@ -241,6 +254,9 @@ async function toggleRecommended(menuId, isRecommended) {
 }
 
 async function deleteMenu(menuId) {
+    menuId = validatePositiveId(menuId);
+    if (!menuId) return;
+
     if (!confirm("정말 이 메뉴를 삭제하시겠습니까?")) {
         return;
     }
@@ -263,4 +279,15 @@ function escapeHtml(value) {
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+}
+
+function validatePositiveId(id) {
+    const numberId = Number(id);
+
+    if (!Number.isInteger(numberId) || numberId < 1) {
+        alert("유효하지 않은 메뉴 ID입니다.");
+        return null;
+    }
+
+    return numberId;
 }

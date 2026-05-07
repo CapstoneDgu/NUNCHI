@@ -12,6 +12,15 @@ const recentOrdersBody = document.getElementById("recentOrdersBody");
 const logoutButton = document.getElementById("logoutButton");
 const refreshDashboardButton = document.getElementById("refreshDashboardButton");
 
+const refreshAnalyticsButton = document.getElementById("refreshAnalyticsButton");
+const analyticsLoading = document.getElementById("analyticsLoading");
+const analyticsError = document.getElementById("analyticsError");
+const analyticsContent = document.getElementById("analyticsContent");
+
+const dailySalesChart = document.getElementById("dailySalesChart");
+const hourlySalesChart = document.getElementById("hourlySalesChart");
+const topMenuChart = document.getElementById("topMenuChart");
+
 document.addEventListener("DOMContentLoaded", () => {
     const token = getAdminToken();
 
@@ -21,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     loadDashboard();
+    loadAnalytics();
 });
 
 logoutButton.addEventListener("click", () => {
@@ -31,6 +41,12 @@ logoutButton.addEventListener("click", () => {
 refreshDashboardButton.addEventListener("click", () => {
     loadDashboard();
 });
+
+if (refreshAnalyticsButton) {
+    refreshAnalyticsButton.addEventListener("click", () => {
+        loadAnalytics();
+    });
+}
 
 async function loadDashboard() {
     dashboardLoading.classList.remove("hidden");
@@ -58,6 +74,32 @@ async function loadDashboard() {
     }
 }
 
+async function loadAnalytics() {
+    if (!analyticsLoading || !analyticsContent) {
+        return;
+    }
+
+    analyticsLoading.classList.remove("hidden");
+    analyticsContent.classList.add("hidden");
+    analyticsError.textContent = "";
+
+    try {
+        const data = await adminFetch("/api/admin/dashboard/analytics");
+
+        if (!data) return;
+
+        renderDailySalesChart(data.dailySales || []);
+        renderHourlySalesChart(data.hourlySales || []);
+        renderTopMenuChart(data.topMenus || []);
+
+        analyticsContent.classList.remove("hidden");
+    } catch (error) {
+        analyticsError.textContent = error.message;
+    } finally {
+        analyticsLoading.classList.add("hidden");
+    }
+}
+
 function renderRecentOrders(orders) {
     if (!orders.length) {
         recentOrdersBody.innerHTML = `
@@ -70,12 +112,91 @@ function renderRecentOrders(orders) {
 
     recentOrdersBody.innerHTML = orders.map(order => `
         <tr>
-            <td>${order.orderId}</td>
-            <td>${order.sessionId}</td>
+            <td>${escapeHtml(order.orderId)}</td>
+            <td>${escapeHtml(order.sessionId)}</td>
             <td>${formatCurrency(order.totalAmount)}</td>
-            <td>${order.orderStatus}</td>
-            <td>${order.itemCount}</td>
-            <td>${formatDateTime(order.createdAt)}</td>
+            <td>${escapeHtml(order.orderStatus)}</td>
+            <td>${escapeHtml(order.itemCount)}</td>
+            <td>${escapeHtml(formatDateTime(order.createdAt))}</td>
         </tr>
     `).join("");
+}
+
+function renderDailySalesChart(items) {
+    renderBarChart(dailySalesChart, items, {
+        label: item => formatShortDate(item.date),
+        value: item => item.salesAmount || 0,
+        subText: item => `${item.orderCount || 0}건`,
+        valueText: value => formatCurrency(value),
+        emptyMessage: "최근 7일 매출 데이터가 없습니다."
+    });
+}
+
+function renderHourlySalesChart(items) {
+    const filtered = items.filter(item => (item.orderCount || 0) > 0 || (item.salesAmount || 0) > 0);
+
+    renderBarChart(hourlySalesChart, filtered, {
+        label: item => `${item.hour}시`,
+        value: item => item.salesAmount || 0,
+        subText: item => `${item.orderCount || 0}건`,
+        valueText: value => formatCurrency(value),
+        emptyMessage: "오늘 시간대별 판매 데이터가 없습니다."
+    });
+}
+
+function renderTopMenuChart(items) {
+    renderBarChart(topMenuChart, items, {
+        label: item => item.menuName || "-",
+        value: item => item.quantitySold || 0,
+        subText: item => formatCurrency(item.salesAmount || 0),
+        valueText: value => `${value}개`,
+        emptyMessage: "TOP 판매 메뉴 데이터가 없습니다."
+    });
+}
+
+function renderBarChart(target, items, options) {
+    if (!target) return;
+
+    if (!items.length) {
+        target.innerHTML = `<div class="empty-chart">${options.emptyMessage}</div>`;
+        return;
+    }
+
+    const maxValue = Math.max(...items.map(options.value), 1);
+
+    target.innerHTML = items.map(item => {
+        const value = options.value(item);
+        const width = Math.max((value / maxValue) * 100, value > 0 ? 6 : 0);
+
+        return `
+            <div class="bar-row">
+                <div class="bar-label">${escapeHtml(options.label(item))}</div>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width: ${width}%"></div>
+                </div>
+                <div class="bar-value">
+                    <strong>${escapeHtml(options.valueText(value))}</strong>
+                    <span>${escapeHtml(options.subText(item))}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function formatShortDate(value) {
+    if (!value) return "-";
+
+    const parts = String(value).split("-");
+    if (parts.length !== 3) return value;
+
+    return `${parts[1]}/${parts[2]}`;
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }

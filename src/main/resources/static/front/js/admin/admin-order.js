@@ -111,18 +111,18 @@ function renderOrders(orders) {
 
     orderTableBody.innerHTML = orders.map(order => `
         <tr>
-            <td>${order.orderId}</td>
-            <td>${order.sessionId}</td>
+            <td>${escapeHtml(order.orderId)}</td>
+            <td>${escapeHtml(order.sessionId)}</td>
             <td>${formatCurrency(order.totalAmount)}</td>
             <td>
                 <span class="status-badge ${getOrderStatusClass(order.orderStatus)}">
-                    ${order.orderStatus}
+                    ${escapeHtml(order.orderStatus)}
                 </span>
             </td>
-            <td>${order.itemCount}</td>
-            <td>${formatDateTime(order.createdAt)}</td>
+            <td>${escapeHtml(order.itemCount)}</td>
+            <td>${escapeHtml(formatDateTime(order.createdAt))}</td>
             <td>
-                <button class="small-button" data-action="detail" data-order-id="${order.orderId}">
+                <button class="small-button" data-action="detail" data-order-id="${escapeHtml(order.orderId)}">
                     상세
                 </button>
             </td>
@@ -139,7 +139,7 @@ async function loadOrderDetail(orderId) {
         orderDetailSection.classList.remove("hidden");
         orderDetailSection.scrollIntoView({ behavior: "smooth" });
     } catch (error) {
-        orderError.textContent = error.message;
+        alert(error.message);
     }
 }
 
@@ -170,10 +170,10 @@ function renderOrderItems(items) {
 
     orderItemTableBody.innerHTML = items.map(item => `
         <tr>
-            <td>${item.orderItemId}</td>
-            <td>${item.menuId}</td>
+            <td>${escapeHtml(item.orderItemId)}</td>
+            <td>${escapeHtml(item.menuId)}</td>
             <td>${escapeHtml(item.menuName)}</td>
-            <td>${item.quantity}</td>
+            <td>${escapeHtml(item.quantity)}</td>
             <td>${formatCurrency(item.unitPrice)}</td>
             <td>${formatCurrency(item.totalPrice)}</td>
         </tr>
