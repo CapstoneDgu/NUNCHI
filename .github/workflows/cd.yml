@@ -72,4 +72,5 @@ jobs:
             cd /home/ubuntu/nunchi
             export ECR_IMAGE=$ECR_IMAGE
             docker compose pull app
+            docker compose down
             docker compose up -d
