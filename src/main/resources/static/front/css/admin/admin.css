@@ -577,8 +577,3 @@ input {
     outline: 2px solid #2563eb;
     outline-offset: 2px;
 }
-
-.primary-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-}

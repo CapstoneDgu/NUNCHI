@@ -16,7 +16,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
-import java.util.*;
+import java.time.format.DateTimeParseException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,11 +33,8 @@ public class AdminSalesReportService {
     public byte[] createMonthlySalesExcel(String month) {
         YearMonth targetMonth = parseMonth(month);
 
-        LocalDate startDate = targetMonth.atDay(1);
-        LocalDate endDate = targetMonth.atEndOfMonth();
-
-        LocalDateTime start = startDate.atStartOfDay();
-        LocalDateTime end = endDate.atTime(23, 59, 59);
+        LocalDateTime start = targetMonth.atDay(1).atStartOfDay();
+        LocalDateTime end = targetMonth.plusMonths(1).atDay(1).atStartOfDay().minusNanos(1);
 
         List<Order> completedOrders = orderRepository.findAllByCreatedAtBetweenAndOrderStatus(
                 start,
@@ -77,7 +77,11 @@ public class AdminSalesReportService {
             return YearMonth.now(ZoneId.of("Asia/Seoul"));
         }
 
-        return YearMonth.parse(month);
+        try {
+            return YearMonth.parse(month);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("조회 월은 yyyy-MM 형식이어야 합니다.");
+        }
     }
 
     private void createSummarySheet(
@@ -91,11 +95,11 @@ public class AdminSalesReportService {
         Sheet sheet = workbook.createSheet("요약");
 
         int totalOrderCount = completedOrders.size();
-        int totalSalesAmount = completedOrders.stream()
-                .mapToInt(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0)
+        long totalSalesAmount = completedOrders.stream()
+                .mapToLong(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0L)
                 .sum();
 
-        int averageOrderAmount = totalOrderCount == 0 ? 0 : totalSalesAmount / totalOrderCount;
+        long averageOrderAmount = totalOrderCount == 0 ? 0 : totalSalesAmount / totalOrderCount;
 
         AdminTopMenuSalesResponse topMenu = menuSales.isEmpty() ? null : menuSales.get(0);
 
@@ -133,11 +137,11 @@ public class AdminSalesReportService {
         Sheet sheet = workbook.createSheet("대시보드");
 
         int totalOrderCount = completedOrders.size();
-        int totalSalesAmount = completedOrders.stream()
-                .mapToInt(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0)
+        long totalSalesAmount = completedOrders.stream()
+                .mapToLong(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0L)
                 .sum();
 
-        int averageOrderAmount = totalOrderCount == 0 ? 0 : totalSalesAmount / totalOrderCount;
+        long averageOrderAmount = totalOrderCount == 0 ? 0 : totalSalesAmount / totalOrderCount;
         AdminTopMenuSalesResponse topMenu = menuSales.isEmpty() ? null : menuSales.get(0);
 
         int rowIndex = 0;
@@ -198,27 +202,27 @@ public class AdminSalesReportService {
         Map<LocalDate, List<Order>> ordersByDate = completedOrders.stream()
                 .collect(Collectors.groupingBy(order -> order.getCreatedAt().toLocalDate()));
 
-        Map<LocalDate, Integer> salesByDate = new LinkedHashMap<>();
+        Map<LocalDate, Long> salesByDate = new LinkedHashMap<>();
 
         for (int day = 1; day <= targetMonth.lengthOfMonth(); day++) {
             LocalDate date = targetMonth.atDay(day);
             List<Order> orders = ordersByDate.getOrDefault(date, List.of());
 
-            int salesAmount = orders.stream()
-                    .mapToInt(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0)
+            long salesAmount = orders.stream()
+                    .mapToLong(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0L)
                     .sum();
 
             salesByDate.put(date, salesAmount);
         }
 
-        int maxSales = salesByDate.values().stream()
-                .mapToInt(Integer::intValue)
+        long maxSales = salesByDate.values().stream()
+                .mapToLong(Long::longValue)
                 .max()
-                .orElse(0);
+                .orElse(0L);
 
-        for (Map.Entry<LocalDate, Integer> entry : salesByDate.entrySet()) {
+        for (Map.Entry<LocalDate, Long> entry : salesByDate.entrySet()) {
             LocalDate date = entry.getKey();
-            int salesAmount = entry.getValue();
+            long salesAmount = entry.getValue();
             int orderCount = ordersByDate.getOrDefault(date, List.of()).size();
 
             Row row = sheet.createRow(rowIndex++);
@@ -267,8 +271,8 @@ public class AdminSalesReportService {
             List<Order> orders = ordersByHour.getOrDefault(hour, List.of());
 
             int orderCount = orders.size();
-            int salesAmount = orders.stream()
-                    .mapToInt(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0)
+            long salesAmount = orders.stream()
+                    .mapToLong(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0L)
                     .sum();
 
             Row row = sheet.createRow(rowIndex++);
@@ -383,8 +387,8 @@ public class AdminSalesReportService {
             List<Order> orders = ordersByDate.getOrDefault(date, List.of());
 
             int orderCount = orders.size();
-            int salesAmount = orders.stream()
-                    .mapToInt(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0)
+            long salesAmount = orders.stream()
+                    .mapToLong(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0L)
                     .sum();
 
             Row row = sheet.createRow(rowIndex++);
@@ -423,8 +427,8 @@ public class AdminSalesReportService {
             List<Order> orders = ordersByHour.getOrDefault(hour, List.of());
 
             int orderCount = orders.size();
-            int salesAmount = orders.stream()
-                    .mapToInt(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0)
+            long salesAmount = orders.stream()
+                    .mapToLong(order -> order.getTotalAmount() != null ? order.getTotalAmount() : 0L)
                     .sum();
 
             Row row = sheet.createRow(rowIndex++);

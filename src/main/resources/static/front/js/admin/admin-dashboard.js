@@ -224,7 +224,7 @@ function setDefaultSalesReportMonth() {
 }
 
 async function downloadSalesExcelReport() {
-    if (!salesReportMonth || !downloadSalesExcelButton) return;
+    if (!salesReportMonth || !downloadSalesExcelButton || !salesReportError) return;
 
     const month = salesReportMonth.value;
 
