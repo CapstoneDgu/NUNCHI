@@ -541,3 +541,44 @@ input {
         align-items: flex-start;
     }
 }
+
+.report-download-box {
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 18px;
+    border-radius: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.report-download-box label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #374151;
+}
+
+.admin-input {
+    min-width: 180px;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    font-size: 15px;
+    color: #111827;
+    background: #ffffff;
+}
+
+.admin-input:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.primary-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}

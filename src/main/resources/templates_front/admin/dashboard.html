@@ -56,6 +56,25 @@
     <section class="admin-section">
         <div class="section-title-row">
             <div>
+                <h2>판매 리포트</h2>
+                <p class="hint-text">월간 판매 데이터를 엑셀 파일로 다운로드합니다.</p>
+            </div>
+        </div>
+
+        <div class="report-download-box">
+            <label for="salesReportMonth">조회 월</label>
+            <input id="salesReportMonth" type="month" class="admin-input" />
+            <button id="downloadSalesExcelButton" class="primary-button">
+                엑셀 다운로드
+            </button>
+        </div>
+
+        <div id="salesReportError" class="error-message"></div>
+    </section>
+
+    <section class="admin-section">
+        <div class="section-title-row">
+            <div>
                 <h2>운영 분석</h2>
                 <p class="hint-text">최근 7일 매출, 오늘 시간대별 주문, TOP 판매 메뉴를 확인합니다.</p>
             </div>

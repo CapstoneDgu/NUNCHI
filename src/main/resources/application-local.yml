@@ -13,10 +13,13 @@ spring:
         - classpath:/templates_front/
 
   datasource:
-    url: ${LOCAL_DB_URL}
-    username: ${LOCAL_DB_USERNAME}
-    password: ${LOCAL_DB_PASSWORD}
+    url: jdbc:postgresql://127.0.0.1:5433/nunchi
+    username: nunchi
+    password: nunchi1234
     driver-class-name: org.postgresql.Driver
+    hikari:
+      data-source-properties:
+        sslmode: disable
 
   jpa:
     hibernate:
