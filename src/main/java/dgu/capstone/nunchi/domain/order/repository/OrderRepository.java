@@ -38,4 +38,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("end") LocalDateTime end,
             @Param("orderStatus") OrderStatus orderStatus
     );
+
+    List<Order> findAllByCreatedAtBetweenAndOrderStatus(
+            LocalDateTime start,
+            LocalDateTime end,
+            OrderStatus orderStatus
+    );
 }

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
@@ -42,5 +43,25 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<AdminTopMenuSalesResponse> findTopMenuSales(
             @Param("orderStatus") OrderStatus orderStatus,
             Pageable pageable
+    );
+
+    @Query("""
+    SELECT new dgu.capstone.nunchi.domain.admin.dto.response.AdminTopMenuSalesResponse(
+        oi.menuId,
+        MAX(oi.menuName),
+        SUM(oi.quantity),
+        SUM(oi.quantity * oi.unitPrice)
+    )
+    FROM OrderItem oi
+    JOIN oi.order o
+    WHERE o.orderStatus = :orderStatus
+      AND o.createdAt BETWEEN :start AND :end
+    GROUP BY oi.menuId
+    ORDER BY SUM(oi.quantity) DESC
+""")
+    List<AdminTopMenuSalesResponse> findMenuSalesByPeriod(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("orderStatus") OrderStatus orderStatus
     );
 }

@@ -17,6 +17,10 @@ const analyticsLoading = document.getElementById("analyticsLoading");
 const analyticsError = document.getElementById("analyticsError");
 const analyticsContent = document.getElementById("analyticsContent");
 
+const salesReportMonth = document.getElementById("salesReportMonth");
+const downloadSalesExcelButton = document.getElementById("downloadSalesExcelButton");
+const salesReportError = document.getElementById("salesReportError");
+
 const dailySalesChart = document.getElementById("dailySalesChart");
 const hourlySalesChart = document.getElementById("hourlySalesChart");
 const topMenuChart = document.getElementById("topMenuChart");
@@ -28,6 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
         redirectToAdminLogin();
         return;
     }
+
+    setDefaultSalesReportMonth();
 
     loadDashboard();
     loadAnalytics();
@@ -45,6 +51,12 @@ refreshDashboardButton.addEventListener("click", () => {
 if (refreshAnalyticsButton) {
     refreshAnalyticsButton.addEventListener("click", () => {
         loadAnalytics();
+    });
+}
+
+if (downloadSalesExcelButton) {
+    downloadSalesExcelButton.addEventListener("click", () => {
+        downloadSalesExcelReport();
     });
 }
 
@@ -199,4 +211,74 @@ function escapeHtml(value) {
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+}
+
+function setDefaultSalesReportMonth() {
+    if (!salesReportMonth) return;
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+
+    salesReportMonth.value = `${year}-${month}`;
+}
+
+async function downloadSalesExcelReport() {
+    if (!salesReportMonth || !downloadSalesExcelButton || !salesReportError) return;
+
+    const month = salesReportMonth.value;
+
+    if (!month) {
+        salesReportError.textContent = "조회 월을 선택해주세요.";
+        return;
+    }
+
+    salesReportError.textContent = "";
+    downloadSalesExcelButton.disabled = true;
+    downloadSalesExcelButton.textContent = "다운로드 중...";
+
+    try {
+        const token = getAdminToken();
+
+        if (!token) {
+            redirectToAdminLogin();
+            return;
+        }
+
+        const response = await fetch(`/api/admin/reports/sales/excel?month=${encodeURIComponent(month)}`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            clearAdminToken();
+            alert("관리자 인증이 만료되었거나 유효하지 않습니다. 다시 인증해주세요.");
+            redirectToAdminLogin();
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error("엑셀 리포트 다운로드에 실패했습니다.");
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `monthly-sales-report-${month}.xlsx`;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+        salesReportError.textContent = error.message;
+    } finally {
+        downloadSalesExcelButton.disabled = false;
+        downloadSalesExcelButton.textContent = "엑셀 다운로드";
+    }
 }

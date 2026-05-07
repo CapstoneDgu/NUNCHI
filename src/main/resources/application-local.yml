@@ -13,10 +13,13 @@ spring:
         - classpath:/templates_front/
 
   datasource:
-    url: ${LOCAL_DB_URL}
-    username: ${LOCAL_DB_USERNAME}
+    url: ${LOCAL_DB_URL:jdbc:postgresql://127.0.0.1:5433/nunchi}
+    username: ${LOCAL_DB_USERNAME:nunchi}
     password: ${LOCAL_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      data-source-properties:
+        sslmode: disable
 
   jpa:
     hibernate:
@@ -33,12 +36,12 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+  admin:
+    password: ${ADMIN_PASSWORD:1234}
+
+  jwt:
+    secret: ${JWT_SECRET:your-very-long-secret-key-your-very-long-secret-key}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+
 fastapi:
-  base-url: http://localhost:8000
-
-admin:
-  password: ${ADMIN_PASSWORD:3316}
-
-jwt:
-  secret: ${JWT_SECRET:your-very-long-secret-key-your-very-long-secret-key}
-  expiration-ms: 3600000
+  base-url: ${LOCAL_FASTAPI_URL:http://localhost:8000}
