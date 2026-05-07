@@ -1,0 +1,9 @@
+{
+  "name": "nunchi-frontend-tests",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NUNCHI 키오스크 프론트엔드 정적 JS 의 단위 테스트 (Node 기본 test runner)",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\""
+  }
+}
