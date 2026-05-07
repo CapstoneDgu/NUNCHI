@@ -205,10 +205,14 @@
                 .map((i) => `${i.name}(${i.origin})`)
                 .join(" · ") + (meta.ingredients.length > 2 ? " 외" : "");
 
+            const thumbStyle = m.imageUrl
+                ? `style="background-image:url('${m.imageUrl}');background-size:cover;background-position:center;"`
+                : "";
+
             return `
                 <li class="n02__menu-card ${inCart ? "n02__menu-card--in-cart" : ""} ${m.soldOut ? "n02__menu-card--sold-out" : ""}"
                     data-menu="${m.id}">
-                    <div class="n02__menu-card-thumb" data-detail-trigger="${m.id}">
+                    <div class="n02__menu-card-thumb" data-detail-trigger="${m.id}" ${thumbStyle}>
                         ${m.aiPick ? `
                             <span class="n02__menu-card-ai-badge">
                                 <i class="xi xi-lightning"></i>AI 추천
@@ -315,9 +319,14 @@
         $detailPrice.textContent = fmt(m.price);
         $detailDesc.textContent  = meta.description;
 
-        // 사진 placeholder — 메뉴명 텍스트
-        $detailHero.style.background =
-            "linear-gradient(135deg, var(--neutral-200), var(--neutral-300))";
+        // 사진 — 등록된 imageUrl 우선, 없으면 placeholder 그라데이션
+        if (m.imageUrl) {
+            $detailHero.style.background =
+                "url('" + m.imageUrl + "') center/cover no-repeat";
+        } else {
+            $detailHero.style.background =
+                "linear-gradient(135deg, var(--neutral-200), var(--neutral-300))";
+        }
 
         // 메뉴 구성 칩
         $detailComps.innerHTML = meta.components
@@ -613,13 +622,36 @@
     }
 
     // ---------- 초기화 ----------
-    function bootstrap() {
+    async function bootstrap() {
         loadSession();
+        sessionStorage.setItem("currentStep", "N02");
 
-        // 매장 브랜드명
+        // 매장 브랜드명 (API 로드 전에도 표시)
         $brand.textContent = window.MenuData.data.brand;
 
-        // 기본 위치 = 1층 / 첫 식당 (세션값이 유효하면 그대로)
+        // 채팅/이벤트는 데이터 로드와 무관하게 먼저 세팅
+        renderChatInitial();
+        renderCartBar();
+        bindEvents();
+
+        // 백엔드에서 메뉴 트리 로드
+        try {
+            await window.MenuData.load();
+        } catch (e) {
+            console.error("[N02] 메뉴 로드 실패", e);
+            $menuEmpty.hidden = false;
+            $menuEmpty.querySelector("p").textContent =
+                "메뉴를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.";
+            return;
+        }
+
+        // 데이터가 비어 있으면 빈 상태
+        if (!window.MenuData.data.floors.length) {
+            $menuEmpty.hidden = false;
+            return;
+        }
+
+        // 기본 위치 = 첫 층 / 첫 식당 (세션값이 유효하면 그대로)
         if (!state.currentFloorId || !getFloor(state.currentFloorId)) {
             state.currentFloorId = window.MenuData.data.floors[0].id;
         }
@@ -628,15 +660,11 @@
             state.currentStoreId = f && f.stores[0] ? f.stores[0].id : null;
         }
         persistFloorStore();
-        sessionStorage.setItem("currentStep", "N02");
 
         renderFloorTabs();
         renderStoreList();
         renderMenuGrid();
         renderCartBar();
-        renderChatInitial();
-
-        bindEvents();
 
         // 운영 상태는 1분마다 갱신
         setInterval(renderStoreList, 60 * 1000);

@@ -13,13 +13,17 @@ public record MenuResponse(
         String name,
         Integer price,
         Boolean isSoldOut,
+        Boolean isRecommended,
         String imageUrl,
         Integer spicyLevel,
         TemperatureType temperatureType,
         VegetarianType vegetarianType,
         Season seasonRecommended,
         Set<AllergyType> allergies,
-        Integer calorie
+        Integer calorie,
+        Integer floor,
+        String restaurantName,
+        String operatingHours
 ) {
 
     public static MenuResponse from(Menu menu) {
@@ -28,13 +32,17 @@ public record MenuResponse(
                 menu.getName(),
                 menu.getPrice(),
                 menu.getIsSoldOut(),
+                menu.getIsRecommended(),
                 menu.getImageUrl(),
                 menu.getSpicyLevel(),
                 menu.getTemperatureType(),
                 menu.getVegetarianType(),
                 menu.getSeasonRecommended(),
                 new java.util.HashSet<>(menu.getAllergies()),
-                menu.getNutrition() != null ? menu.getNutrition().getCalorie() : null
+                menu.getNutrition() != null ? menu.getNutrition().getCalorie() : null,
+                menu.getFloor(),
+                menu.getRestaurantName(),
+                menu.getOperatingHours()
         );
     }
 }
