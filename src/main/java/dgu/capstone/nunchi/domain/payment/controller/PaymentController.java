@@ -1,5 +1,6 @@
 package dgu.capstone.nunchi.domain.payment.controller;
 
+import dgu.capstone.nunchi.domain.payment.dto.request.BarcodePaymentRequest;
 import dgu.capstone.nunchi.domain.payment.dto.request.PaymentCreateRequest;
 import dgu.capstone.nunchi.domain.payment.dto.response.PaymentResponse;
 import dgu.capstone.nunchi.domain.payment.service.PaymentService;
@@ -28,6 +29,15 @@ public class PaymentController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(paymentService.requestPayment(request)));
+    }
+
+    @Operation(summary = "바코드 결제", description = "바코드 값을 받아 즉시 결제 성공 처리합니다. 바코드 유효성 검증 없이 항상 성공합니다.")
+    @PostMapping("/barcode")
+    public ResponseEntity<ApiResponse<PaymentResponse>> payByBarcode(
+            @RequestBody @Valid BarcodePaymentRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(paymentService.payByBarcode(request)));
     }
 
     @Operation(summary = "결제 성공 처리", description = "결제를 성공 상태로 변경합니다.")

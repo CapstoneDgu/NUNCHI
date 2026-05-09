@@ -3,9 +3,11 @@ package dgu.capstone.nunchi.domain.payment.service;
 import dgu.capstone.nunchi.domain.order.entity.Order;
 import dgu.capstone.nunchi.domain.order.entity.OrderStatus;
 import dgu.capstone.nunchi.domain.order.repository.OrderRepository;
+import dgu.capstone.nunchi.domain.payment.dto.request.BarcodePaymentRequest;
 import dgu.capstone.nunchi.domain.payment.dto.request.PaymentCreateRequest;
 import dgu.capstone.nunchi.domain.payment.dto.response.PaymentResponse;
 import dgu.capstone.nunchi.domain.payment.entity.Payment;
+import dgu.capstone.nunchi.domain.payment.entity.PaymentMethod;
 import dgu.capstone.nunchi.domain.payment.entity.PaymentStatus;
 import dgu.capstone.nunchi.domain.payment.repository.PaymentRepository;
 import dgu.capstone.nunchi.global.exception.domainException.OrderException;
@@ -71,6 +73,28 @@ public class PaymentService {
         }
 
         payment.fail();
+        return PaymentResponse.from(payment);
+    }
+
+    /** 바코드 결제: 값 검증 없이 즉시 성공 처리 */
+    @Transactional
+    public PaymentResponse payByBarcode(BarcodePaymentRequest request) {
+        Order order = orderRepository.findById(request.orderId())
+                .orElseThrow(() -> new OrderException(OrderErrorCode.NOT_FOUND_ORDER));
+
+        if (order.getOrderStatus() != OrderStatus.COMPLETED) {
+            throw new PaymentException(PaymentErrorCode.ORDER_NOT_CONFIRMED);
+        }
+
+        paymentRepository.findTopByOrderIdOrderByCreatedAtDesc(request.orderId())
+                .ifPresent(existing -> {
+                    if (existing.getStatus() == PaymentStatus.PENDING || existing.getStatus() == PaymentStatus.SUCCESS) {
+                        throw new PaymentException(PaymentErrorCode.PAYMENT_ALREADY_EXISTS);
+                    }
+                });
+
+        Payment payment = paymentRepository.save(Payment.create(request.orderId(), PaymentMethod.BARCODE));
+        payment.success();
         return PaymentResponse.from(payment);
     }
 
