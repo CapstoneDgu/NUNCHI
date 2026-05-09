@@ -70,8 +70,19 @@
     }
 
     // 논리키 → 실제 sessionStorage 키. 미정의 논리키는 그대로 사용 (자유 키 허용).
+    // dev 환경에서는 미정의 키를 만나면 console.warn 으로 typo 디버깅 도움.
+    const isDevHost = typeof location !== 'undefined' &&
+        (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+    const warnedKeys = new Set();
     function resolveKey(logicalKey) {
-        return KEYS[logicalKey] || logicalKey;
+        if (KEYS[logicalKey]) return KEYS[logicalKey];
+        if (isDevHost && !warnedKeys.has(logicalKey)) {
+            warnedKeys.add(logicalKey);
+            console.warn('[AppState] 미정의 논리키:', logicalKey,
+                '— 그대로 사용됩니다. 오타 확인 또는 KEYS 사전에 추가하세요.',
+                '\n사용 가능한 키:', Object.keys(KEYS).join(', '));
+        }
+        return logicalKey;
     }
 
     // 구독자 — Map<storageKey, Set<callback>>
@@ -91,7 +102,10 @@
         if (raw == null) return null;
         if (JSON_KEYS.has(logicalKey)) {
             try { return JSON.parse(raw); }
-            catch (_) { return null; }
+            catch (e) {
+                console.warn('[AppState] JSON 파싱 실패', { logicalKey, storageKey: sk, raw, error: e && e.message });
+                return null;
+            }
         }
         return raw;
     }

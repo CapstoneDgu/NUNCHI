@@ -40,7 +40,8 @@
 
     /**
      * reply 텍스트 → 단계 추정. 서버 currentStep 미제공 시 fallback.
-     * @returns {'BROWSE'|'SELECT'|'CONFIGURE'|'CHECKOUT'|null}
+     * BROWSE 는 부트 기본값으로 두고 적극 추정 X — 반환 X.
+     * @returns {'SELECT'|'CONFIGURE'|'CHECKOUT'|null}
      */
     function guessStep(text) {
         if (typeof text !== 'string' || text.length === 0) return null;

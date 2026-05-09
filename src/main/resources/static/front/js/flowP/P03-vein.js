@@ -148,7 +148,13 @@
             if (paymentId) {
                 window.NunchiApi.Payments.markFail(paymentId).catch(() => {});
             }
-            location.href = '/fail?reason=vein_unregistered';
+            // 에러 종류에 따라 실패 사유 분기
+            const code = String((e && (e.code || e.msg)) || '');
+            const isVeinUnregistered =
+                /VEIN.*UNREGISTER|VEIN.*NOT.*FOUND|정맥.*등록/i.test(code) ||
+                /VEIN.*UNREGISTER|VEIN.*NOT.*FOUND|정맥.*등록/i.test(String(e && e.message));
+            const reason = isVeinUnregistered ? 'vein_unregistered' : 'payment_failed';
+            location.href = '/fail?reason=' + reason;
         }
     }
 

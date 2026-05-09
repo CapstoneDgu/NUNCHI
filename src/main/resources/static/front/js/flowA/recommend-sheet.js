@@ -203,7 +203,11 @@
     function open(opts) {
         const o = opts || {};
         const menus = Array.isArray(o.menus) ? o.menus : [];
-        if (!menus.length) return;
+        if (!menus.length) {
+            // 메뉴가 비어 있어도 기존 시트는 정리
+            if (activeOverlay) close();
+            return;
+        }
         ensureStyles();
         if (activeOverlay) close();
 

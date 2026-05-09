@@ -106,9 +106,11 @@
             }
 
             // 바지인: AI 발화 중 사용자 발화 감지
+            // → speak abort + LISTENING 모드 전환 (final 처리 흐름 충돌 방지)
             if (state.mode === MODE.AI_SPEAKING && (interim || state.finalAccum)) {
                 console.log(LOG, '✋ 사용자 끼어들기 감지');
                 _bargeIn();
+                setMode(MODE.LISTENING);
             }
 
             // final 결과 처리

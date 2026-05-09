@@ -628,21 +628,37 @@
             const display = it.menuName || '';
             const shortName = display.length > 6 ? display.slice(0, 6) + '…' : display;
             const imgUrl = state.menuImageCache.get(it.menuId);
-            const thumbHtml = imgUrl
-                ? `<span class="a01__minicart-item-thumb"><img alt="" src="${imgUrl}" /></span>`
-                : `<span class="a01__minicart-item-thumb a01__minicart-item-thumb--icon"><i class="xi xi-restaurant" aria-hidden="true"></i></span>`;
-            $li.innerHTML = thumbHtml
-                + '<span class="a01__minicart-item-name">' + shortName + '</span>'
-                + '<span class="a01__minicart-item-qty">×' + (it.quantity || 1) + '</span>';
-            // 이미지 onerror 폴백 → 아이콘
-            const $img = $li.querySelector('img');
-            if ($img) {
-                $img.addEventListener('error', () => {
-                    const $thumb = $li.querySelector('.a01__minicart-item-thumb');
-                    $thumb.classList.add('a01__minicart-item-thumb--icon');
-                    $thumb.innerHTML = '<i class="xi xi-restaurant" aria-hidden="true"></i>';
-                });
+
+            // 썸네일 — 이미지 또는 아이콘 (DOM API, XSS 방지)
+            const $thumb = document.createElement('span');
+            $thumb.className = 'a01__minicart-item-thumb';
+            const setIconFallback = () => {
+                $thumb.classList.add('a01__minicart-item-thumb--icon');
+                $thumb.replaceChildren();
+                const $icon = document.createElement('i');
+                $icon.className = 'xi xi-restaurant';
+                $icon.setAttribute('aria-hidden', 'true');
+                $thumb.appendChild($icon);
+            };
+            if (imgUrl) {
+                const $img = document.createElement('img');
+                $img.alt = '';
+                $img.src = imgUrl;  // setter, HTML 파싱 X
+                $img.addEventListener('error', setIconFallback);
+                $thumb.appendChild($img);
+            } else {
+                setIconFallback();
             }
+
+            const $name = document.createElement('span');
+            $name.className = 'a01__minicart-item-name';
+            $name.textContent = shortName;
+
+            const $qty = document.createElement('span');
+            $qty.className = 'a01__minicart-item-qty';
+            $qty.textContent = '×' + (it.quantity || 1);
+
+            $li.append($thumb, $name, $qty);
             $minicartList.appendChild($li);
         });
         $minicartTotal.textContent = fmtPrice(getCartTotal());
@@ -736,11 +752,8 @@
             showToast('장바구니가 비어있어요.');
             return;
         }
-        const result = await callApi('주문 확정', () =>
-            window.Api.order.confirm(state.sessionId)
-        );
-        if (!result || !result.orderId) return;
-        AppState.set('ORDER_ID', result.orderId);
+        // 주문 확정(order.confirm)은 P01-summary 가 사용자 액션 시 호출.
+        // A01 에서 호출하면 P03/P04 의 retry 흐름과 합쳐 중복 주문 위험.
         AppState.set('CURRENT_STEP', 'P01');
         if (window.ConvEngine) window.ConvEngine.stop();
         location.href = '/summary';
@@ -954,16 +967,25 @@
         // 자동 청취 시작 — ConvEngine.start() 가 AI_SPEAKING 으로 진입,
         // greeting 발화 끝나면 endTurn() 으로 LISTENING 전환 (마이크 권한 팝업).
         // 사용자가 마이크 버튼으로 끄기 전까지 자동으로 듣고 끊고 응답.
-        if (!window.ConvEngine.isSupported()) {
+        if (window.ConvEngine.isSupported()) {
+            state.engineStarted = true;
+            window.ConvEngine.start();
+            if (state.bootGreeting) {
+                await window.ConvEngine.say(state.bootGreeting);
+            }
+            state.greetedOnBoot = true;
+            window.ConvEngine.endTurn();
+        } else {
+            // 브라우저 미지원 — 텍스트 입력으로 폴백
             showToast('이 브라우저는 음성 입력을 지원하지 않아요. 텍스트로 입력해주세요.');
+            // greeting 만 typewriter+TTS 로 1회 노출 (ConvEngine 비경유)
+            if (state.bootGreeting) {
+                const bootAbort = new AbortController();
+                state.speechAbort = bootAbort;
+                try { await aiSpeak(state.bootGreeting, bootAbort.signal); }
+                catch (_) { /* AbortError 무시 */ }
+            }
+            state.greetedOnBoot = true;
         }
-        state.engineStarted = true;
-        window.ConvEngine.start();
-
-        if (state.bootGreeting) {
-            await window.ConvEngine.say(state.bootGreeting);
-        }
-        state.greetedOnBoot = true;
-        window.ConvEngine.endTurn();
     });
 })();

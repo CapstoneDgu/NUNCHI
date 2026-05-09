@@ -98,6 +98,8 @@
         stylesInjected = true;
     }
 
+    let modalCounter = 0;
+
     function show(opts) {
         ensureStyles();
         const o = opts || {};
@@ -107,10 +109,16 @@
         const cancelLabel = o.cancelLabel || '아니요';
 
         return new Promise((resolve) => {
+            const id = ++modalCounter;
+            const titleId = 'confirm-modal__title-' + id;
+            const messageId = 'confirm-modal__message-' + id;
+
             const $overlay = document.createElement('div');
             $overlay.className = 'confirm-modal__overlay';
             $overlay.setAttribute('role', 'dialog');
             $overlay.setAttribute('aria-modal', 'true');
+            $overlay.setAttribute('aria-labelledby', titleId);
+            $overlay.setAttribute('aria-describedby', messageId);
             $overlay.innerHTML =
                 '<div class="confirm-modal__box">' +
                     '<h2 class="confirm-modal__title"></h2>' +
@@ -120,10 +128,17 @@
                         '<button type="button" class="confirm-modal__btn confirm-modal__btn--confirm"></button>' +
                     '</div>' +
                 '</div>';
-            $overlay.querySelector('.confirm-modal__title').textContent = title;
-            $overlay.querySelector('.confirm-modal__message').textContent = message;
+            const $title = $overlay.querySelector('.confirm-modal__title');
+            const $message = $overlay.querySelector('.confirm-modal__message');
+            $title.id = titleId;
+            $title.textContent = title;
+            $message.id = messageId;
+            $message.textContent = message;
             $overlay.querySelector('.confirm-modal__btn--cancel').textContent = cancelLabel;
             $overlay.querySelector('.confirm-modal__btn--confirm').textContent = confirmLabel;
+
+            const $confirmBtn = $overlay.querySelector('.confirm-modal__btn--confirm');
+            const $cancelBtn  = $overlay.querySelector('.confirm-modal__btn--cancel');
 
             const cleanup = (result) => {
                 $overlay.remove();
@@ -131,20 +146,25 @@
                 resolve(result);
             };
             const onKey = (e) => {
-                if (e.key === 'Escape') cleanup(false);
-                else if (e.key === 'Enter') cleanup(true);
+                if (e.key === 'Escape') {
+                    cleanup(false);
+                    return;
+                }
+                // Enter 는 confirm 버튼이 포커스됐을 때만 confirm.
+                // (취소 버튼 포커스에서 Enter 누르면 취소 의도이므로 confirm 트리거 X)
+                if (e.key === 'Enter' && document.activeElement === $confirmBtn) {
+                    cleanup(true);
+                }
             };
-            $overlay.querySelector('.confirm-modal__btn--cancel')
-                .addEventListener('click', () => cleanup(false));
-            $overlay.querySelector('.confirm-modal__btn--confirm')
-                .addEventListener('click', () => cleanup(true));
+            $cancelBtn.addEventListener('click', () => cleanup(false));
+            $confirmBtn.addEventListener('click', () => cleanup(true));
             $overlay.addEventListener('click', (e) => {
                 if (e.target === $overlay) cleanup(false);
             });
             document.addEventListener('keydown', onKey);
             document.body.appendChild($overlay);
             // 포커스 — 확인 버튼
-            $overlay.querySelector('.confirm-modal__btn--confirm').focus();
+            $confirmBtn.focus();
         });
     }
 
