@@ -21,15 +21,8 @@
     'use strict';
 
     const LOG = '[Api]';
-    // 운영: same-origin (nginx 가 /api/** → Spring, /ai/** → FastAPI 매핑)
-    // 로컬 개발: 페이지가 localhost 라면 fetch 만 운영 도메인으로 (nginx 매핑 활용)
-    const BASE_URL = (() => {
-        const h = location.hostname;
-        if (h === 'localhost' || h === '127.0.0.1') {
-            return 'https://43-201-20-11.sslip.io';
-        }
-        return '';
-    })();
+    // 운영 도메인 — nginx 가 /api/** → Spring, /ai/** → FastAPI 로 매핑
+    const BASE_URL = 'https://43-201-20-11.sslip.io';
 
     // ---------- 에러 타입 ----------
     /** 서버가 ApiResponse 포맷으로 돌려준 4xx/5xx 또는 네트워크 실패. */
