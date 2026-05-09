@@ -29,9 +29,14 @@ public class Order extends BaseEntity {
     @Builder.Default
     private OrderStatus orderStatus = OrderStatus.PENDING;
 
-    public static Order create(Long sessionId) {
+    @Enumerated(EnumType.STRING)
+    @Column(name = "order_type", length = 10, nullable = false)
+    private OrderType orderType;
+
+    public static Order create(Long sessionId, OrderType orderType) {
         return Order.builder()
                 .sessionId(sessionId)
+                .orderType(orderType)
                 .build();
     }
 

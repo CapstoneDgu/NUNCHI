@@ -1,5 +1,6 @@
 package dgu.capstone.nunchi.domain.session.entity;
 
+import dgu.capstone.nunchi.domain.order.entity.OrderType;
 import dgu.capstone.nunchi.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -32,11 +33,16 @@ public class KioskSession extends BaseEntity {
     @Builder.Default
     private SessionStatus sessionStatus = SessionStatus.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "order_type", length = 10, nullable = false)
+    private OrderType orderType;
+
     // 정적 팩토리 메서드
-    public static KioskSession create(SessionMode mode, String language) {
+    public static KioskSession create(SessionMode mode, String language, OrderType orderType) {
         return KioskSession.builder()
                 .mode(mode)
                 .language(language)
+                .orderType(orderType)
                 .build();
     }
 
