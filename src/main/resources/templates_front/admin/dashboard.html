@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NUNCHI 관리자페이지</title>
+    <link rel="stylesheet" href="/css/admin/admin.css" />
+</head>
+<body class="admin-body">
+<header class="admin-header">
+    <div>
+        <h1>NUNCHI 관리자페이지</h1>
+        <p>메뉴, 주문, 추천 현황을 관리합니다.</p>
+    </div>
+    <button id="logoutButton" class="logout-button">로그아웃</button>
+</header>
+
+<main class="admin-main">
+    <section class="admin-section">
+        <div class="section-title-row">
+            <h2>대시보드</h2>
+            <button id="refreshDashboardButton" class="secondary-button">새로고침</button>
+        </div>
+
+        <div id="dashboardLoading" class="loading-text">대시보드 정보를 불러오는 중입니다...</div>
+        <div id="dashboardError" class="error-message"></div>
+
+        <div id="dashboardContent" class="dashboard-grid hidden">
+            <div class="dashboard-card">
+                <span class="card-label">오늘 주문 수</span>
+                <strong id="todayOrderCount">0</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="card-label">오늘 매출</span>
+                <strong id="todaySalesAmount">0원</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="card-label">전체 주문 수</span>
+                <strong id="totalOrderCount">0</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="card-label">품절 메뉴 수</span>
+                <strong id="soldOutMenuCount">0</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="card-label">추천 메뉴 수</span>
+                <strong id="recommendedMenuCount">0</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <div class="section-title-row">
+            <div>
+                <h2>판매 리포트</h2>
+                <p class="hint-text">월간 판매 데이터를 엑셀 파일로 다운로드합니다.</p>
+            </div>
+        </div>
+
+        <div class="report-download-box">
+            <label for="salesReportMonth">조회 월</label>
+            <input id="salesReportMonth" type="month" class="admin-input" />
+            <button id="downloadSalesExcelButton" class="primary-button">
+                엑셀 다운로드
+            </button>
+        </div>
+
+        <div id="salesReportError" class="error-message"></div>
+    </section>
+
+    <section class="admin-section">
+        <div class="section-title-row">
+            <div>
+                <h2>운영 분석</h2>
+                <p class="hint-text">최근 7일 매출, 오늘 시간대별 주문, TOP 판매 메뉴를 확인합니다.</p>
+            </div>
+            <button id="refreshAnalyticsButton" class="secondary-button">분석 새로고침</button>
+        </div>
+
+        <div id="analyticsLoading" class="loading-text">운영 분석 데이터를 불러오는 중입니다...</div>
+        <div id="analyticsError" class="error-message"></div>
+
+        <div id="analyticsContent" class="analytics-layout hidden">
+            <div class="analytics-card">
+                <h3>최근 7일 매출 추이</h3>
+                <div id="dailySalesChart" class="bar-chart"></div>
+            </div>
+
+            <div class="analytics-card">
+                <h3>오늘 시간대별 주문</h3>
+                <div id="hourlySalesChart" class="bar-chart"></div>
+            </div>
+
+            <div class="analytics-card">
+                <h3>TOP 5 판매 메뉴</h3>
+                <div id="topMenuChart" class="bar-chart"></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <h2>최근 주문</h2>
+        <div class="table-wrapper">
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>주문 ID</th>
+                    <th>세션 ID</th>
+                    <th>금액</th>
+                    <th>상태</th>
+                    <th>상품 수</th>
+                    <th>주문 시간</th>
+                </tr>
+                </thead>
+                <tbody id="recentOrdersBody">
+                <tr>
+                    <td colspan="6" class="empty-cell">최근 주문이 없습니다.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <h2>관리 메뉴</h2>
+        <div class="admin-menu-links">
+            <a href="/admin/menus.html">메뉴 관리</a>
+            <a href="/admin/orders.html">주문 관리</a>
+            <a href="/admin/recommendations.html">추천 관리</a>
+        </div>
+        <p class="hint-text">다음 단계에서 메뉴/주문/추천 관리 화면을 연결합니다.</p>
+    </section>
+</main>
+
+<script src="/js/admin/admin-api.js"></script>
+<script src="/js/admin/admin-dashboard.js"></script>
+</body>
+</html>

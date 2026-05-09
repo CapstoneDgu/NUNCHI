@@ -12,7 +12,8 @@
             console.warn("[S01] unknown mode:", mode);
             return;
         }
-        sessionStorage.setItem("mode", mode);
+        // 백엔드 SessionMode enum 형식(대문자)으로 저장
+        sessionStorage.setItem("mode", mode.toUpperCase());
         sessionStorage.setItem("currentStep", "S02");
         location.href = NEXT_URL;
     }

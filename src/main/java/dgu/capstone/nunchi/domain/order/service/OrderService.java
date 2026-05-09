@@ -17,17 +17,23 @@ import dgu.capstone.nunchi.domain.order.repository.CartRedisRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderItemOptionRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderItemRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderRepository;
+import dgu.capstone.nunchi.domain.session.entity.KioskSession;
+import dgu.capstone.nunchi.domain.session.repository.KioskSessionRepository;
 import dgu.capstone.nunchi.global.exception.domainException.MenuException;
 import dgu.capstone.nunchi.global.exception.domainException.OrderException;
+import dgu.capstone.nunchi.global.exception.domainException.SessionException;
 import dgu.capstone.nunchi.global.exception.errorcode.MenuErrorCode;
 import dgu.capstone.nunchi.global.exception.errorcode.OrderErrorCode;
+import dgu.capstone.nunchi.global.exception.errorcode.SessionErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -40,6 +46,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderItemOptionRepository orderItemOptionRepository;
+    private final KioskSessionRepository kioskSessionRepository;
 
     /** 장바구니 조회 */
     public CartResponse getCart(Long sessionId) {
@@ -68,21 +75,48 @@ public class OrderService {
             }
         }
 
-        // 새 CartItem 생성
-        CartItem newItem = CartItem.builder()
-                .itemId(UUID.randomUUID().toString())
-                .menuId(menu.getMenuId())
-                .menuName(menu.getName())
-                .unitPrice(menu.getPrice())
-                .quantity(request.quantity())
-                .options(cartOptions)
-                .build();
+        // 같은 메뉴 + 동일 옵션 조합이 이미 있으면 수량만 증가, 없으면 새 라인 추가
+        List<CartItem> items = new ArrayList<>(cartRedisRepository.getItems(request.sessionId()));
+        Set<Long> newOptionIds = cartOptions.stream()
+                .map(CartItem.CartOption::getOptionId)
+                .collect(Collectors.toSet());
 
-        // 기존 장바구니에 추가 후 저장
-        List<CartItem> items = cartRedisRepository.getItems(request.sessionId());
-        items.add(newItem);
+        int existingIdx = -1;
+        for (int i = 0; i < items.size(); i++) {
+            CartItem it = items.get(i);
+            if (!it.getMenuId().equals(menu.getMenuId())) continue;
+            Set<Long> existingOptionIds = (it.getOptions() == null ? List.<CartItem.CartOption>of() : it.getOptions()).stream()
+                    .map(CartItem.CartOption::getOptionId)
+                    .collect(Collectors.toSet());
+            if (existingOptionIds.equals(newOptionIds)) {
+                existingIdx = i;
+                break;
+            }
+        }
+
+        if (existingIdx >= 0) {
+            CartItem prev = items.get(existingIdx);
+            CartItem merged = CartItem.builder()
+                    .itemId(prev.getItemId())
+                    .menuId(prev.getMenuId())
+                    .menuName(prev.getMenuName())
+                    .unitPrice(prev.getUnitPrice())
+                    .quantity(prev.getQuantity() + request.quantity())
+                    .options(prev.getOptions())
+                    .build();
+            items.set(existingIdx, merged);
+        } else {
+            items.add(CartItem.builder()
+                    .itemId(UUID.randomUUID().toString())
+                    .menuId(menu.getMenuId())
+                    .menuName(menu.getName())
+                    .unitPrice(menu.getPrice())
+                    .quantity(request.quantity())
+                    .options(cartOptions)
+                    .build());
+        }
+
         cartRedisRepository.saveItems(request.sessionId(), items);
-
         return CartResponse.from(request.sessionId(), items);
     }
 
@@ -143,8 +177,12 @@ public class OrderService {
             throw new OrderException(OrderErrorCode.EMPTY_CART);
         }
 
+        // 세션에서 orderType 조회
+        KioskSession session = kioskSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new SessionException(SessionErrorCode.NOT_FOUND_SESSION));
+
         // Order 생성 및 저장
-        Order order = Order.create(sessionId);
+        Order order = Order.create(sessionId, session.getOrderType());
         orderRepository.save(order);
 
         int totalAmount = 0;

@@ -36,7 +36,7 @@ public class SessionService {
 
     @Transactional
     public SessionResponse createSession(SessionCreateRequest request) {
-        KioskSession session = KioskSession.create(request.mode(), request.language());
+        KioskSession session = KioskSession.create(request.mode(), request.language(), request.orderType());
         kioskSessionRepository.save(session);
         return SessionResponse.from(session);
     }

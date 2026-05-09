@@ -37,28 +37,24 @@
     const homeEl   = $('[data-action="home"]');
 
     /* ---------- Session ---------- */
-    const CART_KEY   = 'cart';
-    const STORE_KEY  = 'currentStoreName';
-    const METHOD_KEY = 'paymentMethod';
-    const STATUS_KEY = 'paymentStatus';
+    const SESSION_ID_KEY    = 'sessionId';
+    const STORE_KEY         = 'currentStoreName';
+    const METHOD_KEY        = 'paymentMethod';
+    const STATUS_KEY        = 'paymentStatus';
+    const ORDER_SUMMARY_KEY = 'orderSummary';
 
     const FLOW_KEYS_TO_CLEAR = [
-        CART_KEY, STORE_KEY, METHOD_KEY, STATUS_KEY, 'orderNumber',
-        'mode', 'dineOption', 'currentFloor', 'currentStore',
-        'aiSessionId', 'currentStep', 'orderId', 'paymentId'
+        STORE_KEY, METHOD_KEY, STATUS_KEY, ORDER_SUMMARY_KEY, 'orderNumber',
+        SESSION_ID_KEY, 'mode', 'dineOption', 'currentFloor', 'currentStore',
+        'currentStep', 'orderId', 'paymentId'
     ];
 
-    const MOCK_CART = [
-        { id: 'mock-shabu', name: '샤브칼국수 세트', price: 7000, qty: 1, storeName: '상록원' }
-    ];
-
-    function loadCart() {
+    function loadOrderSummary() {
         try {
-            const raw = sessionStorage.getItem(CART_KEY);
-            if (!raw) return MOCK_CART.slice();
-            const parsed = JSON.parse(raw);
-            return (Array.isArray(parsed) && parsed.length) ? parsed : MOCK_CART.slice();
-        } catch (_) { return MOCK_CART.slice(); }
+            const raw = sessionStorage.getItem(ORDER_SUMMARY_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (_) { return null; }
     }
 
     function getQuery(name) {
@@ -145,9 +141,8 @@
         const storeName = sessionStorage.getItem(STORE_KEY) || '상록원';
         if (storeEl) storeEl.textContent = storeName;
 
-        const cart = loadCart();
-        const totalPrice = cart.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
-        if (totalEl) totalEl.textContent = fmtWon(totalPrice);
+        const summary = loadOrderSummary() || { totalAmount: 0 };
+        if (totalEl) totalEl.textContent = fmtWon(summary.totalAmount);
     }
 
     function renderReason(config) {

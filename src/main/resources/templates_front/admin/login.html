@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NUNCHI 관리자 모드</title>
+    <link rel="stylesheet" href="/css/admin/admin.css" />
+</head>
+<body class="admin-login-body">
+<div class="admin-login-container">
+    <div class="admin-login-card">
+        <div class="admin-logo">NUNCHI</div>
+
+        <h1>관리자 모드</h1>
+        <p class="admin-login-desc">관리자 전용 비밀번호를 입력하세요.</p>
+
+        <form id="adminLoginForm">
+            <label for="password">관리자 비밀번호</label>
+            <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="비밀번호 입력"
+                    autocomplete="off"
+                    required
+            />
+
+            <button type="submit" id="loginButton">관리자 모드 진입</button>
+        </form>
+
+        <p id="loginErrorMessage" class="error-message"></p>
+    </div>
+</div>
+
+<script src="/js/admin/admin-api.js"></script>
+<script src="/js/admin/admin-login.js"></script>
+</body>
+</html>

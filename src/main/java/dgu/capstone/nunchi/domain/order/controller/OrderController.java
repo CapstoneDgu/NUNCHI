@@ -60,7 +60,7 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.ok(orderService.removeItem(sessionId, itemId)));
     }
 
-    @Operation(summary = "주문 확정", description = "Redis 장바구니를 PostgreSQL에 최종 주문으로 저장합니다.")
+    @Operation(summary = "주문 확정", description = "Redis 장바구니를 PostgreSQL에 최종 주문으로 저장합니다. 포장/매장 구분은 세션 생성 시 결정됩니다.")
     @PostMapping("/confirm")
     public ResponseEntity<ApiResponse<OrderResponse>> confirmOrder(
             @RequestBody @Valid OrderConfirmRequest request

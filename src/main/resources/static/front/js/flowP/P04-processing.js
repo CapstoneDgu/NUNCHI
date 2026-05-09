@@ -33,22 +33,15 @@
     const cancelEl = $('[data-action="cancel"]');
 
     /* ---------- Session ---------- */
-    const CART_KEY   = 'cart';
+    const SESSION_ID_KEY = 'sessionId';
     const STORE_KEY  = 'currentStoreName';
     const METHOD_KEY = 'paymentMethod';
     const STATUS_KEY = 'paymentStatus';
 
-    const MOCK_CART = [
-        { id: 'mock-shabu', name: '샤브칼국수 세트', price: 7000, qty: 1, storeName: '상록원' }
-    ];
-
-    function loadCart() {
-        try {
-            const raw = sessionStorage.getItem(CART_KEY);
-            if (!raw) return MOCK_CART.slice();
-            const parsed = JSON.parse(raw);
-            return (Array.isArray(parsed) && parsed.length) ? parsed : MOCK_CART.slice();
-        } catch (_) { return MOCK_CART.slice(); }
+    function getSessionId() {
+        const raw = sessionStorage.getItem(SESSION_ID_KEY);
+        const n = raw ? Number(raw) : NaN;
+        return Number.isFinite(n) ? n : null;
     }
 
     function getQuery(name) {
@@ -133,6 +126,7 @@
                 const forced = getQuery('result');
                 if (forced === 'timeout' || forced === 'card_error' || forced === 'declined') {
                     try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
+                    // 아직 confirm/payment 호출 전이므로 카트 그대로 살아있음. 단순 P06 이동.
                     location.href = '/flowP/P06-fail.html?reason=' + encodeURIComponent(forced);
                     return;
                 }
@@ -143,51 +137,100 @@
             setProgress(100);
             try { sessionStorage.setItem(STATUS_KEY, 'approved'); } catch (_) {}
 
-            // 실제 전이 이벤트일 때만 백엔드 결제 성공 마킹.
-            // URL 로 강제 진입(?state=approved) 한 디자인 확인 시에는 호출하지 않음.
+            // 실제 승인 직전에 confirmOrder + payment.create + markSuccess 한 번에 호출.
             if (transition) {
-                const paymentId = Number(sessionStorage.getItem('paymentId'));
-                if (paymentId && window.NunchiApi) {
-                    window.NunchiApi.Payments.markSuccess(paymentId)
-                        .catch((e) => console.warn('[P04] markSuccess 실패', e));
-                }
+                finalizePaymentThenGoComplete();
+            } else {
+                approvedTimer = setTimeout(() => {
+                    location.href = '/flowP/P05-complete.html';
+                }, 1200);
             }
-
-            approvedTimer = setTimeout(() => {
-                location.href = '/flowP/P05-complete.html';
-            }, 2000);
         }
     }
 
-    /* ---------- Init render ---------- */
+    /* ---------- 백엔드 결제 확정 (승인 분기) ---------- */
+    let finalizing = false;
+    async function finalizePaymentThenGoComplete() {
+        if (finalizing) return;
+        finalizing = true;
+
+        const sid = getSessionId();
+        if (!sid) {
+            location.href = '/flowN/N02-menu.html';
+            return;
+        }
+
+        let orderId = null, paymentId = null;
+        try {
+            const order = await window.NunchiApi.Orders.confirm(sid);
+            if (!order || !order.orderId) throw new Error('confirm 응답에 orderId 없음');
+            orderId = order.orderId;
+            sessionStorage.setItem('orderId', String(orderId));
+
+            try {
+                sessionStorage.setItem('orderSummary', JSON.stringify({
+                    totalAmount: order.totalAmount,
+                    itemCount:   (order.items || []).length,
+                    firstName:   (order.items && order.items[0] && order.items[0].menuName) || '',
+                    totalQty:    (order.items || []).reduce((s, it) => s + (it.quantity || 0), 0),
+                }));
+            } catch (_) {}
+
+            const payment = await window.NunchiApi.Payments.create(orderId, 'IC_CARD');
+            if (!payment || !payment.paymentId) throw new Error('payment.create 응답에 paymentId 없음');
+            paymentId = payment.paymentId;
+            sessionStorage.setItem('paymentId', String(paymentId));
+
+            await window.NunchiApi.Payments.markSuccess(paymentId);
+
+            approvedTimer = setTimeout(() => {
+                location.href = '/flowP/P05-complete.html';
+            }, 1200);
+        } catch (e) {
+            console.warn('[P04] 결제 확정 실패', e);
+            if (paymentId) {
+                window.NunchiApi.Payments.markFail(paymentId).catch(() => {});
+            }
+            location.href = '/flowP/P06-fail.html?reason=declined';
+        }
+    }
+
+    /* ---------- Init render ----------
+       이 화면 진입 시점엔 아직 confirm 전이라 서버 카트가 살아있음 → 카트 합계 그대로 표시 */
     function renderStoreAndTotal() {
         const storeName = sessionStorage.getItem(STORE_KEY) || '상록원';
         if (storeEl) storeEl.textContent = storeName;
-
-        const cart = loadCart();
-        const totalPrice = cart.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
-        if (totalEl) totalEl.textContent = fmtWon(totalPrice);
     }
 
-    /* ---------- Events ---------- */
-    if (backEl) {
-        backEl.addEventListener('click', () => {
-            clearAllTimers();
-            if (history.length > 1) history.back();
-            else location.href = '/flowP/P02-payment.html';
-        });
+    async function fetchTotalFromCart() {
+        const sid = getSessionId();
+        if (!sid || !window.NunchiApi) return;
+        try {
+            const res = await window.NunchiApi.Cart.get(sid);
+            const total = (res && typeof res.totalAmount === 'number') ? res.totalAmount : 0;
+            if (totalEl) totalEl.textContent = fmtWon(total);
+        } catch (e) {
+            console.warn('[P04] 카트 조회 실패', e);
+        }
     }
-    if (cancelEl) {
-        cancelEl.addEventListener('click', () => {
-            clearAllTimers();
-            location.href = '/flowP/P02-payment.html';
-        });
+
+    /* ---------- Events ----------
+       승인 직전 단계에 들어가기 전이면 confirm 도 안 한 상태이므로 카트 그대로 → 자유 복귀.
+       모든 복귀(뒤로/취소) 는 history.back() — location.href 로 새 entry 쌓으면 P02 에서
+       뒤로가기 시 P04 로 되돌아오는 문제가 생긴다. */
+    function goPrev() {
+        clearAllTimers();
+        if (history.length > 1) history.back();
+        else location.href = '/flowP/P02-payment.html';
     }
+    if (backEl)   backEl.addEventListener('click',   goPrev);
+    if (cancelEl) cancelEl.addEventListener('click', goPrev);
 
     window.addEventListener('beforeunload', clearAllTimers);
 
     /* ---------- Boot ---------- */
     renderStoreAndTotal();
+    fetchTotalFromCart();
     try { sessionStorage.setItem(METHOD_KEY, 'ic'); } catch (_) {}
 
     // 초기 진입은 항상 비-전이(transition=false) — markSuccess 중복 호출 방지

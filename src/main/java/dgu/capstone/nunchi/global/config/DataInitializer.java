@@ -8,6 +8,7 @@ import dgu.capstone.nunchi.domain.menu.entity.enums.VegetarianType;
 import dgu.capstone.nunchi.domain.menu.repository.*;
 import dgu.capstone.nunchi.domain.order.entity.Order;
 import dgu.capstone.nunchi.domain.order.entity.OrderItem;
+import dgu.capstone.nunchi.domain.order.entity.OrderType;
 import dgu.capstone.nunchi.domain.order.repository.OrderItemOptionRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderItemRepository;
 import dgu.capstone.nunchi.domain.order.repository.OrderRepository;
@@ -583,10 +584,10 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private SessionSeedData seedSessions() {
-        KioskSession activeSession    = kioskSessionRepository.save(KioskSession.create(SessionMode.NORMAL, "ko"));
-        KioskSession avatarSession    = kioskSessionRepository.save(KioskSession.create(SessionMode.AVATAR, "ko"));
-        KioskSession completedSession = kioskSessionRepository.save(KioskSession.create(SessionMode.NORMAL, "ko"));
-        KioskSession expiredSession   = kioskSessionRepository.save(KioskSession.create(SessionMode.AVATAR, "ko"));
+        KioskSession activeSession    = kioskSessionRepository.save(KioskSession.create(SessionMode.NORMAL, "ko", OrderType.DINE_IN));
+        KioskSession avatarSession    = kioskSessionRepository.save(KioskSession.create(SessionMode.AVATAR, "ko", OrderType.DINE_IN));
+        KioskSession completedSession = kioskSessionRepository.save(KioskSession.create(SessionMode.NORMAL, "ko", OrderType.TAKEOUT));
+        KioskSession expiredSession   = kioskSessionRepository.save(KioskSession.create(SessionMode.AVATAR, "ko", OrderType.TAKEOUT));
         completedSession.complete();
         expiredSession.expire();
         return new SessionSeedData(activeSession, avatarSession, completedSession, expiredSession);
@@ -620,9 +621,9 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedOrdersAndPayments(MenuSeedData menuData, SessionSeedData sessionData) {
-        orderRepository.save(Order.create(sessionData.activeSession().getSessionId()));
+        orderRepository.save(Order.create(sessionData.activeSession().getSessionId(), OrderType.DINE_IN));
 
-        Order orderCompleted = orderRepository.save(Order.create(sessionData.completedSession().getSessionId()));
+        Order orderCompleted = orderRepository.save(Order.create(sessionData.completedSession().getSessionId(), OrderType.DINE_IN));
         OrderItem completedItem = orderItemRepository.save(
                 OrderItem.create(orderCompleted, menuData.teriyakiChicken().getMenuId(), 1, "데리야끼치킨솥밥", 7500));
         orderItemRepository.save(
@@ -630,14 +631,14 @@ public class DataInitializer implements CommandLineRunner {
         orderCompleted.updateTotalAmount(8500);
         orderCompleted.complete();
 
-        Order orderCancelled = orderRepository.save(Order.create(sessionData.expiredSession().getSessionId()));
+        Order orderCancelled = orderRepository.save(Order.create(sessionData.expiredSession().getSessionId(), OrderType.TAKEOUT));
         orderItemRepository.save(
                 OrderItem.create(orderCancelled, menuData.naengmomil().getMenuId(), 1, "냉모밀", 7000));
         orderCancelled.cancel();
 
         Payment paymentSuccess = paymentRepository.save(Payment.create(orderCompleted.getOrderId(), PaymentMethod.IC_CARD));
         paymentSuccess.success();
-        paymentRepository.save(Payment.create(orderRepository.save(Order.create(sessionData.activeSession().getSessionId())).getOrderId(), PaymentMethod.VEIN_AUTH));
+        paymentRepository.save(Payment.create(orderRepository.save(Order.create(sessionData.activeSession().getSessionId(), OrderType.TAKEOUT)).getOrderId(), PaymentMethod.VEIN_AUTH));
         Payment paymentFailed = paymentRepository.save(Payment.create(orderCancelled.getOrderId(), PaymentMethod.IC_CARD));
         paymentFailed.fail();
     }

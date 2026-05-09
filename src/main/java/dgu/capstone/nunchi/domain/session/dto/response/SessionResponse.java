@@ -10,6 +10,7 @@ public record SessionResponse(
         String status,
         String language,
         String currentStep,
+        String orderType,
         LocalDateTime createdAt
 ) {
     public static SessionResponse from(KioskSession session) {
@@ -19,6 +20,7 @@ public record SessionResponse(
                 session.getSessionStatus().name(),
                 session.getLanguage(),
                 session.getCurrentStep(),
+                session.getOrderType().name(),
                 session.getCreatedAt()
         );
     }
