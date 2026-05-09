@@ -64,12 +64,17 @@
             color: var(--color-text-heading, var(--neutral-800, #352F2B));
         }
         .rec-sheet__close {
-            width: 36px; height: 36px;
+            width: 40px; height: 40px;
             border: none; background: var(--neutral-100, #F0EDEA);
             border-radius: 50%;
-            font-size: 20px; line-height: 1;
             cursor: pointer;
             color: var(--neutral-700, #4D4742);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px; line-height: 1;
+            font-family: inherit;
+            padding: 0;
         }
         .rec-sheet__close:hover { background: var(--neutral-200, #DDD9D5); }
 
@@ -213,8 +218,8 @@
                 </div>
                 <div class="rec-sheet__cards" data-cards></div>
                 <div class="rec-sheet__actions">
-                    <button type="button" class="rec-sheet__btn rec-sheet__btn--another">다른 거 추천</button>
-                    <button type="button" class="rec-sheet__btn rec-sheet__btn--cancel">선택 안 함</button>
+                    <button type="button" class="rec-sheet__btn rec-sheet__btn--another">다른 메뉴 추천받기</button>
+                    <button type="button" class="rec-sheet__btn rec-sheet__btn--cancel">닫기</button>
                 </div>
             </div>
         `;

@@ -58,7 +58,10 @@
         engineStarted: false,
         greetedOnBoot: false,
         currentAudio: null,         // 재생 중인 TTS Audio 객체
-        currentAudioUrl: null       // revokeObjectURL 대상
+        currentAudioUrl: null,      // revokeObjectURL 대상
+        // 추천 시트에서 담은 메뉴의 image_url 캐시 (menuId → url)
+        // 카트 응답엔 image_url 이 없어서 추천 응답을 통해서만 채움
+        menuImageCache: new Map()
     };
 
     // ========================================================
@@ -487,6 +490,12 @@
             console.warn('[A01] RecommendSheet 모듈 미로드');
             return;
         }
+        // 추천 메뉴들의 image_url 을 cache 에 미리 채워둠 — 미니카트 사진 표시용
+        menus.forEach((m) => {
+            const id = m.menu_id || m.menuId;
+            const url = m.image_url || m.imageUrl;
+            if (id != null && url) state.menuImageCache.set(id, url);
+        });
         window.RecommendSheet.open({
             menus,
             onPick: async (menu) => {
@@ -559,12 +568,24 @@
         state.cart.items.forEach((it) => {
             const $li = document.createElement('li');
             $li.className = 'a01__minicart-item';
-            $li.innerHTML = ''
-                + '<span class="a01__minicart-item-name"></span>'
-                + '<span class="a01__minicart-item-qty">×' + (it.quantity || 1) + '</span>';
             const display = it.menuName || '';
-            $li.querySelector('.a01__minicart-item-name').textContent =
-                display.length > 10 ? display.slice(0, 10) + '…' : display;
+            const shortName = display.length > 6 ? display.slice(0, 6) + '…' : display;
+            const imgUrl = state.menuImageCache.get(it.menuId);
+            const thumbHtml = imgUrl
+                ? `<span class="a01__minicart-item-thumb"><img alt="" src="${imgUrl}" /></span>`
+                : `<span class="a01__minicart-item-thumb a01__minicart-item-thumb--icon"><i class="xi xi-restaurant" aria-hidden="true"></i></span>`;
+            $li.innerHTML = thumbHtml
+                + '<span class="a01__minicart-item-name">' + shortName + '</span>'
+                + '<span class="a01__minicart-item-qty">×' + (it.quantity || 1) + '</span>';
+            // 이미지 onerror 폴백 → 아이콘
+            const $img = $li.querySelector('img');
+            if ($img) {
+                $img.addEventListener('error', () => {
+                    const $thumb = $li.querySelector('.a01__minicart-item-thumb');
+                    $thumb.classList.add('a01__minicart-item-thumb--icon');
+                    $thumb.innerHTML = '<i class="xi xi-restaurant" aria-hidden="true"></i>';
+                });
+            }
             $minicartList.appendChild($li);
         });
         $minicartTotal.textContent = fmtPrice(getCartTotal());
