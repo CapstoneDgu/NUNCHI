@@ -223,7 +223,7 @@
         if (history.length > 1) history.back();
         else location.href = '/payment';
     }
-    if (backEl)   backEl.addEventListener('click', () => { clearAllTimers(); location.href = '/start'; });
+    if (backEl)   backEl.addEventListener('click', () => confirmGoHome(clearAllTimers));
     if (cancelEl) cancelEl.addEventListener('click', goPrev);
 
     window.addEventListener('beforeunload', clearAllTimers);

@@ -222,9 +222,7 @@
 
     /* ---------- Events ---------- */
     if (backEl) {
-        backEl.addEventListener('click', () => {
-            location.href = '/start';
-        });
+        backEl.addEventListener('click', () => confirmGoHome());
     }
     if (switchEl) switchEl.addEventListener('click', goSwitch);
     if (retryEl)  retryEl.addEventListener('click', () => goRetry(config.retry));

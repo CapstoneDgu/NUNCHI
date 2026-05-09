@@ -163,9 +163,7 @@
         }
     });
 
-    backEl.addEventListener('click', () => {
-        location.href = '/start';
-    });
+    backEl.addEventListener('click', () => confirmGoHome());
 
     ctaEl.addEventListener('click', goNext);
 
