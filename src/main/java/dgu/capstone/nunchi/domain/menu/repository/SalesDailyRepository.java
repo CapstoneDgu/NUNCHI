@@ -14,11 +14,13 @@ public interface SalesDailyRepository extends JpaRepository<SalesDaily, Long> {
 
     @Query("""
             SELECT new dgu.capstone.nunchi.domain.menu.dto.response.TopMenuResponse(
-                s.menu.menuId, s.menu.name, s.menu.price, s.menu.isSoldOut, SUM(s.quantitySold)
+                s.menu.menuId, s.menu.name, s.menu.price, s.menu.isSoldOut, SUM(s.quantitySold),
+                s.menu.imageUrl, s.menu.restaurantName, s.menu.floor
             )
             FROM SalesDaily s
             WHERE s.salesDate = :today
-            GROUP BY s.menu.menuId, s.menu.name, s.menu.price, s.menu.isSoldOut
+            GROUP BY s.menu.menuId, s.menu.name, s.menu.price, s.menu.isSoldOut,
+                     s.menu.imageUrl, s.menu.restaurantName, s.menu.floor
             ORDER BY SUM(s.quantitySold) DESC
             """)
     List<TopMenuResponse> findTopMenusByDate(@Param("today") LocalDate today, Pageable pageable);

@@ -5,6 +5,9 @@ public record TopMenuResponse(
         String name,
         Integer price,
         Boolean isSoldOut,
-        Long quantitySold
+        Long quantitySold,
+        String imageUrl,
+        String restaurantName,
+        Integer floor
 ) {
 }
