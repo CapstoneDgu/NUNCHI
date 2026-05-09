@@ -21,8 +21,20 @@
     'use strict';
 
     const LOG = '[Api]';
-    // 운영 도메인 — nginx 가 /api/** → Spring, /ai/** → FastAPI 로 매핑
-    const BASE_URL = 'https://43-201-20-11.sslip.io';
+    // 로컬 개발: 페이지가 localhost 면 Spring 은 same-origin(`''`),
+    //           FastAPI(/ai/**) 는 운영 도메인 — nginx 가 매핑.
+    // 운영: 둘 다 same-origin (`''`).
+    const PROD_DOMAIN = 'https://43-201-20-11.sslip.io';
+    const isLocalHost = (typeof location !== 'undefined') &&
+        (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
+    /** path 별 base URL 결정. /ai/** 는 항상 FastAPI(운영), 그 외는 Spring. */
+    function resolveUrl(path) {
+        if (path.startsWith('/ai/')) {
+            return (isLocalHost ? PROD_DOMAIN : '') + path;
+        }
+        return path; // Spring 은 same-origin
+    }
 
     // ---------- 에러 타입 ----------
     /** 서버가 ApiResponse 포맷으로 돌려준 4xx/5xx 또는 네트워크 실패. */
@@ -42,7 +54,7 @@
      * FastAPI 같은 raw JSON 응답에는 requestRaw 사용.
      */
     async function request(method, path, body) {
-        const url = BASE_URL + path;
+        const url = resolveUrl(path);
         const init = {
             method,
             headers: { 'Content-Type': 'application/json' },
@@ -97,7 +109,7 @@
      * Content-Type 은 브라우저가 boundary 포함하여 자동 설정 (직접 지정 X).
      */
     async function requestMultipart(method, path, formData) {
-        const url = BASE_URL + path;
+        const url = resolveUrl(path);
         const init = {
             method,
             credentials: 'same-origin',
@@ -136,7 +148,7 @@
      * 바이너리 응답용 — Blob 반환. 4xx/5xx 면 ApiError throw.
      */
     async function requestBinary(method, path, body) {
-        const url = BASE_URL + path;
+        const url = resolveUrl(path);
         const init = {
             method,
             headers: { 'Content-Type': 'application/json', 'Accept': 'audio/*, application/json' },
@@ -171,7 +183,7 @@
      * 4xx/5xx 시 FastAPI 에러 포맷 ({ detail }) 또는 Spring 포맷 ({ code, msg }) 양쪽 매핑.
      */
     async function requestRaw(method, path, body) {
-        const url = BASE_URL + path;
+        const url = resolveUrl(path);
         const init = {
             method,
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
