@@ -284,16 +284,18 @@
         }
     }
 
-    /** Google TTS 호출 후 fire-and-forget 으로 Audio 재생 시작. */
+    /**
+     * Google TTS 호출 → Audio 재생.
+     * @returns {Promise<number|null>} 음성 길이(초). 실패/뮤트 시 null.
+     *   typewriter 속도 동기화에 사용.
+     */
     function startTtsPlayback(text, signal) {
-        if (state.muted) return;
-        if (!window.Api || !window.Api.Voice) return;
-        // 이전 재생은 정리
+        if (state.muted) return Promise.resolve(null);
+        if (!window.Api || !window.Api.Voice) return Promise.resolve(null);
         stopCurrentAudio();
-        window.Api.Voice.synthesize(text)
+        return window.Api.Voice.synthesize(text)
             .then((blob) => {
-                if (!blob) return;
-                if (signal && signal.aborted) return;
+                if (!blob || (signal && signal.aborted)) return null;
                 const url = URL.createObjectURL(blob);
                 const audio = new Audio(url);
                 audio.muted = state.muted;
@@ -302,17 +304,30 @@
                 audio.addEventListener('ended', () => {
                     if (state.currentAudio === audio) stopCurrentAudio();
                 });
-                audio.play().catch((e) => {
-                    console.warn('[A01] TTS 재생 실패', e);
-                });
                 if (signal) {
                     signal.addEventListener('abort', () => {
                         if (state.currentAudio === audio) stopCurrentAudio();
                     }, { once: true });
                 }
+                // metadata 로드 후 duration 확보 + 재생 시작
+                return new Promise((resolve) => {
+                    const onMeta = () => {
+                        audio.removeEventListener('loadedmetadata', onMeta);
+                        const d = isFinite(audio.duration) ? audio.duration : null;
+                        audio.play().catch((e) => console.warn('[A01] TTS 재생 실패', e));
+                        resolve(d);
+                    };
+                    audio.addEventListener('loadedmetadata', onMeta);
+                    // 1.5s 안전 타임아웃 — metadata 못 받아도 typewriter 시작
+                    setTimeout(() => {
+                        audio.removeEventListener('loadedmetadata', onMeta);
+                        resolve(isFinite(audio.duration) ? audio.duration : null);
+                    }, 1500);
+                });
             })
             .catch((e) => {
                 console.warn('[A01] TTS 합성 실패', e);
+                return null;
             });
     }
 
@@ -326,13 +341,19 @@
                 .catch(() => {});
         }
 
-        // typewriter 와 TTS 음성 재생 병행
-        startTtsPlayback(text, signal);
-
+        // TTS 시작 + duration 받아서 typewriter 속도 동기화
+        const ttsPromise = startTtsPlayback(text, signal);
         setAvatar('talking');
+
         try {
-            await typewriter(text, { speed: 48, signal });
-            await sleep(450, signal);
+            const duration = await ttsPromise;  // 초 단위 또는 null
+            // typewriter 글자당 ms — TTS duration 으로 보정 (bias 0.95 살짝 빠르게)
+            let speed = 110; // 기본값 (TTS 실패 시 한국어 평균 발화 속도)
+            if (duration && duration > 0 && text.length > 0) {
+                speed = Math.max(40, (duration * 1000 * 0.95) / text.length);
+            }
+            await typewriter(text, { speed, signal });
+            await sleep(300, signal);
         } catch (e) {
             if (!e || e.name !== 'AbortError') throw e;
         } finally {
