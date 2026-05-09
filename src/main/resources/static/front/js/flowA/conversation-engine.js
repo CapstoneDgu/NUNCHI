@@ -304,13 +304,33 @@
         }
     }
 
+    /**
+     * 명시적 바지인 — 마이크 버튼 클릭 등 사용자 의도가 명확한 경우.
+     * AI 발화 즉시 중단 + LISTENING 으로 전환 + recognition 시작.
+     */
+    function bargeIn() {
+        if (state.mode === MODE.LISTENING || state.mode === MODE.INACTIVE) return;
+        console.log(LOG, '✋ 사용자 바지인 (수동)');
+        _bargeIn();
+        if (state.wantsRunning) {
+            setMode(MODE.LISTENING);
+            state.finalAccum = '';
+            state.interimAccum = '';
+            if (state.supported) {
+                _ensureRecognition();
+                _scheduleStart();
+            }
+            _startSilenceTimer();
+        }
+    }
+
     function isActive() { return state.wantsRunning; }
     function getMode()  { return state.mode; }
     function isSupported() { return state.supported; }
 
     window.ConvEngine = {
         MODE,
-        init, start, stop, say, endTurn, submitText,
+        init, start, stop, say, endTurn, submitText, bargeIn,
         isActive, getMode, isSupported
     };
 })();

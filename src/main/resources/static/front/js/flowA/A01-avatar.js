@@ -313,6 +313,12 @@
                 return new Promise((resolve) => {
                     const onMeta = () => {
                         audio.removeEventListener('loadedmetadata', onMeta);
+                        // 로딩 중 사용자가 끼어들었다면 재생 시작 X
+                        if (signal && signal.aborted) {
+                            if (state.currentAudio === audio) stopCurrentAudio();
+                            resolve(null);
+                            return;
+                        }
                         const d = isFinite(audio.duration) ? audio.duration : null;
                         audio.play().catch((e) => console.warn('[A01] TTS 재생 실패', e));
                         resolve(d);
@@ -739,13 +745,27 @@
             $input.focus();
             return;
         }
-        if (window.ConvEngine.isActive()) {
-            window.ConvEngine.stop();
+        const mode = window.ConvEngine.getMode();
+
+        if (mode === 'INACTIVE') {
+            // 첫 시작
+            window.ConvEngine.start();
+            state.engineStarted = true;
+            enterState('opening');
             return;
         }
-        window.ConvEngine.start();
-        state.engineStarted = true;
-        enterState('opening');
+
+        if (mode === 'AI_SPEAKING' || mode === 'THINKING') {
+            // 동대맘이 말하거나 응답 대기 중 — 사용자가 바로 말하고 싶을 때.
+            // AI 즉시 멈추고 LISTENING 으로 전환.
+            window.ConvEngine.bargeIn();
+            return;
+        }
+
+        if (mode === 'LISTENING') {
+            // 듣는 중 마이크 클릭 → 대화 종료
+            window.ConvEngine.stop();
+        }
     }
 
     function onConvModeChange(next) {
@@ -826,8 +846,12 @@
         if (state.speechAbort) {
             try { state.speechAbort.abort(); } catch (_) {}
         }
-        stopCurrentAudio();
+        stopCurrentAudio();           // TTS 음성 즉시 정지
         setAvatar('idle');
+        // 즉시 시각 신호 — 모드 전환 콜백이 늦게 와도 사용자에게 바로 보임
+        if ($bubble) $bubble.classList.remove('is-typing');
+        if ($bubbleText) $bubbleText.textContent = '🎤 말씀해 주세요';
+        if ($input) $input.placeholder = '듣고 있어요...';
     }
 
     // ========================================================
