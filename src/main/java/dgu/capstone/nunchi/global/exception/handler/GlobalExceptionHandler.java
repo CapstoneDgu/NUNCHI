@@ -3,6 +3,7 @@ package dgu.capstone.nunchi.global.exception.handler;
 import dgu.capstone.nunchi.global.exception.BusinessException;
 import dgu.capstone.nunchi.global.exception.errorcode.GlobalErrorCode;
 import dgu.capstone.nunchi.global.response.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -75,6 +77,7 @@ public class GlobalExceptionHandler {
     // 그 외 모든 예외
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
+        log.error("[500 INTERNAL_SERVER_ERROR] {} - {}", e.getClass().getSimpleName(), e.getMessage(), e);
         return ResponseEntity
                 .status(GlobalErrorCode.INTERNAL_SERVER_ERROR.getStatus())
                 .body(ApiResponse.fail(GlobalErrorCode.INTERNAL_SERVER_ERROR.getCode(), GlobalErrorCode.INTERNAL_SERVER_ERROR.getMsg()));
