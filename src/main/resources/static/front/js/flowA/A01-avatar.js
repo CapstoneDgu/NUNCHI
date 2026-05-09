@@ -27,10 +27,6 @@
     // 1. 상수 / 시나리오 스크립트
     // ========================================================
     const SCRIPTS = {
-        opening: {
-            // 기본 인사 — FastAPI greeting 이 있으면 그걸로 대체됨
-            greeting: "안녕하세요! 동대맘이에요. 오늘 뭐 드시고 싶으세요?"
-        },
         recommend: {
             picked: (name) => `좋은 선택이에요! "${name}" 담아드릴게요.`
         },
@@ -375,8 +371,7 @@
 
     async function runOpening(signal) {
         if (state.greetedOnBoot) return;
-        const greeting = state.bootGreeting || SCRIPTS.opening.greeting;
-        await aiSpeak(greeting, signal);
+        if (state.bootGreeting) await aiSpeak(state.bootGreeting, signal);
     }
 
     async function runRecommend(signal) {
@@ -733,8 +728,9 @@
         state.engineStarted = true;
         window.ConvEngine.start();
 
-        const greeting = state.bootGreeting || SCRIPTS.opening.greeting;
-        await window.ConvEngine.say(greeting);
+        if (state.bootGreeting) {
+            await window.ConvEngine.say(state.bootGreeting);
+        }
         state.greetedOnBoot = true;
         window.ConvEngine.endTurn();
     });
