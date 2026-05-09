@@ -641,6 +641,13 @@ public class DataInitializer implements CommandLineRunner {
         paymentRepository.save(Payment.create(orderRepository.save(Order.create(sessionData.activeSession().getSessionId(), OrderType.TAKEOUT)).getOrderId(), PaymentMethod.VEIN_AUTH));
         Payment paymentFailed = paymentRepository.save(Payment.create(orderCancelled.getOrderId(), PaymentMethod.IC_CARD));
         paymentFailed.fail();
+
+        Order orderBarcode = orderRepository.save(Order.create(sessionData.avatarSession().getSessionId(), OrderType.DINE_IN));
+        orderItemRepository.save(OrderItem.create(orderBarcode, menuData.katsudon().getMenuId(), 1, "가츠동", 8000));
+        orderBarcode.updateTotalAmount(8000);
+        orderBarcode.complete();
+        Payment paymentBarcode = paymentRepository.save(Payment.create(orderBarcode.getOrderId(), PaymentMethod.BARCODE));
+        paymentBarcode.success();
     }
 
     // ===== 헬퍼 메서드 =====
