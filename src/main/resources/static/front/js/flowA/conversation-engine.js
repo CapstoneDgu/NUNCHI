@@ -61,10 +61,10 @@
         const prev = state.mode;
         if (prev === next) return;
         state.mode = next;
-        console.log(LOG, 'mode:', prev, '→', next);
+        console.log(LOG, '🔄 모드 전환:', prev, '→', next);
         if (handlers.onModeChange) {
             try { handlers.onModeChange(next, prev); }
-            catch (e) { console.warn(LOG, 'onModeChange', e); }
+            catch (e) { console.warn(LOG, '모드 변경 처리 실패', e); }
         }
     }
 
@@ -80,7 +80,7 @@
         rec.onstart = () => {
             state.startScheduled = false;
             state.lastInterimAt = Date.now();
-            console.log(LOG, '🎤 mic ON (recognition started)');
+            console.log(LOG, '🎤 마이크 켜짐 — 음성 인식 시작');
         };
 
         rec.onresult = (event) => {
@@ -98,23 +98,23 @@
 
             // 실시간 interim 콘솔 + 콜백
             if (interim) {
-                console.log(LOG, '💬 interim:', interim);
+                console.log(LOG, '💬 듣는 중:', interim);
                 if (handlers.onInterim) {
                     try { handlers.onInterim(interim); }
-                    catch (e) { console.warn(LOG, 'onInterim', e); }
+                    catch (e) { console.warn(LOG, '실시간 인식 처리 실패', e); }
                 }
             }
 
             // 바지인: AI 발화 중 사용자 발화 감지
             if (state.mode === MODE.AI_SPEAKING && (interim || state.finalAccum)) {
-                console.log(LOG, '✋ barge-in detected');
+                console.log(LOG, '✋ 사용자 끼어들기 감지');
                 _bargeIn();
             }
 
             // final 결과 처리
             if (state.finalAccum.trim() && state.mode !== MODE.AI_SPEAKING) {
                 const text = state.finalAccum.trim();
-                console.log(LOG, '✅ final:', text);
+                console.log(LOG, '✅ 최종 인식:', text);
                 state.finalAccum = '';
                 state.interimAccum = '';
                 _clearSilenceTimer();
@@ -126,7 +126,7 @@
                 }
                 if (handlers.onUserUtterance) {
                     try { handlers.onUserUtterance(text); }
-                    catch (e) { console.warn(LOG, 'onUserUtterance', e); }
+                    catch (e) { console.warn(LOG, '사용자 발화 처리 실패', e); }
                 }
             }
         };
@@ -137,17 +137,17 @@
                 return; // 정상 — 침묵 타이머/재시작 흐름
             }
             if (code === 'not-allowed' || code === 'service-not-allowed' || code === 'audio-capture') {
-                console.warn(LOG, '🚫 mic blocked:', code);
+                console.warn(LOG, '🚫 마이크 권한 차단:', code);
                 state.wantsRunning = false;
                 state.supported = false;
                 setMode(MODE.INACTIVE);
                 return;
             }
-            console.warn(LOG, 'recognition error:', code);
+            console.warn(LOG, '음성 인식 오류:', code);
         };
 
         rec.onend = () => {
-            console.log(LOG, '🎤 mic OFF (recognition ended)');
+            console.log(LOG, '🎤 마이크 꺼짐 — 음성 인식 종료');
             // Chrome 은 continuous=true 라도 ~1분 후 자동 종료 → LISTENING 이면 재시작
             if (state.wantsRunning && state.mode === MODE.LISTENING) {
                 _scheduleStart();
@@ -167,7 +167,7 @@
             catch (e) {
                 state.startScheduled = false;
                 if (e && e.name !== 'InvalidStateError') {
-                    console.warn(LOG, 'start failed', e);
+                    console.warn(LOG, '음성 인식 시작 실패', e);
                 } else {
                     setTimeout(() => {
                         if (state.wantsRunning) {
@@ -184,7 +184,7 @@
             try { state.currentSpeakAbort.abort(); } catch (_) {}
         }
         if (handlers.onBargeIn) {
-            try { handlers.onBargeIn(); } catch (e) { console.warn(LOG, 'onBargeIn', e); }
+            try { handlers.onBargeIn(); } catch (e) { console.warn(LOG, '끼어들기 처리 실패', e); }
         }
     }
 
@@ -198,7 +198,7 @@
             let prompt = null;
             if (handlers.onSilencePrompt) {
                 try { prompt = handlers.onSilencePrompt(); }
-                catch (e) { console.warn(LOG, 'onSilencePrompt', e); }
+                catch (e) { console.warn(LOG, '침묵 프롬프트 처리 실패', e); }
             }
             if (prompt) {
                 say(prompt).then(() => endTurn()).catch(() => {});
@@ -228,7 +228,7 @@
 
     function init(opts) {
         handlers = Object.assign({}, handlers, opts || {});
-        console.log(LOG, 'init — supported:', state.supported);
+        console.log(LOG, '초기화 — 음성인식 지원:', state.supported);
     }
 
     function start() {
@@ -254,7 +254,7 @@
     /** 단일 발화 — host typewriter + TTS. AI_SPEAKING 모드 유지. */
     async function say(text) {
         if (!handlers.speak) {
-            console.warn(LOG, 'speak handler not set');
+            console.warn(LOG, '발화 핸들러 미설정');
             return;
         }
         if (state.mode === MODE.LISTENING) {
@@ -268,7 +268,7 @@
         try {
             await handlers.speak(text, signal);
         } catch (e) {
-            if (!e || e.name !== 'AbortError') console.warn(LOG, 'speak failed', e);
+            if (!e || e.name !== 'AbortError') console.warn(LOG, '발화 실패', e);
         } finally {
             state.currentSpeakAbort = null;
         }
@@ -292,7 +292,7 @@
     function submitText(text) {
         const t = (text || '').trim();
         if (!t) return;
-        console.log(LOG, '⌨️ text submit:', t);
+        console.log(LOG, '⌨️ 텍스트 입력:', t);
         _clearSilenceTimer();
         _stopRecognition();
         state.finalAccum = '';
@@ -300,7 +300,7 @@
         if (state.wantsRunning) setMode(MODE.THINKING);
         if (handlers.onUserUtterance) {
             try { handlers.onUserUtterance(t); }
-            catch (e) { console.warn(LOG, 'onUserUtterance', e); }
+            catch (e) { console.warn(LOG, '사용자 발화 처리 실패', e); }
         }
     }
 

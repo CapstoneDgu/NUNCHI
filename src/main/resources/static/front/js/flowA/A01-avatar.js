@@ -40,8 +40,7 @@
 
     const STEP_ORDER = ['opening', 'recommend', 'addmore', 'confirm'];
 
-    // FastAPI chat 응답 지연 토스트 임계
-    const SLOW_REPLY_MS = 5000;
+    // (지연 토스트는 제거됨 — ConvEngine THINKING 모드 placeholder 로 표시 충분)
 
     // ========================================================
     // 2. 상태
@@ -444,20 +443,12 @@
             return;
         }
 
-        // 5초 지연 토스트
-        let slowTimer = setTimeout(() => {
-            slowTimer = null;
-            showToast('잠시만요...');
-        }, SLOW_REPLY_MS);
-
         const res = await callApi('AI 응답', () =>
             window.Api.Ai.chat({
                 session_id: state.aiSessionId,
                 text
             })
         );
-
-        if (slowTimer) { clearTimeout(slowTimer); slowTimer = null; }
 
         if (!res || !res.reply) {
             // 폴백 멘트 추가 금지 — 청취만 재개
