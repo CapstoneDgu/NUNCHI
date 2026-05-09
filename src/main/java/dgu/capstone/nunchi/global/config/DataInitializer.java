@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Component
-@Profile("local")
+@Profile({"local", "dev"})
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
