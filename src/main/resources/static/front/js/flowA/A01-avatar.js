@@ -112,14 +112,10 @@
         }
     }
 
-    /** S02-dine 의 dineOption 을 Spring OrderType ('DINE_IN'/'TAKEOUT') 로 변환. */
-    function resolveSpringOrderType() {
+    /** S02-dine 의 dineOption 을 OrderType ('DINE_IN'/'TAKEOUT') 로 변환.
+     *  Spring/FastAPI 모두 동일 enum 사용. */
+    function resolveOrderType() {
         return sessionStorage.getItem('dineOption') === 'take_out' ? 'TAKEOUT' : 'DINE_IN';
-    }
-
-    /** S02-dine 의 dineOption 을 FastAPI order_type ('DINE_IN'/'TAKE_OUT') 로 변환. */
-    function resolveAiOrderType() {
-        return sessionStorage.getItem('dineOption') === 'take_out' ? 'TAKE_OUT' : 'DINE_IN';
     }
 
     // ========================================================
@@ -165,7 +161,7 @@
             window.Api.session.create({
                 mode: 'AVATAR',
                 language: 'ko',
-                orderType: resolveSpringOrderType()
+                orderType: resolveOrderType()
             })
         );
         if (res && res.sessionId) {
@@ -182,7 +178,7 @@
             window.Api.Ai.start({
                 mode: 'AVATAR',
                 language: 'ko',
-                order_type: resolveAiOrderType()
+                order_type: resolveOrderType()
             })
         );
         if (res && res.session_id != null) {
