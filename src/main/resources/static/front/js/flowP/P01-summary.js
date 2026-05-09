@@ -164,8 +164,7 @@
     });
 
     backEl.addEventListener('click', () => {
-        if (history.length > 1) history.back();
-        else location.href = '/menu';
+        location.href = '/start';
     });
 
     ctaEl.addEventListener('click', goNext);

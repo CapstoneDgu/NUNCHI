@@ -223,8 +223,7 @@
     /* ---------- Events ---------- */
     if (backEl) {
         backEl.addEventListener('click', () => {
-            if (history.length > 1) history.back();
-            else goSwitch();
+            location.href = '/start';
         });
     }
     if (switchEl) switchEl.addEventListener('click', goSwitch);
