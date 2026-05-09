@@ -29,8 +29,7 @@
     const SCRIPTS = {
         opening: {
             // 기본 인사 — FastAPI greeting 이 있으면 그걸로 대체됨
-            greeting: "안녕하세요! 동대맘이에요. 오늘 뭐 드시고 싶으세요?",
-            startHint: "마이크를 눌러서 저랑 대화해 보세요."
+            greeting: "안녕하세요! 동대맘이에요. 오늘 뭐 드시고 싶으세요?"
         },
         recommend: {
             picked: (name) => `좋은 선택이에요! "${name}" 담아드릴게요.`
@@ -725,14 +724,18 @@
         ]);
         if (state.sessionId) await refreshCart();
 
-        // 부트 발화 — 마이크 클릭 전까지는 청취 비활성. 마이크 클릭이 들어오면
-        // enterState 가 speechAbort 를 abort 하므로 boot 발화도 깔끔히 컷.
-        const bootAbort = new AbortController();
-        state.speechAbort = bootAbort;
+        // 자동 청취 시작 — ConvEngine.start() 가 AI_SPEAKING 으로 진입,
+        // greeting 발화 끝나면 endTurn() 으로 LISTENING 전환 (마이크 권한 팝업).
+        // 사용자가 마이크 버튼으로 끄기 전까지 자동으로 듣고 끊고 응답.
+        if (!window.ConvEngine.isSupported()) {
+            showToast('이 브라우저는 음성 입력을 지원하지 않아요. 텍스트로 입력해주세요.');
+        }
+        state.engineStarted = true;
+        window.ConvEngine.start();
+
         const greeting = state.bootGreeting || SCRIPTS.opening.greeting;
-        await aiSpeak(greeting, bootAbort.signal);
-        if (bootAbort.signal.aborted) return;
+        await window.ConvEngine.say(greeting);
         state.greetedOnBoot = true;
-        await aiSpeak(SCRIPTS.opening.startHint, bootAbort.signal);
+        window.ConvEngine.endTurn();
     });
 })();
