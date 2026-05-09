@@ -57,7 +57,9 @@
         muted: false,
         speechAbort: null,
         engineStarted: false,
-        greetedOnBoot: false
+        greetedOnBoot: false,
+        currentAudio: null,         // 재생 중인 TTS Audio 객체
+        currentAudioUrl: null       // revokeObjectURL 대상
     };
 
     // ========================================================
@@ -268,6 +270,50 @@
         }
     }
 
+    /** 재생 중인 TTS 오디오 정리. */
+    function stopCurrentAudio() {
+        if (state.currentAudio) {
+            try { state.currentAudio.pause(); } catch (_) {}
+            state.currentAudio = null;
+        }
+        if (state.currentAudioUrl) {
+            try { URL.revokeObjectURL(state.currentAudioUrl); } catch (_) {}
+            state.currentAudioUrl = null;
+        }
+    }
+
+    /** Google TTS 호출 후 fire-and-forget 으로 Audio 재생 시작. */
+    function startTtsPlayback(text, signal) {
+        if (state.muted) return;
+        if (!window.Api || !window.Api.Voice) return;
+        // 이전 재생은 정리
+        stopCurrentAudio();
+        window.Api.Voice.synthesize(text)
+            .then((blob) => {
+                if (!blob) return;
+                if (signal && signal.aborted) return;
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                audio.muted = state.muted;
+                state.currentAudio = audio;
+                state.currentAudioUrl = url;
+                audio.addEventListener('ended', () => {
+                    if (state.currentAudio === audio) stopCurrentAudio();
+                });
+                audio.play().catch((e) => {
+                    console.warn('[A01] TTS 재생 실패', e);
+                });
+                if (signal) {
+                    signal.addEventListener('abort', () => {
+                        if (state.currentAudio === audio) stopCurrentAudio();
+                    }, { once: true });
+                }
+            })
+            .catch((e) => {
+                console.warn('[A01] TTS 합성 실패', e);
+            });
+    }
+
     async function aiSpeak(text, signal) {
         if (signal && signal.aborted) return;
 
@@ -277,6 +323,9 @@
                 .saveMessage(state.sessionId, { role: 'ASSISTANT', text })
                 .catch(() => {});
         }
+
+        // typewriter 와 TTS 음성 재생 병행
+        startTtsPlayback(text, signal);
 
         setAvatar('talking');
         try {
@@ -579,10 +628,13 @@
         if (state.muted) {
             $icon.classList.remove('xi-volume-up');
             $icon.classList.add('xi-volume-mute');
+            // 재생 중인 음성도 즉시 정지
+            stopCurrentAudio();
         } else {
             $icon.classList.remove('xi-volume-mute');
             $icon.classList.add('xi-volume-up');
         }
+        if (state.currentAudio) state.currentAudio.muted = state.muted;
     }
 
     // ========================================================
@@ -645,6 +697,7 @@
         if (state.speechAbort) {
             try { state.speechAbort.abort(); } catch (_) {}
         }
+        stopCurrentAudio();
         setAvatar('idle');
     }
 
