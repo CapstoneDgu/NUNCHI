@@ -462,6 +462,33 @@
         }
     }
 
+    /**
+     * Spring SessionStep enum (BROWSE/SELECT/CONFIGURE/CHECKOUT) → FSM 인디케이터 매핑.
+     * 응답에 currentStep 이 있으면 사용, 없으면 reply 키워드로 추정.
+     * 단계 인디케이터(기/승/전/결)만 갱신 — 발화/실행은 이미 chat 응답이 처리.
+     */
+    function applyStep(res) {
+        let serverStep = res && (res.current_step || res.currentStep || res.step);
+        if (!serverStep && window.ReplyKeywords) {
+            serverStep = window.ReplyKeywords.guessStep(res && res.reply);
+        }
+        if (!serverStep) return;
+
+        const STEP_MAP = {
+            'BROWSE':    'opening',
+            'SELECT':    'recommend',
+            'CONFIGURE': 'addmore',
+            'CHECKOUT':  'confirm'
+        };
+        const fsmStep = STEP_MAP[String(serverStep).toUpperCase()];
+        if (!fsmStep || state.fsm === fsmStep) return;
+
+        // 인디케이터 + 칩만 갱신 (runner 실행 X — chat 응답이 이미 발화 진행 중)
+        state.fsm = fsmStep;
+        renderSteps();
+        renderChips();
+    }
+
     // ========================================================
     // 11. 사용자 발화 → FastAPI chat → reply 발화 + 후처리
     // ========================================================
@@ -485,6 +512,9 @@
             if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
             return;
         }
+
+        // 단계 인디케이터 갱신 — 서버 currentStep 우선, fallback 으로 reply 키워드 추정
+        applyStep(res);
 
         await aiSpeakChained(res.reply);
 
