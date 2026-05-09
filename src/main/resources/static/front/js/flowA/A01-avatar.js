@@ -62,15 +62,7 @@
         muted: false,
         speechAbort: null,
         engineStarted: false,
-        greetedOnBoot: false,
-        // 메뉴 캐시 (백엔드 prefetch — 미니카트 이미지/이름 보강용)
-        menuCache: {
-            categories: [],
-            top: [],
-            byId: new Map(),
-            categoryNameById: new Map(),
-            ready: false
-        }
+        greetedOnBoot: false
     };
 
     // ========================================================
@@ -125,10 +117,14 @@
         }
     }
 
-    /** S02-dine 에서 결정한 dineOption 을 FastAPI order_type 으로 변환. */
-    function resolveOrderType() {
-        const dine = sessionStorage.getItem('dineOption');
-        return dine === 'take_out' ? 'TAKE_OUT' : 'DINE_IN';
+    /** S02-dine 의 dineOption 을 Spring OrderType ('DINE_IN'/'TAKEOUT') 로 변환. */
+    function resolveSpringOrderType() {
+        return sessionStorage.getItem('dineOption') === 'take_out' ? 'TAKEOUT' : 'DINE_IN';
+    }
+
+    /** S02-dine 의 dineOption 을 FastAPI order_type ('DINE_IN'/'TAKE_OUT') 로 변환. */
+    function resolveAiOrderType() {
+        return sessionStorage.getItem('dineOption') === 'take_out' ? 'TAKE_OUT' : 'DINE_IN';
     }
 
     // ========================================================
@@ -171,7 +167,11 @@
             sessionStorage.removeItem('sessionId');
         }
         const res = await callApi('Spring 세션 생성', () =>
-            window.Api.session.create({ mode: 'AVATAR', language: 'ko' })
+            window.Api.session.create({
+                mode: 'AVATAR',
+                language: 'ko',
+                orderType: resolveSpringOrderType()
+            })
         );
         if (res && res.sessionId) {
             state.sessionId = res.sessionId;
@@ -183,9 +183,12 @@
     // 5b. 세션 영속 — FastAPI 세션
     // ========================================================
     async function startAiSession() {
-        const order_type = resolveOrderType();
         const res = await callApi('AI 세션 시작', () =>
-            window.Api.Ai.start({ mode: 'AVATAR', language: 'ko', order_type })
+            window.Api.Ai.start({
+                mode: 'AVATAR',
+                language: 'ko',
+                order_type: resolveAiOrderType()
+            })
         );
         if (res && res.session_id != null) {
             state.aiSessionId = res.session_id;
@@ -211,40 +214,6 @@
         } catch (e) {
             console.warn('[A01] 카트 캐시 실패', e);
         }
-    }
-
-    // ========================================================
-    // 6. 메뉴 prefetch — 미니카트 이미지/이름 보강용 (가벼운 fetch)
-    // ========================================================
-    async function fetchMenuCatalog() {
-        const [categories, top] = await Promise.all([
-            callApi('카테고리 조회', () => window.Api.menu.categories()),
-            callApi('인기 메뉴 조회', () => window.Api.menu.top(8))
-        ]);
-        state.menuCache.categories = categories || [];
-        state.menuCache.top        = top || [];
-        (categories || []).forEach((c) => {
-            state.menuCache.categoryNameById.set(c.categoryId, c.name);
-        });
-        (top || []).forEach((m) => state.menuCache.byId.set(m.menuId, m));
-        state.menuCache.ready = true;
-    }
-
-    /**
-     * 메뉴 이미지 URL 후보를 우선순위대로 반환.
-     * 1) 한글 카테고리/메뉴명 매핑: /images/menu/덮밥류/가츠동.png
-     * 2) 백엔드 menu.imageUrl
-     */
-    function resolveMenuImageUrls(menu) {
-        const urls = [];
-        if (menu && menu.name) {
-            const catName = state.menuCache.categoryNameById.get(menu.categoryId);
-            if (catName) {
-                urls.push(encodeURI(`/images/menu/${catName}/${menu.name}.png`));
-            }
-        }
-        if (menu && menu.imageUrl) urls.push(menu.imageUrl);
-        return urls;
     }
 
     // ========================================================
@@ -488,15 +457,6 @@
             items: cartResp.items || [],
             totalAmount: cartResp.totalAmount || 0
         };
-        state.cart.items.forEach((it) => {
-            if (!state.menuCache.byId.has(it.menuId)) {
-                state.menuCache.byId.set(it.menuId, {
-                    menuId: it.menuId,
-                    name: it.menuName,
-                    price: it.unitPrice
-                });
-            }
-        });
         persistCartCache();
         renderMinicart();
     }
@@ -758,11 +718,10 @@
 
         onConvModeChange('INACTIVE');
 
-        // Spring + FastAPI 세션 + 메뉴 prefetch 병렬
+        // Spring + FastAPI 세션 병렬 시작
         await Promise.all([
             loadOrCreateSpringSession(),
-            startAiSession(),
-            fetchMenuCatalog()
+            startAiSession()
         ]);
         if (state.sessionId) await refreshCart();
 
