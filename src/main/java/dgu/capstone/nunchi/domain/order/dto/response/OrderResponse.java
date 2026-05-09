@@ -9,6 +9,7 @@ public record OrderResponse(
         Long sessionId,
         Integer totalAmount,
         String orderStatus,
+        String orderType,
         List<OrderItemResponse> items
 ) {
 
@@ -18,6 +19,7 @@ public record OrderResponse(
                 order.getSessionId(),
                 order.getTotalAmount(),
                 order.getOrderStatus().name(),
+                order.getOrderType().name(),
                 items
         );
     }
