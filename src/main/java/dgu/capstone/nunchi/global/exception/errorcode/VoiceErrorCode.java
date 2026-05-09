@@ -7,19 +7,8 @@ import org.springframework.http.HttpStatus;
 public enum VoiceErrorCode implements ErrorCode {
 
     /**
-     * 400 BAD_REQUEST
-     */
-    INVALID_AUDIO_FORMAT(HttpStatus.BAD_REQUEST, 400, "오디오 데이터가 비어있거나 형식이 올바르지 않습니다."),
-
-    /**
-     * 422 UNPROCESSABLE_ENTITY
-     */
-    EMPTY_TRANSCRIPT(HttpStatus.UNPROCESSABLE_ENTITY, 422, "음성에서 텍스트를 추출하지 못했습니다."),
-
-    /**
      * 500 INTERNAL_SERVER_ERROR
      */
-    TRANSCRIBE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "음성 인식 처리에 실패했습니다."),
     SYNTHESIZE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "음성 합성 처리에 실패했습니다."),
 
     /**

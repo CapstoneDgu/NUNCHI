@@ -1,25 +1,29 @@
 // ========================================================
-// conversation-engine.js — 턴테이킹 대화 엔진 (AudioRecorder + Google STT)
+// conversation-engine.js — 턴테이킹 대화 엔진 (Web Speech API)
 //
 // 모드:
-//   INACTIVE     — 세션 시작 전. 녹음 X.
-//   AI_SPEAKING  — AI 발화 중 (typewriter + TTS 재생). 사용자 입력 시 바지인.
-//   LISTENING    — 사용자 발화 대기. AudioRecorder 가 녹음 중.
-//   THINKING     — STT/AI 응답 대기. 다음 say() 까지 대기.
+//   INACTIVE     — 세션 시작 전. recognition 미가동.
+//   AI_SPEAKING  — AI 발화 중(typewriter + TTS). 사용자 interim 감지 시 바지인.
+//   LISTENING    — 사용자 발화 대기. 3초 침묵 시 onSilencePrompt 콜백.
+//   THINKING     — final 인식 후 host 가 처리 중. 다음 say() 까지 대기.
 //
 // 사용:
-//   ConvEngine.init({ speak, onUserUtterance, onSilencePrompt, onBargeIn, onModeChange });
+//   ConvEngine.init({ speak, onUserUtterance, onInterim, onSilencePrompt, onBargeIn, onModeChange });
 //   ConvEngine.start();
 //   await ConvEngine.say("안녕하세요");
-//   ConvEngine.endTurn();              // → AudioRecorder 자동 시작
+//   ConvEngine.endTurn();              // → 자동 청취 시작
 //   ConvEngine.submitText("매운 거");  // 텍스트 입력 폴백
 //   ConvEngine.stop();
 //
-// 의존: window.AudioRecorder, window.Api.Voice
+// 의존: 없음 (Web Speech API 만 사용)
+//
+// 콘솔 로그:
+//   [Conv] 접두사로 마이크 상태/interim/final 모두 출력
 // ========================================================
 (function () {
     'use strict';
 
+    const LOG = '[Conv]';
     const MODE = {
         INACTIVE: 'INACTIVE',
         AI_SPEAKING: 'AI_SPEAKING',
@@ -27,28 +31,152 @@
         THINKING: 'THINKING'
     };
 
+    const SILENCE_MS = 3000;     // 침묵 N 초 → 되물음
+    const SILENCE_TICK = 200;    // 타이머 폴링 간격
+
     let handlers = {
-        speak: null,
-        onUserUtterance: null,
-        onSilencePrompt: null,    // 호환 유지 (호출은 안 함 — VAD 가 자동 처리)
+        speak: null,             // async (text, signal) => void
+        onUserUtterance: null,   // (text) => void          — final
+        onInterim: null,         // (text) => void          — partial result (실시간)
+        onSilencePrompt: null,   // () => string | null
         onBargeIn: null,
         onModeChange: null
     };
 
     const state = {
         mode: MODE.INACTIVE,
+        recognition: null,
+        supported: typeof window !== 'undefined' &&
+                   !!(window.SpeechRecognition || window.webkitSpeechRecognition),
         currentSpeakAbort: null,
-        wantsRunning: false
+        finalAccum: '',
+        interimAccum: '',
+        lastInterimAt: 0,
+        silenceTimer: null,
+        wantsRunning: false,
+        startScheduled: false
     };
 
     function setMode(next) {
         const prev = state.mode;
         if (prev === next) return;
         state.mode = next;
+        console.log(LOG, 'mode:', prev, '→', next);
         if (handlers.onModeChange) {
             try { handlers.onModeChange(next, prev); }
-            catch (e) { console.warn('[ConvEngine] onModeChange', e); }
+            catch (e) { console.warn(LOG, 'onModeChange', e); }
         }
+    }
+
+    function _ensureRecognition() {
+        if (state.recognition || !state.supported) return state.recognition;
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new SR();
+        rec.lang = 'ko-KR';
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.maxAlternatives = 1;
+
+        rec.onstart = () => {
+            state.startScheduled = false;
+            state.lastInterimAt = Date.now();
+            console.log(LOG, '🎤 mic ON (recognition started)');
+        };
+
+        rec.onresult = (event) => {
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const res = event.results[i];
+                if (res.isFinal) {
+                    state.finalAccum += res[0].transcript;
+                } else {
+                    interim += res[0].transcript;
+                }
+            }
+            state.interimAccum = interim;
+            state.lastInterimAt = Date.now();
+
+            // 실시간 interim 콘솔 + 콜백
+            if (interim) {
+                console.log(LOG, '💬 interim:', interim);
+                if (handlers.onInterim) {
+                    try { handlers.onInterim(interim); }
+                    catch (e) { console.warn(LOG, 'onInterim', e); }
+                }
+            }
+
+            // 바지인: AI 발화 중 사용자 발화 감지
+            if (state.mode === MODE.AI_SPEAKING && (interim || state.finalAccum)) {
+                console.log(LOG, '✋ barge-in detected');
+                _bargeIn();
+            }
+
+            // final 결과 처리
+            if (state.finalAccum.trim() && state.mode !== MODE.AI_SPEAKING) {
+                const text = state.finalAccum.trim();
+                console.log(LOG, '✅ final:', text);
+                state.finalAccum = '';
+                state.interimAccum = '';
+                _clearSilenceTimer();
+                _stopRecognition();
+                setMode(MODE.THINKING);
+                // interim 화면 비우기 신호
+                if (handlers.onInterim) {
+                    try { handlers.onInterim(''); } catch (_) {}
+                }
+                if (handlers.onUserUtterance) {
+                    try { handlers.onUserUtterance(text); }
+                    catch (e) { console.warn(LOG, 'onUserUtterance', e); }
+                }
+            }
+        };
+
+        rec.onerror = (e) => {
+            const code = e && e.error;
+            if (code === 'no-speech' || code === 'aborted') {
+                return; // 정상 — 침묵 타이머/재시작 흐름
+            }
+            if (code === 'not-allowed' || code === 'service-not-allowed' || code === 'audio-capture') {
+                console.warn(LOG, '🚫 mic blocked:', code);
+                state.wantsRunning = false;
+                state.supported = false;
+                setMode(MODE.INACTIVE);
+                return;
+            }
+            console.warn(LOG, 'recognition error:', code);
+        };
+
+        rec.onend = () => {
+            console.log(LOG, '🎤 mic OFF (recognition ended)');
+            // Chrome 은 continuous=true 라도 ~1분 후 자동 종료 → LISTENING 이면 재시작
+            if (state.wantsRunning && state.mode === MODE.LISTENING) {
+                _scheduleStart();
+            }
+        };
+
+        state.recognition = rec;
+        return rec;
+    }
+
+    function _scheduleStart() {
+        if (state.startScheduled || !state.recognition) return;
+        state.startScheduled = true;
+        setTimeout(() => {
+            if (!state.wantsRunning) { state.startScheduled = false; return; }
+            try { state.recognition.start(); }
+            catch (e) {
+                state.startScheduled = false;
+                if (e && e.name !== 'InvalidStateError') {
+                    console.warn(LOG, 'start failed', e);
+                } else {
+                    setTimeout(() => {
+                        if (state.wantsRunning) {
+                            try { state.recognition.start(); } catch (_) {}
+                        }
+                    }, 250);
+                }
+            }
+        }, 50);
     }
 
     function _bargeIn() {
@@ -56,57 +184,42 @@
             try { state.currentSpeakAbort.abort(); } catch (_) {}
         }
         if (handlers.onBargeIn) {
-            try { handlers.onBargeIn(); } catch (e) { console.warn('[ConvEngine] onBargeIn', e); }
+            try { handlers.onBargeIn(); } catch (e) { console.warn(LOG, 'onBargeIn', e); }
         }
     }
 
-    function _stopRecording() {
-        if (window.AudioRecorder && window.AudioRecorder.isActive()) {
-            window.AudioRecorder.stop();
-        }
-    }
-
-    /** 녹음 종료 후 호출 — STT 후 onUserUtterance 디스패치. */
-    async function _onRecordingStop(blob, meta) {
-        if (!state.wantsRunning) return;
-        if (!blob || !meta || !meta.hadSpeech) {
-            // 발화 감지 없이 종료(타임아웃 등) — 다시 LISTENING 으로 재시작
-            if (state.wantsRunning && state.mode !== MODE.AI_SPEAKING) {
-                _startListening();
+    function _startSilenceTimer() {
+        _clearSilenceTimer();
+        state.lastInterimAt = Date.now();
+        state.silenceTimer = setInterval(() => {
+            if (state.mode !== MODE.LISTENING) return;
+            if (Date.now() - state.lastInterimAt < SILENCE_MS) return;
+            _clearSilenceTimer();
+            let prompt = null;
+            if (handlers.onSilencePrompt) {
+                try { prompt = handlers.onSilencePrompt(); }
+                catch (e) { console.warn(LOG, 'onSilencePrompt', e); }
             }
-            return;
-        }
-        setMode(MODE.THINKING);
-        let text = null;
-        try {
-            const res = await window.Api.Voice.transcribe(blob);
-            text = res && res.text ? res.text.trim() : null;
-        } catch (e) {
-            console.warn('[ConvEngine] transcribe 실패', e);
-        }
-        if (!text) {
-            // 인식 실패 — 다시 청취 시작 (폴백 멘트 X)
-            if (state.wantsRunning) _startListening();
-            return;
-        }
-        if (handlers.onUserUtterance) {
-            try { handlers.onUserUtterance(text); }
-            catch (e) { console.warn('[ConvEngine] onUserUtterance', e); }
+            if (prompt) {
+                say(prompt).then(() => endTurn()).catch(() => {});
+            } else {
+                state.lastInterimAt = Date.now();
+                _startSilenceTimer();
+            }
+        }, SILENCE_TICK);
+    }
+
+    function _clearSilenceTimer() {
+        if (state.silenceTimer) {
+            clearInterval(state.silenceTimer);
+            state.silenceTimer = null;
         }
     }
 
-    function _startListening() {
-        if (!window.AudioRecorder || !window.AudioRecorder.isSupported()) return;
-        if (window.AudioRecorder.isActive()) return;
-        setMode(MODE.LISTENING);
-        window.AudioRecorder.start({
-            onStop: _onRecordingStop,
-            onError: (e) => {
-                console.warn('[ConvEngine] mic error', e);
-                state.wantsRunning = false;
-                setMode(MODE.INACTIVE);
-            }
-        });
+    function _stopRecognition() {
+        if (!state.recognition) return;
+        try { state.recognition.abort(); } catch (_) {}
+        state.startScheduled = false;
     }
 
     // ----------------------------------------------------
@@ -115,18 +228,22 @@
 
     function init(opts) {
         handlers = Object.assign({}, handlers, opts || {});
+        console.log(LOG, 'init — supported:', state.supported);
     }
 
     function start() {
         if (state.mode !== MODE.INACTIVE) return;
         state.wantsRunning = true;
-        // 첫 say() 까지 AI_SPEAKING 으로 진입.
+        if (state.supported) _ensureRecognition();
         setMode(MODE.AI_SPEAKING);
     }
 
     function stop() {
         state.wantsRunning = false;
-        _stopRecording();
+        state.finalAccum = '';
+        state.interimAccum = '';
+        _clearSilenceTimer();
+        _stopRecognition();
         if (state.currentSpeakAbort) {
             try { state.currentSpeakAbort.abort(); } catch (_) {}
             state.currentSpeakAbort = null;
@@ -134,16 +251,16 @@
         setMode(MODE.INACTIVE);
     }
 
-    /** AI 발화 — host 의 speak() 호출. 발화 끝나면 AI_SPEAKING 모드 유지. */
+    /** 단일 발화 — host typewriter + TTS. AI_SPEAKING 모드 유지. */
     async function say(text) {
         if (!handlers.speak) {
-            console.warn('[ConvEngine] speak handler not set');
+            console.warn(LOG, 'speak handler not set');
             return;
         }
-        // 청취 중이면 잠시 멈춤 — 자기 음성 자기인식 방지
         if (state.mode === MODE.LISTENING) {
-            _stopRecording();
+            _stopRecognition();  // 자기 음성 자기인식 방지
         }
+        _clearSilenceTimer();
         setMode(MODE.AI_SPEAKING);
 
         state.currentSpeakAbort = new AbortController();
@@ -151,36 +268,45 @@
         try {
             await handlers.speak(text, signal);
         } catch (e) {
-            if (!e || e.name !== 'AbortError') console.warn('[ConvEngine] speak failed', e);
+            if (!e || e.name !== 'AbortError') console.warn(LOG, 'speak failed', e);
         } finally {
             state.currentSpeakAbort = null;
         }
     }
 
-    /** AI 발화 시퀀스가 끝났음을 알림. wantsRunning 이면 청취 시작. */
+    /** AI 발화 끝 알림. wantsRunning 이면 LISTENING 으로 전환 + 청취 시작. */
     function endTurn() {
         if (!state.wantsRunning) return;
         if (state.mode === MODE.INACTIVE) return;
-        _startListening();
+        setMode(MODE.LISTENING);
+        state.finalAccum = '';
+        state.interimAccum = '';
+        if (state.supported) {
+            _ensureRecognition();
+            _scheduleStart();
+        }
+        _startSilenceTimer();
     }
 
-    /** 텍스트 입력 폴백 — 녹음/STT 우회하고 직접 onUserUtterance 호출. */
+    /** 텍스트 입력 폴백 — 음성 우회. */
     function submitText(text) {
         const t = (text || '').trim();
         if (!t) return;
-        _stopRecording();
+        console.log(LOG, '⌨️ text submit:', t);
+        _clearSilenceTimer();
+        _stopRecognition();
+        state.finalAccum = '';
+        state.interimAccum = '';
         if (state.wantsRunning) setMode(MODE.THINKING);
         if (handlers.onUserUtterance) {
             try { handlers.onUserUtterance(t); }
-            catch (e) { console.warn('[ConvEngine] onUserUtterance', e); }
+            catch (e) { console.warn(LOG, 'onUserUtterance', e); }
         }
     }
 
     function isActive() { return state.wantsRunning; }
     function getMode()  { return state.mode; }
-    function isSupported() {
-        return !!(window.AudioRecorder && window.AudioRecorder.isSupported());
-    }
+    function isSupported() { return state.supported; }
 
     window.ConvEngine = {
         MODE,

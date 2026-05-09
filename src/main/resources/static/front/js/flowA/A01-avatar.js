@@ -693,6 +693,17 @@
         return null;
     }
 
+    /** 사용자 발화 interim(실시간 부분) — 입력바에 표시. */
+    function onConvInterim(text) {
+        if (!$input) return;
+        if (text) {
+            $input.placeholder = text + ' ...';
+        } else {
+            // final 시 클리어 — 모드별 placeholder 는 onConvModeChange 가 다시 세팅
+            $input.placeholder = '듣고 있어요...';
+        }
+    }
+
     function onConvBargeIn() {
         if (state.speechAbort) {
             try { state.speechAbort.abort(); } catch (_) {}
@@ -753,6 +764,7 @@
         window.ConvEngine.init({
             speak: aiSpeak,
             onUserUtterance: userSay,
+            onInterim: onConvInterim,
             onSilencePrompt: onConvSilencePrompt,
             onModeChange: onConvModeChange,
             onBargeIn: onConvBargeIn

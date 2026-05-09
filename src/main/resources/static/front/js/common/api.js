@@ -105,46 +105,6 @@
     const del   = (path)        => request('DELETE', path);
 
     /**
-     * Spring multipart 업로드용 — ApiResponse 언래핑.
-     * Content-Type 은 브라우저가 boundary 포함하여 자동 설정 (직접 지정 X).
-     */
-    async function requestMultipart(method, path, formData) {
-        const url = resolveUrl(path);
-        const init = {
-            method,
-            credentials: 'same-origin',
-            body: formData,
-        };
-
-        let res;
-        try {
-            res = await fetch(url, init);
-        } catch (networkErr) {
-            console.error(LOG, method, path, '네트워크 실패', networkErr);
-            throw new ApiError(0, '서버에 연결할 수 없습니다.', 0, path);
-        }
-
-        let json = null;
-        const text = await res.text();
-        if (text) {
-            try { json = JSON.parse(text); }
-            catch (e) {
-                throw new ApiError(res.status, '응답 파싱에 실패했습니다.', res.status, path);
-            }
-        }
-
-        if (!res.ok) {
-            const code = json && typeof json.code === 'number' ? json.code : res.status;
-            const msg  = (json && json.msg) || ('HTTP ' + res.status);
-            throw new ApiError(code, msg, res.status, path);
-        }
-
-        const data = json && Object.prototype.hasOwnProperty.call(json, 'data') ? json.data : json;
-        if (window.__NUNCHI_API_DEBUG__) console.debug(LOG, method, path, data);
-        return data;
-    }
-
-    /**
      * 바이너리 응답용 — Blob 반환. 4xx/5xx 면 ApiError throw.
      */
     async function requestBinary(method, path, body) {
@@ -293,18 +253,8 @@
         },
     };
 
-    // /api/voice — Google Cloud STT/TTS (Spring 프록시)
+    // /api/voice — Google Cloud TTS (Spring 프록시). STT 는 Web Speech API 가 처리.
     const Voice = {
-        /**
-         * 음성 인식 (STT).
-         * @param {Blob} audioBlob audio/webm;codecs=opus 권장
-         * @returns {Promise<{text:string, confidence:number}>}
-         */
-        transcribe(audioBlob) {
-            const fd = new FormData();
-            fd.append('audio', audioBlob, 'speech.webm');
-            return requestMultipart('POST', '/api/voice/transcribe', fd);
-        },
         /**
          * 음성 합성 (TTS) — Blob(audio/mpeg) 반환.
          * @param {string} text

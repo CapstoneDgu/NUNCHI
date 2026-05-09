@@ -45,9 +45,6 @@ spring:
 google:
   cloud:
     api-key: ${GOOGLE_API_KEY:}
-    stt:
-      language-code: ko-KR
-      encoding: WEBM_OPUS
     tts:
       language-code: ko-KR
       voice-name: ko-KR-Chirp3-HD-Pulcherrima

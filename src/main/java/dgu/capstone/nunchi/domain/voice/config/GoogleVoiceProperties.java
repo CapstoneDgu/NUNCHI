@@ -9,14 +9,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "google.cloud")
 public record GoogleVoiceProperties(
         String apiKey,
-        Stt stt,
         Tts tts
 ) {
-    public record Stt(
-            String languageCode,
-            String encoding
-    ) {}
-
     public record Tts(
             String languageCode,
             String voiceName,

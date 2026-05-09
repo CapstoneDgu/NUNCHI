@@ -13,13 +13,6 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties(GoogleVoiceProperties.class)
 public class GoogleVoiceConfig {
 
-    @Bean(name = "googleSpeechRestClient")
-    public RestClient googleSpeechRestClient() {
-        return RestClient.builder()
-                .baseUrl("https://speech.googleapis.com")
-                .build();
-    }
-
     @Bean(name = "googleTextToSpeechRestClient")
     public RestClient googleTextToSpeechRestClient() {
         return RestClient.builder()
