@@ -20,57 +20,73 @@
     const STYLES = `
         .confirm-modal__overlay {
             position: fixed; inset: 0;
-            background: rgba(0, 0, 0, 0.45);
+            background: var(--color-bg-overlay, rgba(30, 25, 21, 0.4));
             display: flex; align-items: center; justify-content: center;
             z-index: 9999;
-            animation: confirm-modal-fade-in 0.18s ease-out;
+            font-family: var(--font-sans, "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif);
+            animation: confirm-modal-fade-in 200ms var(--ease-out, cubic-bezier(0.25, 0.46, 0.45, 0.94));
+            padding: 24px;
         }
         @keyframes confirm-modal-fade-in {
             from { opacity: 0; }
             to   { opacity: 1; }
         }
         .confirm-modal__box {
-            background: #fff;
-            border-radius: 16px;
-            min-width: 320px; max-width: 480px;
-            padding: 28px 24px 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            background: var(--neutral-0, #fff);
+            border-radius: 24px;
+            width: min(560px, calc(100% - 48px));
+            padding: 48px 40px 32px;
+            box-shadow: var(--shadow-lg, 0 8px 32px rgba(30, 25, 21, 0.15));
             text-align: center;
-            animation: confirm-modal-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: confirm-modal-pop 280ms var(--ease-bounce, cubic-bezier(0.34, 1.56, 0.64, 1));
         }
         @keyframes confirm-modal-pop {
-            from { opacity: 0; transform: scale(0.92); }
-            to   { opacity: 1; transform: scale(1); }
+            from { opacity: 0; transform: scale(0.94) translateY(8px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
         }
         .confirm-modal__title {
-            margin: 0 0 12px;
-            font-size: 20px; font-weight: 700;
-            color: #1a1a1a;
+            margin: 0 0 16px;
+            font-size: 28px; font-weight: 700; line-height: 1.35;
+            color: var(--color-text-heading, var(--neutral-800, #352F2B));
         }
         .confirm-modal__message {
-            margin: 0 0 24px;
-            font-size: 15px; line-height: 1.5;
-            color: #555;
+            margin: 0 0 36px;
+            font-size: 18px; line-height: 1.55;
+            color: var(--color-text-body, var(--neutral-700, #4D4742));
         }
         .confirm-modal__actions {
-            display: flex; gap: 10px;
+            display: flex; gap: 12px;
         }
         .confirm-modal__btn {
             flex: 1;
-            padding: 14px 18px;
-            border: none; border-radius: 10px;
-            font-size: 16px; font-weight: 600;
+            min-height: 64px;
+            padding: 16px 20px;
+            border: none; border-radius: 14px;
+            font-family: inherit;
+            font-size: 18px; font-weight: 600;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: background 150ms ease, transform 100ms ease;
+            -webkit-tap-highlight-color: transparent;
         }
+        .confirm-modal__btn:active { transform: scale(0.98); }
         .confirm-modal__btn--cancel {
-            background: #f3f4f6; color: #333;
+            background: var(--neutral-100, #F0EDEA);
+            color: var(--color-text-body, var(--neutral-700, #4D4742));
         }
-        .confirm-modal__btn--cancel:hover { background: #e5e7eb; }
+        .confirm-modal__btn--cancel:hover {
+            background: var(--neutral-200, #DDD9D5);
+        }
         .confirm-modal__btn--confirm {
-            background: #2563eb; color: #fff;
+            background: var(--color-btn-primary, var(--primary-500, #E8600A));
+            color: var(--color-text-inverse, #fff);
         }
-        .confirm-modal__btn--confirm:hover { background: #1d4ed8; }
+        .confirm-modal__btn--confirm:hover {
+            background: var(--color-btn-hover, var(--primary-400, #FF8320));
+        }
+        .confirm-modal__btn--confirm:focus-visible {
+            outline: 3px solid var(--color-focus, var(--primary-500, #E8600A));
+            outline-offset: 2px;
+        }
     `;
 
     let stylesInjected = false;
