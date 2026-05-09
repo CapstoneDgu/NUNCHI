@@ -44,8 +44,7 @@ spring:
 
 google:
   cloud:
-    credentials:
-      location: ${GOOGLE_APPLICATION_CREDENTIALS:}
+    api-key: ${GOOGLE_API_KEY:}
     stt:
       language-code: ko-KR
       encoding: WEBM_OPUS

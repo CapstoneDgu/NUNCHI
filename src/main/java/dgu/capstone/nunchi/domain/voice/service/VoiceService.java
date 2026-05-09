@@ -1,86 +1,102 @@
 package dgu.capstone.nunchi.domain.voice.service;
 
-import com.google.cloud.speech.v1.RecognitionAudio;
-import com.google.cloud.speech.v1.RecognitionConfig;
-import com.google.cloud.speech.v1.RecognizeResponse;
-import com.google.cloud.speech.v1.SpeechClient;
-import com.google.cloud.speech.v1.SpeechRecognitionAlternative;
-import com.google.cloud.speech.v1.SpeechRecognitionResult;
-import com.google.cloud.texttospeech.v1.AudioConfig;
-import com.google.cloud.texttospeech.v1.AudioEncoding;
-import com.google.cloud.texttospeech.v1.SsmlVoiceGender;
-import com.google.cloud.texttospeech.v1.SynthesisInput;
-import com.google.cloud.texttospeech.v1.SynthesizeSpeechResponse;
-import com.google.cloud.texttospeech.v1.TextToSpeechClient;
-import com.google.cloud.texttospeech.v1.VoiceSelectionParams;
-import com.google.protobuf.ByteString;
 import dgu.capstone.nunchi.domain.voice.config.GoogleVoiceProperties;
 import dgu.capstone.nunchi.domain.voice.dto.request.SynthesizeRequest;
 import dgu.capstone.nunchi.domain.voice.dto.response.TranscribeResponse;
 import dgu.capstone.nunchi.global.exception.domainException.VoiceException;
 import dgu.capstone.nunchi.global.exception.errorcode.VoiceErrorCode;
-import io.grpc.StatusRuntimeException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * Google Cloud Speech-to-Text / Text-to-Speech REST API 호출.
+ * 인증: API key (쿼리스트링 ?key=...).
+ */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class VoiceService {
 
-    private final SpeechClient speechClient;
-    private final TextToSpeechClient textToSpeechClient;
+    private final RestClient speechClient;
+    private final RestClient textToSpeechClient;
     private final GoogleVoiceProperties props;
+
+    public VoiceService(
+            @Qualifier("googleSpeechRestClient") RestClient speechClient,
+            @Qualifier("googleTextToSpeechRestClient") RestClient textToSpeechClient,
+            GoogleVoiceProperties props
+    ) {
+        this.speechClient = speechClient;
+        this.textToSpeechClient = textToSpeechClient;
+        this.props = props;
+    }
 
     public TranscribeResponse transcribe(MultipartFile audio) {
         if (audio == null || audio.isEmpty()) {
             throw new VoiceException(VoiceErrorCode.INVALID_AUDIO_FORMAT);
         }
+        if (props.apiKey() == null || props.apiKey().isBlank()) {
+            throw new VoiceException(VoiceErrorCode.TRANSCRIBE_FAILED);
+        }
         try {
-            ByteString content = ByteString.copyFrom(audio.getBytes());
+            String base64Audio = Base64.getEncoder().encodeToString(audio.getBytes());
 
-            RecognitionConfig.AudioEncoding encoding =
-                    RecognitionConfig.AudioEncoding.valueOf(props.stt().encoding());
+            Map<String, Object> body = Map.of(
+                    "config", Map.of(
+                            "encoding", props.stt().encoding(),
+                            "languageCode", props.stt().languageCode(),
+                            "enableAutomaticPunctuation", true
+                    ),
+                    "audio", Map.of("content", base64Audio)
+            );
 
-            RecognitionConfig config = RecognitionConfig.newBuilder()
-                    .setEncoding(encoding)
-                    .setLanguageCode(props.stt().languageCode())
-                    .setEnableAutomaticPunctuation(true)
-                    .build();
+            Map<String, Object> response = speechClient.post()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/v1/speech:recognize")
+                            .queryParam("key", props.apiKey())
+                            .build())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .body(Map.class);
 
-            RecognitionAudio recognitionAudio = RecognitionAudio.newBuilder()
-                    .setContent(content)
-                    .build();
-
-            RecognizeResponse response = speechClient.recognize(config, recognitionAudio);
-
-            if (response.getResultsCount() == 0) {
+            if (response == null) {
                 throw new VoiceException(VoiceErrorCode.EMPTY_TRANSCRIPT);
             }
-
-            SpeechRecognitionResult result = response.getResults(0);
-            if (result.getAlternativesCount() == 0) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
+            if (results == null || results.isEmpty()) {
                 throw new VoiceException(VoiceErrorCode.EMPTY_TRANSCRIPT);
             }
-
-            SpeechRecognitionAlternative alt = result.getAlternatives(0);
-            String text = alt.getTranscript().trim();
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> alternatives = (List<Map<String, Object>>) results.get(0).get("alternatives");
+            if (alternatives == null || alternatives.isEmpty()) {
+                throw new VoiceException(VoiceErrorCode.EMPTY_TRANSCRIPT);
+            }
+            Map<String, Object> alt = alternatives.get(0);
+            String text = String.valueOf(alt.getOrDefault("transcript", "")).trim();
             if (text.isEmpty()) {
                 throw new VoiceException(VoiceErrorCode.EMPTY_TRANSCRIPT);
             }
-            return TranscribeResponse.from(text, alt.getConfidence());
+            double confidence = alt.get("confidence") instanceof Number n ? n.doubleValue() : 0.0;
+            return TranscribeResponse.from(text, confidence);
 
         } catch (VoiceException e) {
             throw e;
-        } catch (StatusRuntimeException e) {
-            log.warn("[Voice] STT gRPC 실패", e);
-            throw new VoiceException(VoiceErrorCode.GOOGLE_API_TIMEOUT);
+        } catch (RestClientResponseException e) {
+            log.warn("[Voice] STT REST 실패 status={} body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new VoiceException(VoiceErrorCode.TRANSCRIBE_FAILED);
         } catch (IOException e) {
             log.warn("[Voice] STT 파일 읽기 실패", e);
             throw new VoiceException(VoiceErrorCode.TRANSCRIBE_FAILED);
@@ -91,33 +107,47 @@ public class VoiceService {
     }
 
     public byte[] synthesize(SynthesizeRequest req) {
+        if (props.apiKey() == null || props.apiKey().isBlank()) {
+            throw new VoiceException(VoiceErrorCode.SYNTHESIZE_FAILED);
+        }
         try {
-            SynthesisInput input = SynthesisInput.newBuilder()
-                    .setText(req.text())
-                    .build();
-
             String voiceName = (req.voice() != null && !req.voice().isBlank())
                     ? req.voice()
                     : props.tts().voiceName();
 
-            VoiceSelectionParams voice = VoiceSelectionParams.newBuilder()
-                    .setLanguageCode(props.tts().languageCode())
-                    .setName(voiceName)
-                    .setSsmlGender(SsmlVoiceGender.valueOf(props.tts().ssmlGender()))
-                    .build();
+            Map<String, Object> body = Map.of(
+                    "input", Map.of("text", req.text()),
+                    "voice", Map.of(
+                            "languageCode", props.tts().languageCode(),
+                            "name", voiceName,
+                            "ssmlGender", props.tts().ssmlGender()
+                    ),
+                    "audioConfig", Map.of(
+                            "audioEncoding", props.tts().audioEncoding()
+                    )
+            );
 
-            AudioConfig audioConfig = AudioConfig.newBuilder()
-                    .setAudioEncoding(AudioEncoding.valueOf(props.tts().audioEncoding()))
-                    .build();
+            Map<String, Object> response = textToSpeechClient.post()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/v1/text:synthesize")
+                            .queryParam("key", props.apiKey())
+                            .build())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .body(Map.class);
 
-            SynthesizeSpeechResponse response =
-                    textToSpeechClient.synthesizeSpeech(input, voice, audioConfig);
+            if (response == null || response.get("audioContent") == null) {
+                throw new VoiceException(VoiceErrorCode.SYNTHESIZE_FAILED);
+            }
+            String base64Audio = String.valueOf(response.get("audioContent"));
+            return Base64.getDecoder().decode(base64Audio);
 
-            return response.getAudioContent().toByteArray();
-
-        } catch (StatusRuntimeException e) {
-            log.warn("[Voice] TTS gRPC 실패", e);
-            throw new VoiceException(VoiceErrorCode.GOOGLE_API_TIMEOUT);
+        } catch (VoiceException e) {
+            throw e;
+        } catch (RestClientResponseException e) {
+            log.warn("[Voice] TTS REST 실패 status={} body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new VoiceException(VoiceErrorCode.SYNTHESIZE_FAILED);
         } catch (Exception e) {
             log.warn("[Voice] TTS 알 수 없는 오류", e);
             throw new VoiceException(VoiceErrorCode.SYNTHESIZE_FAILED);

@@ -8,12 +8,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "google.cloud")
 public record GoogleVoiceProperties(
-        Credentials credentials,
+        String apiKey,
         Stt stt,
         Tts tts
 ) {
-    public record Credentials(String location) {}
-
     public record Stt(
             String languageCode,
             String encoding
