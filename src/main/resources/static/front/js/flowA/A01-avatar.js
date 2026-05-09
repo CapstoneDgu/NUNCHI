@@ -545,11 +545,10 @@
     }
 
     async function onSwitchToNormal() {
-        if (state.sessionId) {
-            await callApi('세션 종료', () => window.Api.session.complete(state.sessionId));
-        }
+        // 모드 전환 — Spring 세션/카트는 그대로 유지. FastAPI 세션만 정리.
+        // session.complete 는 결제 완료 시점에서만 호출 (모드 전환 시엔 X).
         sessionStorage.removeItem('aiSessionId');
-        sessionStorage.setItem('mode', 'normal');
+        sessionStorage.setItem('mode', 'NORMAL');
         if (window.ConvEngine) window.ConvEngine.stop();
         location.href = '/menu';
     }
