@@ -468,7 +468,63 @@
             return;
         }
 
+        // 추천 메뉴가 응답에 포함되면 하단 시트로 표시
+        if (Array.isArray(res.recommendations) && res.recommendations.length > 0) {
+            openRecommendSheet(res.recommendations);
+            return; // 시트 열린 동안 청취 재개 보류 — 시트 닫힐 때 endTurn
+        }
+
         if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+    }
+
+    /**
+     * 추천 시트 열기. 카드 [담기] 시 카트 추가 + 짧은 발화.
+     * [다른 거 추천] 시 자동으로 같은 의도의 발화 재시도.
+     * [선택 안 함] 또는 닫기 시 청취 재개.
+     */
+    function openRecommendSheet(menus) {
+        if (!window.RecommendSheet) {
+            console.warn('[A01] RecommendSheet 모듈 미로드');
+            return;
+        }
+        window.RecommendSheet.open({
+            menus,
+            onPick: async (menu) => {
+                // FastAPI 추천 menu_id → Spring 카트 add
+                const ok = await addToCart(menu.menu_id || menu.menuId, 1);
+                if (ok) {
+                    await aiSpeakChained(`${menu.name} 담아드렸어요!`);
+                }
+                if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            },
+            onAnother: () => {
+                // 사용자가 직접 다시 추천 요청한 것처럼 처리
+                handleUserUtterance('다른 거 추천해주세요');
+            },
+            onCancel: () => {
+                // 폴백 멘트 X — 시트만 닫고 청취 재개
+                if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            }
+        });
+    }
+
+    /** 카트 추가 — 작업 1 에서 제거됐던 함수 재도입 (추천 시트 onPick 용). */
+    async function addToCart(menuId, qty) {
+        if (!state.sessionId) {
+            showToast('세션이 없어요.');
+            return false;
+        }
+        const result = await callApi('장바구니 담기', () =>
+            window.Api.cart.addItem({
+                sessionId: state.sessionId,
+                menuId,
+                quantity: qty || 1,
+                optionIds: []
+            })
+        );
+        if (!result) return false;
+        applyCartResponse(result);
+        return true;
     }
 
     // ========================================================
