@@ -58,3 +58,8 @@ src/main/resources/static/_figma-raw/
 ### Docker (로컬 개발용 - 커밋하지 않음) ###
 docker-compose.yml
 docker-compose.*.yml
+
+### 검증/임시 산출물 ###
+out.mp3
+*.webm
+sample.webm
