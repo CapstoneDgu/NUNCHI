@@ -116,7 +116,7 @@
     /** S02-dine 의 dineOption 을 OrderType ('DINE_IN'/'TAKEOUT') 로 변환.
      *  Spring/FastAPI 모두 동일 enum 사용. */
     function resolveOrderType() {
-        return sessionStorage.getItem('dineOption') === 'take_out' ? 'TAKEOUT' : 'DINE_IN';
+        return AppState.get('DINE_OPTION') === 'take_out' ? 'TAKEOUT' : 'DINE_IN';
     }
 
     // ========================================================
@@ -127,7 +127,7 @@
      * mock 잔재('a01-...') 또는 소수, 음수, 0 은 폐기.
      */
     function readStoredSessionId() {
-        const raw = sessionStorage.getItem('sessionId');
+        const raw = AppState.get('SESSION_ID');
         if (!raw) return null;
         if (!/^[1-9][0-9]*$/.test(raw)) return null;
         const n = Number(raw);
@@ -156,7 +156,7 @@
                 state.sessionId = stored;
                 return;
             }
-            sessionStorage.removeItem('sessionId');
+            AppState.remove('SESSION_ID');
         }
         const res = await callApi('Spring 세션 생성', () =>
             window.Api.session.create({
@@ -167,7 +167,7 @@
         );
         if (res && res.sessionId) {
             state.sessionId = res.sessionId;
-            sessionStorage.setItem('sessionId', String(res.sessionId));
+            AppState.set('SESSION_ID', res.sessionId);
         }
     }
 
@@ -184,7 +184,7 @@
         );
         if (res && res.session_id != null) {
             state.aiSessionId = res.session_id;
-            sessionStorage.setItem('aiSessionId', String(res.session_id));
+            AppState.set('AI_SESSION_ID', res.session_id);
             state.bootGreeting = res.greeting || null;
             return true;
         }
@@ -202,7 +202,7 @@
                 qty:       it.quantity,
                 itemTotal: it.itemTotal
             }));
-            sessionStorage.setItem('cart', JSON.stringify(compat));
+            AppState.set('CART', compat);
         } catch (e) {
             console.warn('[A01] 카트 캐시 실패', e);
         }
@@ -587,8 +587,8 @@
     async function onSwitchToNormal() {
         // 모드 전환 — Spring 세션/카트는 그대로 유지. FastAPI 세션만 정리.
         // session.complete 는 결제 완료 시점에서만 호출 (모드 전환 시엔 X).
-        sessionStorage.removeItem('aiSessionId');
-        sessionStorage.setItem('mode', 'NORMAL');
+        AppState.remove('AI_SESSION_ID');
+        AppState.set('MODE', 'NORMAL');
         if (window.ConvEngine) window.ConvEngine.stop();
         location.href = '/menu';
     }
@@ -606,8 +606,8 @@
             window.Api.order.confirm(state.sessionId)
         );
         if (!result || !result.orderId) return;
-        sessionStorage.setItem('orderId', String(result.orderId));
-        sessionStorage.setItem('currentStep', 'P01');
+        AppState.set('ORDER_ID', result.orderId);
+        AppState.set('CURRENT_STEP', 'P01');
         if (window.ConvEngine) window.ConvEngine.stop();
         location.href = '/summary';
     }
@@ -766,8 +766,8 @@
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
-        sessionStorage.setItem('currentStep', 'A01');
-        sessionStorage.setItem('mode', 'avatar');
+        AppState.set('CURRENT_STEP', 'A01');
+        AppState.set('MODE', 'AVATAR');
 
         renderMinicart();
         renderSteps();
