@@ -62,6 +62,11 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
 	implementation 'org.apache.poi:poi-ooxml:5.4.1'
+
+	// Google Cloud STT/TTS (Speech-to-Text / Text-to-Speech)
+	implementation platform('com.google.cloud:libraries-bom:26.49.0')
+	implementation 'com.google.cloud:google-cloud-speech'
+	implementation 'com.google.cloud:google-cloud-texttospeech'
 }
 
 tasks.named('test') {

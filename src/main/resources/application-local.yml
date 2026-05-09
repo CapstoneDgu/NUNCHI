@@ -37,6 +37,24 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+
+google:
+  cloud:
+    credentials:
+      location: ${GOOGLE_APPLICATION_CREDENTIALS:}
+    stt:
+      language-code: ko-KR
+      encoding: WEBM_OPUS
+    tts:
+      language-code: ko-KR
+      voice-name: ko-KR-Neural2-A
+      ssml-gender: FEMALE
+      audio-encoding: MP3
+
 fastapi:
   base-url: ${LOCAL_FASTAPI_URL:http://localhost:8000}
 
