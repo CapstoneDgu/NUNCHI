@@ -656,26 +656,55 @@
             'a01__btn-mic--ai-turn',
             'a01__btn-mic--inactive'
         );
+
+        // 모드별 UI 상태 — 마이크 버튼 / 입력바 / 상단바 / 말풍선 힌트
+        let micClass, statusText, placeholder, bubbleHint, ariaPressed, ariaLabel;
         if (next === 'LISTENING') {
-            $micBtn.classList.add('a01__btn-mic--listening');
-            $micBtn.setAttribute('aria-pressed', 'true');
-            $micBtn.setAttribute('aria-label', '대화 종료');
-            $input.placeholder = '듣고 있어요...';
+            micClass = 'a01__btn-mic--listening';
+            statusText = '듣고 있어요';
+            placeholder = '듣고 있어요...';
+            bubbleHint = '🎤 말씀해 주세요';
+            ariaPressed = 'true';
+            ariaLabel = '대화 종료';
         } else if (next === 'AI_SPEAKING') {
-            $micBtn.classList.add('a01__btn-mic--ai-turn');
-            $micBtn.setAttribute('aria-pressed', 'true');
-            $micBtn.setAttribute('aria-label', '대화 종료 (말씀하시면 끼어들 수 있어요)');
-            $input.placeholder = '동대맘이 말하고 있어요';
+            micClass = 'a01__btn-mic--ai-turn';
+            statusText = '대화 중';
+            placeholder = '동대맘이 말하고 있어요';
+            bubbleHint = null; // typewriter 가 직접 채움
+            ariaPressed = 'true';
+            ariaLabel = '대화 종료 (말씀하시면 끼어들 수 있어요)';
         } else if (next === 'THINKING') {
-            $micBtn.classList.add('a01__btn-mic--ai-turn');
-            $micBtn.setAttribute('aria-pressed', 'false');
-            $micBtn.setAttribute('aria-label', 'AI 응답 중, 마이크 비활성');
-            $input.placeholder = '잠시만요...';
-        } else {
-            $micBtn.classList.add('a01__btn-mic--inactive');
-            $micBtn.setAttribute('aria-pressed', 'false');
-            $micBtn.setAttribute('aria-label', '대화 시작');
-            $input.placeholder = '동대맘에게 말하거나 입력해보세요';
+            micClass = 'a01__btn-mic--ai-turn';
+            statusText = '생각 중';
+            placeholder = '잠시만요...';
+            bubbleHint = '💭 생각하고 있어요';
+            ariaPressed = 'false';
+            ariaLabel = 'AI 응답 중';
+        } else { // INACTIVE
+            micClass = 'a01__btn-mic--inactive';
+            statusText = '대기';
+            placeholder = '동대맘에게 말하거나 입력해보세요';
+            bubbleHint = null;
+            ariaPressed = 'false';
+            ariaLabel = '대화 시작';
+        }
+
+        $micBtn.classList.add(micClass);
+        $micBtn.setAttribute('aria-pressed', ariaPressed);
+        $micBtn.setAttribute('aria-label', ariaLabel);
+        $input.placeholder = placeholder;
+
+        // 상단바 상태 텍스트 — 점은 유지, 라벨만 갱신
+        const $status = document.querySelector('[data-bind="status"]');
+        if ($status) {
+            $status.innerHTML = '<span class="a01__topbar-status-dot"></span>' + statusText;
+        }
+
+        // 말풍선 상태 힌트 (LISTENING / THINKING 만 — AI_SPEAKING 은 typewriter 가 채움)
+        if (bubbleHint) {
+            $bubble.classList.add('is-visible');
+            $bubble.classList.remove('is-typing');
+            $bubbleText.textContent = bubbleHint;
         }
     }
 
