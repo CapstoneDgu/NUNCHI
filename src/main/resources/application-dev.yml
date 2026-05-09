@@ -48,7 +48,7 @@ google:
       encoding: WEBM_OPUS
     tts:
       language-code: ko-KR
-      voice-name: ko-KR-Neural2-A
+      voice-name: ko-KR-Chirp3-HD-Gacrux
       ssml-gender: FEMALE
       audio-encoding: MP3
 
