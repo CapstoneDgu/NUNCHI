@@ -50,7 +50,7 @@ google:
       encoding: WEBM_OPUS
     tts:
       language-code: ko-KR
-      voice-name: ko-KR-Chirp3-HD-Gacrux
+      voice-name: ko-KR-Chirp3-HD-Pulcherrima
       ssml-gender: FEMALE
       audio-encoding: MP3
 
