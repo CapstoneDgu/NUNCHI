@@ -9,10 +9,10 @@
     function getNextUrl() {
         // 백엔드 SessionMode enum 형식(대문자)으로 통일. 옛 소문자 잔여물도 호환.
         var mode = (sessionStorage.getItem("mode") || "").toUpperCase();
-        if (mode === "AVATAR") return "/flowA/A01-avatar.html";
-        if (mode === "NORMAL") return "/flowN/N02-menu.html";
+        if (mode === "AVATAR") return "/avatar";
+        if (mode === "NORMAL") return "/menu";
         // mode 가 없거나 잘못된 값 → 모드 선택으로 복귀
-        return "/S01-mode.html";
+        return "/mode";
     }
 
     function selectDine(option) {

@@ -18,9 +18,9 @@
     <header class="app-topbar fade-up" style="--delay: 0ms;">
         <div class="app-topbar__left">
             <button class="app-topbar__back" type="button"
-                    aria-label="뒤로 가기"
-                    onclick="location.href='/S02-dine.html'">
-                <i class="xi xi-angle-left-thin" aria-hidden="true"></i>
+                    aria-label="처음으로"
+                    onclick="confirmGoHome()">
+                <i class="xi xi-home" aria-hidden="true"></i>
             </button>
             <div class="app-topbar__store">
                 <span class="app-topbar__store-sub" data-bind="brand">상록원</span>
@@ -283,6 +283,8 @@
 </main>
 
 <script src="/lib/jquery-3.7.0.min.js"></script>
+<script src="/js/common/confirm-modal.js"></script>
+<script src="/js/common/app-state.js"></script>
 <script src="/js/common/api.js"></script>
 <script src="/js/flowN/menu-data.js"></script>
 <script src="/js/flowN/N02-menu.js"></script>

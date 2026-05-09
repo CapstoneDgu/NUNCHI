@@ -4,8 +4,8 @@
    - IC카드 / 정맥인증 중 하나 선택
    - CTA 클릭 시
        1) POST /api/payments { orderId, method } 로 결제 생성 → paymentId 저장
-       2) ic   → /flowP/P04-processing.html
-          vein → /flowP/P03-vein.html
+       2) ic   → /processing
+          vein → /vein
    - orderId / sessionId 없으면 P01 또는 N02 로 복귀
    ======================================================== */
 
@@ -106,7 +106,7 @@
     async function fetchCart() {
         const sid = getSessionId();
         if (!sid) {
-            location.href = '/flowN/N02-menu.html';
+            location.href = '/menu';
             return;
         }
         try {
@@ -130,10 +130,7 @@
     });
 
     if (backEl) {
-        backEl.addEventListener('click', () => {
-            if (history.length > 1) history.back();
-            else location.href = '/flowP/P01-summary.html';
-        });
+        backEl.addEventListener('click', () => confirmGoHome());
     }
 
     if (ctaEl) {
@@ -144,9 +141,9 @@
             try { sessionStorage.setItem(METHOD_KEY, selectedMethod); } catch (_) {}
 
             if (selectedMethod === 'ic') {
-                location.href = '/flowP/P04-processing.html';
+                location.href = '/processing';
             } else if (selectedMethod === 'vein') {
-                location.href = '/flowP/P03-vein.html';
+                location.href = '/vein';
             }
         });
     }

@@ -21,7 +21,20 @@
     'use strict';
 
     const LOG = '[Api]';
-    const BASE_URL = ''; // same-origin
+    // 로컬 개발: 페이지가 localhost 면 Spring 은 same-origin(`''`),
+    //           FastAPI(/ai/**) 는 운영 도메인 — nginx 가 매핑.
+    // 운영: 둘 다 same-origin (`''`).
+    const PROD_DOMAIN = 'https://43-201-20-11.sslip.io';
+    const isLocalHost = (typeof location !== 'undefined') &&
+        (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
+    /** path 별 base URL 결정. /ai/** 는 항상 FastAPI(운영), 그 외는 Spring. */
+    function resolveUrl(path) {
+        if (path.startsWith('/ai/')) {
+            return (isLocalHost ? PROD_DOMAIN : '') + path;
+        }
+        return path; // Spring 은 same-origin
+    }
 
     // ---------- 에러 타입 ----------
     /** 서버가 ApiResponse 포맷으로 돌려준 4xx/5xx 또는 네트워크 실패. */
@@ -36,8 +49,12 @@
     }
 
     // ---------- 저레벨 fetch 래퍼 ----------
+    /**
+     * Spring 전용 — ApiResponse<T> 자동 언래핑.
+     * FastAPI 같은 raw JSON 응답에는 requestRaw 사용.
+     */
     async function request(method, path, body) {
-        const url = BASE_URL + path;
+        const url = resolveUrl(path);
         const init = {
             method,
             headers: { 'Content-Type': 'application/json' },
@@ -86,6 +103,91 @@
     const put   = (path, body)  => request('PUT',    path, body);
     const patch = (path, body)  => request('PATCH',  path, body);
     const del   = (path)        => request('DELETE', path);
+
+    /**
+     * 바이너리 응답용 — Blob 반환. 4xx/5xx 면 ApiError throw.
+     */
+    async function requestBinary(method, path, body) {
+        const url = resolveUrl(path);
+        const init = {
+            method,
+            headers: { 'Content-Type': 'application/json', 'Accept': 'audio/*, application/json' },
+            credentials: 'same-origin',
+        };
+        if (body !== undefined && body !== null) {
+            init.body = JSON.stringify(body);
+        }
+
+        let res;
+        try {
+            res = await fetch(url, init);
+        } catch (networkErr) {
+            console.error(LOG, method, path, '네트워크 실패', networkErr);
+            throw new ApiError(0, '서버에 연결할 수 없습니다.', 0, path);
+        }
+
+        if (!res.ok) {
+            // 에러 시엔 JSON 으로 내려옴 (ApiResponse fail)
+            let json = null;
+            try { json = await res.json(); } catch (_) {}
+            const code = json && typeof json.code === 'number' ? json.code : res.status;
+            const msg  = (json && json.msg) || ('HTTP ' + res.status);
+            throw new ApiError(code, msg, res.status, path);
+        }
+
+        return await res.blob();
+    }
+
+    /**
+     * FastAPI(raw JSON) 호출용 — ApiResponse 언래핑 없음.
+     * 4xx/5xx 시 FastAPI 에러 포맷 ({ detail }) 또는 Spring 포맷 ({ code, msg }) 양쪽 매핑.
+     */
+    async function requestRaw(method, path, body) {
+        const url = resolveUrl(path);
+        const init = {
+            method,
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            credentials: 'same-origin',
+        };
+        if (body !== undefined && body !== null) {
+            init.body = JSON.stringify(body);
+        }
+
+        let res;
+        try {
+            res = await fetch(url, init);
+        } catch (networkErr) {
+            console.error(LOG, method, path, '네트워크 실패', networkErr);
+            throw new ApiError(0, '서버에 연결할 수 없습니다.', 0, path);
+        }
+
+        let json = null;
+        const text = await res.text();
+        if (text) {
+            try { json = JSON.parse(text); }
+            catch (e) {
+                console.error(LOG, method, path, 'JSON 파싱 실패', text);
+                throw new ApiError(res.status, '응답 파싱에 실패했습니다.', res.status, path);
+            }
+        }
+
+        if (!res.ok) {
+            // FastAPI: { detail: "..." } 또는 { detail: [{msg, ...}] } 또는 Spring: { code, msg }
+            const detail = json && json.detail;
+            const msg = (json && json.msg)
+                || (typeof detail === 'string' ? detail : null)
+                || (Array.isArray(detail) && detail[0] && detail[0].msg)
+                || ('HTTP ' + res.status);
+            const code = (json && typeof json.code === 'number') ? json.code : res.status;
+            console.warn(LOG, method, path, '실패', { status: res.status, msg });
+            throw new ApiError(code, msg, res.status, path);
+        }
+
+        if (window.__NUNCHI_API_DEBUG__) {
+            console.debug(LOG, method, path, json);
+        }
+        return json;
+    }
 
     // ---------- 도메인 헬퍼 ----------
 
@@ -151,11 +253,60 @@
         },
     };
 
+    // /api/voice — Google Cloud TTS (Spring 프록시). STT 는 Web Speech API 가 처리.
+    const Voice = {
+        /**
+         * 음성 합성 (TTS) — Blob(audio/mpeg) 반환.
+         * @param {string} text
+         * @param {string} [voice] 비우면 서버 기본
+         * @returns {Promise<Blob>}
+         */
+        synthesize(text, voice) {
+            const body = { text };
+            if (voice) body.voice = voice;
+            return requestBinary('POST', '/api/voice/synthesize', body);
+        }
+    };
+
+    // /ai/order/* — FastAPI AI 서버 (nginx /ai/** 매핑)
+    const Ai = {
+        /**
+         * 주문 세션 시작.
+         * @param {{mode?:"AVATAR"|"TOUCH", language?:string, order_type?:"DINE_IN"|"TAKE_OUT"}} body
+         * @returns {Promise<{session_id:number, greeting:string}>}
+         */
+        start(body) {
+            const payload = {
+                mode: (body && body.mode) || 'AVATAR',
+                language: (body && body.language) || 'ko',
+                order_type: (body && body.order_type) || 'DINE_IN',
+            };
+            return requestRaw('POST', '/ai/order/start', payload);
+        },
+        /**
+         * 사용자 발화 처리.
+         * @param {{session_id:number, text:string, nunchi_signal?:string, mode?:string}} body
+         * @returns {Promise<{session_id:number, reply:string}>}
+         */
+        chat(body) {
+            if (!body || body.session_id == null || !body.text) {
+                throw new Error('Ai.chat: session_id, text 필수');
+            }
+            const payload = {
+                session_id: body.session_id,
+                text: body.text,
+                mode: body.mode || 'AVATAR',
+            };
+            if (body.nunchi_signal) payload.nunchi_signal = body.nunchi_signal;
+            return requestRaw('POST', '/ai/order/chat', payload);
+        },
+    };
+
     // ---------- 글로벌 노출 ----------
     const Api = {
         ApiError,
         get, post, put, patch, del,
-        session, menu, cart, order, payment, recommend,
+        session, menu, cart, order, payment, recommend, Ai, Voice,
     };
 
     window.NunchiApi = Api;
