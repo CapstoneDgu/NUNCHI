@@ -99,7 +99,7 @@
         const sid = getSessionId();
         if (!sid) {
             // 세션이 없으면 N02 부터 다시 시작
-            location.href = '/flowN/N02-menu.html';
+            location.href = '/menu';
             return;
         }
         try {
@@ -136,7 +136,7 @@
     function goNext() {
         if (items.length === 0) return;
         // confirmOrder 는 결제수단 선택 직후 P02 에서 호출 (그래야 P02 까지 카트가 살아있음)
-        location.href = '/flowP/P02-payment.html';
+        location.href = '/payment';
     }
 
     /* ---------- Events ---------- */
@@ -165,7 +165,7 @@
 
     backEl.addEventListener('click', () => {
         if (history.length > 1) history.back();
-        else location.href = '/flowN/N02-menu.html';
+        else location.href = '/menu';
     });
 
     ctaEl.addEventListener('click', goNext);

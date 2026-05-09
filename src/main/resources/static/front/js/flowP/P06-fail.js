@@ -13,8 +13,8 @@
      - 재시도 가능 (timeout/card_error/vein_timeout) → [다른 수단] + [다시 시도 →] 2버튼
      - 재시도 불가 (declined/vein_unregistered)     → [다른 결제 수단] 1버튼
      retry 클릭 시 돌아갈 대상:
-        vein_* → /flowP/P03-vein.html
-        ic_*   → /flowP/P04-processing.html
+        vein_* → /vein
+        ic_*   → /processing
    ======================================================== */
 
 (function () {
@@ -170,14 +170,14 @@
 
     /* ---------- Navigation ---------- */
     function goSwitch() {
-        location.href = '/flowP/P02-payment.html';
+        location.href = '/payment';
     }
 
     function goRetry(retryTarget) {
         if (retryTarget === 'vein') {
-            location.href = '/flowP/P03-vein.html';
+            location.href = '/vein';
         } else if (retryTarget === 'ic') {
-            location.href = '/flowP/P04-processing.html';
+            location.href = '/processing';
         } else {
             goSwitch();
         }
@@ -190,7 +190,7 @@
 
     function goHome() {
         clearFlowSession();
-        location.href = '/index.html';
+        location.href = '/start';
     }
 
     /* ---------- Boot ---------- */

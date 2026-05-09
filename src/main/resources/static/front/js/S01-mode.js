@@ -5,7 +5,7 @@
 
 (function () {
     // 두 모드 모두 S02 매장/포장 → 그 다음에 모드별 분기
-    var NEXT_URL = "/S02-dine.html";
+    var NEXT_URL = "/dine";
 
     function selectMode(mode) {
         if (mode !== "normal" && mode !== "avatar") {

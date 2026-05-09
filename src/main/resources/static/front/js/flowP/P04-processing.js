@@ -1,14 +1,14 @@
 /* ========================================================
    P04-processing.js — 카드 결제 처리 (Step 3/3 · 3상태)
    states: inserting → processing → approved
-   실패 → /flowP/P06-fail.html?reason=…
+   실패 → /fail?reason=…
 
    자동 전환:
      inserting  (3.0s) → processing     (카드 인식 가정)
      processing (3.0s + progress 0→100%) → result
          · default: approved
          · ?result=timeout|card_error|declined → P06 으로 이동
-     approved   (2.0s) → /flowP/P05-complete.html
+     approved   (2.0s) → /complete
 
    디자인 확인용 쿼리스트링:
      ?state=inserting|processing|approved   초기 상태 강제
@@ -127,7 +127,7 @@
                 if (forced === 'timeout' || forced === 'card_error' || forced === 'declined') {
                     try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
                     // 아직 confirm/payment 호출 전이므로 카트 그대로 살아있음. 단순 P06 이동.
-                    location.href = '/flowP/P06-fail.html?reason=' + encodeURIComponent(forced);
+                    location.href = '/fail?reason=' + encodeURIComponent(forced);
                     return;
                 }
                 setState('approved', { transition: true });
@@ -142,7 +142,7 @@
                 finalizePaymentThenGoComplete();
             } else {
                 approvedTimer = setTimeout(() => {
-                    location.href = '/flowP/P05-complete.html';
+                    location.href = '/complete';
                 }, 1200);
             }
         }
@@ -156,7 +156,7 @@
 
         const sid = getSessionId();
         if (!sid) {
-            location.href = '/flowN/N02-menu.html';
+            location.href = '/menu';
             return;
         }
 
@@ -184,14 +184,14 @@
             await window.NunchiApi.Payments.markSuccess(paymentId);
 
             approvedTimer = setTimeout(() => {
-                location.href = '/flowP/P05-complete.html';
+                location.href = '/complete';
             }, 1200);
         } catch (e) {
             console.warn('[P04] 결제 확정 실패', e);
             if (paymentId) {
                 window.NunchiApi.Payments.markFail(paymentId).catch(() => {});
             }
-            location.href = '/flowP/P06-fail.html?reason=declined';
+            location.href = '/fail?reason=declined';
         }
     }
 
@@ -221,7 +221,7 @@
     function goPrev() {
         clearAllTimers();
         if (history.length > 1) history.back();
-        else location.href = '/flowP/P02-payment.html';
+        else location.href = '/payment';
     }
     if (backEl)   backEl.addEventListener('click',   goPrev);
     if (cancelEl) cancelEl.addEventListener('click', goPrev);

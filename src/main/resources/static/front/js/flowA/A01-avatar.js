@@ -551,7 +551,7 @@
         sessionStorage.removeItem('aiSessionId');
         sessionStorage.setItem('mode', 'normal');
         if (window.ConvEngine) window.ConvEngine.stop();
-        location.href = '/flowN/N02-menu.html';
+        location.href = '/menu';
     }
 
     async function goToPayment() {
@@ -570,7 +570,7 @@
         sessionStorage.setItem('orderId', String(result.orderId));
         sessionStorage.setItem('currentStep', 'P01');
         if (window.ConvEngine) window.ConvEngine.stop();
-        location.href = '/flowP/P01-summary.html';
+        location.href = '/summary';
     }
 
     function onToggleMute() {

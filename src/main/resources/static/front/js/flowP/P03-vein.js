@@ -5,7 +5,7 @@
    자동 전환:
      prepare  (1.8s) → scanning
      scanning (3.5s + progress 0→100%) → result (default: success)
-     success  (2.0s) → /flowP/P05-complete.html
+     success  (2.0s) → /complete
      fail     → 사용자 액션
 
    디자인 확인용 쿼리스트링:
@@ -111,7 +111,7 @@
 
         const sid = Number(sessionStorage.getItem('sessionId'));
         if (!sid) {
-            location.href = '/flowN/N02-menu.html';
+            location.href = '/menu';
             return;
         }
 
@@ -140,7 +140,7 @@
             await window.NunchiApi.Payments.markSuccess(paymentId);
 
             successTimer = setTimeout(() => {
-                location.href = '/flowP/P05-complete.html';
+                location.href = '/complete';
             }, 1200);
         } catch (e) {
             console.warn('[P03] 결제 확정 실패', e);
@@ -148,7 +148,7 @@
             if (paymentId) {
                 window.NunchiApi.Payments.markFail(paymentId).catch(() => {});
             }
-            location.href = '/flowP/P06-fail.html?reason=vein_unregistered';
+            location.href = '/fail?reason=vein_unregistered';
         }
     }
 
@@ -199,7 +199,7 @@
     function goPrev() {
         clearAllTimers();
         if (history.length > 1) history.back();
-        else location.href = '/flowP/P02-payment.html';
+        else location.href = '/payment';
     }
     if (backEl)   backEl.addEventListener('click',   goPrev);
     if (cancelEl) cancelEl.addEventListener('click', goPrev);

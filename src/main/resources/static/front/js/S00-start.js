@@ -30,7 +30,7 @@
         } catch (e) {
             console.warn("[S00] sessionStorage 쓰기 실패", e);
         }
-        location.href = "/S01-mode.html";
+        location.href = "/mode";
     }
 
     // ---- 음식 슬라이드 캐러셀 ----
