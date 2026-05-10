@@ -32,7 +32,6 @@ public class SalesDaily extends BaseEntity {
     @JoinColumn(name = "menu_id")
     private Menu menu;
 
-    // 정적 팩토리 메서드
     public static SalesDaily create(LocalDate salesDate, Integer quantitySold, Integer salesAmount, Menu menu) {
         return SalesDaily.builder()
                 .salesDate(salesDate)
@@ -40,5 +39,10 @@ public class SalesDaily extends BaseEntity {
                 .salesAmount(salesAmount)
                 .menu(menu)
                 .build();
+    }
+
+    public void addSales(int quantity, int amount) {
+        this.quantitySold += quantity;
+        this.salesAmount += amount;
     }
 }
