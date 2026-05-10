@@ -16,6 +16,7 @@ public class CartItem {
     private String itemId;      // UUID
     private Long menuId;
     private String menuName;
+    private String imageUrl;
     private Integer unitPrice;
     private Integer quantity;
     private List<CartOption> options;
