@@ -14,6 +14,7 @@ public record CartResponse(
             String itemId,
             Long menuId,
             String menuName,
+            String imageUrl,
             Integer unitPrice,
             Integer quantity,
             Integer itemTotal,
@@ -32,7 +33,7 @@ public record CartResponse(
                             .toList();
 
             return new CartItemInfo(item.getItemId(), item.getMenuId(), item.getMenuName(),
-                    item.getUnitPrice(), item.getQuantity(), itemTotal, options);
+                    item.getImageUrl(), item.getUnitPrice(), item.getQuantity(), itemTotal, options);
         }
     }
 
