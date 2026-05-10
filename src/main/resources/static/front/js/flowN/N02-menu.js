@@ -19,7 +19,7 @@
     'use strict';
 
     // ---------- 상수 / 상태 ----------
-    const PAY_NEXT_URL = "/flowP/P01-summary.html"; // 추후 페이지
+    const PAY_NEXT_URL = "/summary"; // 추후 페이지
 
     const state = {
         currentFloorId: null,

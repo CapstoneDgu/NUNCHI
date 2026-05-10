@@ -30,7 +30,7 @@
         } catch (e) {
             console.warn("[S00] sessionStorage 쓰기 실패", e);
         }
-        location.href = "/S01-mode.html";
+        location.href = "/mode";
     }
 
     // ---- 음식 슬라이드 캐러셀 ----
@@ -48,52 +48,19 @@
     async function hydrateSlidesFromBackend() {
         if (!window.NunchiApi) return;
         try {
-            // top 메뉴 + 모든 카테고리·메뉴 prefetch (categoryId·imageUrl 보강용)
-            const [top, categories] = await Promise.all([
-                window.NunchiApi.Menus.top(4),
-                window.NunchiApi.Menus.categories()
-            ]);
-            const catNameById = new Map();
-            (categories || []).forEach((c) => catNameById.set(c.categoryId, c.name));
-
-            const allMenus = await Promise.all(
-                (categories || []).map((c) =>
-                    window.NunchiApi.Menus.list({ categoryId: c.categoryId })
-                        .then((list) => (list || []).map((m) => ({ ...m, categoryId: m.categoryId == null ? c.categoryId : m.categoryId })))
-                        .catch(() => [])
-                )
-            );
-            const menuById = new Map();
-            allMenus.flat().forEach((m) => menuById.set(m.menuId, m));
-
-            const slides = (top || []).slice(0, 4).map((t) => {
-                const detail = menuById.get(t.menuId) || {};
-                // 한글 매핑 우선, 그 다음 백엔드 imageUrl
-                const imageCandidates = [];
-                const cgPath = resolveImagePath(detail.categoryId, t.name, catNameById);
-                if (cgPath) imageCandidates.push(cgPath);
-                if (detail.imageUrl) imageCandidates.push(detail.imageUrl);
-                return {
-                    menuId: t.menuId,
-                    name: t.name,
-                    price: t.price,
-                    quantitySold: t.quantitySold || 0,
-                    isSoldOut: t.isSoldOut,
-                    imageCandidates
-                };
-            });
-
+            const top = await window.NunchiApi.Menus.top(4);
+            const slides = (top || []).slice(0, 4).map((t) => ({
+                menuId: t.menuId,
+                name: t.name,
+                price: t.price,
+                quantitySold: t.quantitySold || 0,
+                isSoldOut: t.isSoldOut,
+                imageCandidates: t.imageUrl ? [t.imageUrl] : []
+            }));
             applySlides(slides);
         } catch (e) {
             console.warn("[S00] 메뉴 데이터 hydrate 실패 — 정적 슬라이드 유지", e);
         }
-    }
-
-    function resolveImagePath(categoryId, name, catNameById) {
-        if (categoryId == null) return null;
-        const cat = catNameById.get(categoryId);
-        if (!cat || !name) return null;
-        return encodeURI(`/images/menu/${cat}/${name}.png`);
     }
 
     /**

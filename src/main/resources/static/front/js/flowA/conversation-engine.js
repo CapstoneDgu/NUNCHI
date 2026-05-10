@@ -1,14 +1,14 @@
 // ========================================================
-// conversation-engine.js — 턴테이킹 대화 엔진
+// conversation-engine.js — 턴테이킹 대화 엔진 (Web Speech API)
 //
 // 모드:
 //   INACTIVE     — 세션 시작 전. recognition 미가동.
-//   AI_SPEAKING  — AI 발화 중(typewriter). 사용자 interim 감지 시 바지인.
+//   AI_SPEAKING  — AI 발화 중(typewriter + TTS). 사용자 interim 감지 시 바지인.
 //   LISTENING    — 사용자 발화 대기. 3초 침묵 시 onSilencePrompt 콜백.
 //   THINKING     — final 인식 후 host 가 처리 중. 다음 say() 까지 대기.
 //
 // 사용:
-//   ConvEngine.init({ speak, onUserUtterance, onSilencePrompt, onBargeIn, onModeChange });
+//   ConvEngine.init({ speak, onUserUtterance, onInterim, onSilencePrompt, onBargeIn, onModeChange });
 //   ConvEngine.start();
 //   await ConvEngine.say("안녕하세요");
 //   ConvEngine.endTurn();              // → 자동 청취 시작
@@ -16,10 +16,14 @@
 //   ConvEngine.stop();
 //
 // 의존: 없음 (Web Speech API 만 사용)
+//
+// 콘솔 로그:
+//   [Conv] 접두사로 마이크 상태/interim/final 모두 출력
 // ========================================================
 (function () {
     'use strict';
 
+    const LOG = '[Conv]';
     const MODE = {
         INACTIVE: 'INACTIVE',
         AI_SPEAKING: 'AI_SPEAKING',
@@ -32,10 +36,11 @@
 
     let handlers = {
         speak: null,             // async (text, signal) => void
-        onUserUtterance: null,   // (text) => void
-        onSilencePrompt: null,   // () => string | null  — null 반환 시 발화 생략
-        onBargeIn: null,         // () => void
-        onModeChange: null       // (newMode, prevMode) => void
+        onUserUtterance: null,   // (text) => void          — final
+        onInterim: null,         // (text) => void          — partial result (실시간)
+        onSilencePrompt: null,   // () => string | null
+        onBargeIn: null,
+        onModeChange: null
     };
 
     const state = {
@@ -43,22 +48,23 @@
         recognition: null,
         supported: typeof window !== 'undefined' &&
                    !!(window.SpeechRecognition || window.webkitSpeechRecognition),
-        currentSpeakAbort: null,    // 호스트 typewriter 의 AbortController (say() 가 생성)
+        currentSpeakAbort: null,
         finalAccum: '',
         interimAccum: '',
         lastInterimAt: 0,
         silenceTimer: null,
-        // 'soft' 종료(타임아웃)와 'hard' 종료(stop()) 구분 — onend 에서 재시작 여부 결정
         wantsRunning: false,
-        startScheduled: false       // 중복 start() 호출 방지
+        startScheduled: false
     };
 
     function setMode(next) {
         const prev = state.mode;
         if (prev === next) return;
         state.mode = next;
+        console.log(LOG, '🔄 모드 전환:', prev, '→', next);
         if (handlers.onModeChange) {
-            try { handlers.onModeChange(next, prev); } catch (e) { console.warn('[ConvEngine] onModeChange', e); }
+            try { handlers.onModeChange(next, prev); }
+            catch (e) { console.warn(LOG, '모드 변경 처리 실패', e); }
         }
     }
 
@@ -74,11 +80,10 @@
         rec.onstart = () => {
             state.startScheduled = false;
             state.lastInterimAt = Date.now();
+            console.log(LOG, '🎤 마이크 켜짐 — 음성 인식 시작');
         };
 
         rec.onresult = (event) => {
-            // interim 결과는 매 호출마다 일부 results 가 isFinal=false 로 옴.
-            // resultIndex 부터 순회하여 final 누적.
             let interim = '';
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 const res = event.results[i];
@@ -91,23 +96,39 @@
             state.interimAccum = interim;
             state.lastInterimAt = Date.now();
 
-            // 바지인: AI 발화 중에 사용자 interim 이 들어오면 typewriter 컷
-            if (state.mode === MODE.AI_SPEAKING && (interim || state.finalAccum)) {
-                _bargeIn();
+            // 실시간 interim 콘솔 + 콜백
+            if (interim) {
+                console.log(LOG, '💬 듣는 중:', interim);
+                if (handlers.onInterim) {
+                    try { handlers.onInterim(interim); }
+                    catch (e) { console.warn(LOG, '실시간 인식 처리 실패', e); }
+                }
             }
 
-            // final 결과가 누적된 경우 — 한 번에 한 발화 처리
+            // 바지인: AI 발화 중 사용자 발화 감지
+            // → speak abort + LISTENING 모드 전환 (final 처리 흐름 충돌 방지)
+            if (state.mode === MODE.AI_SPEAKING && (interim || state.finalAccum)) {
+                console.log(LOG, '✋ 사용자 끼어들기 감지');
+                _bargeIn();
+                setMode(MODE.LISTENING);
+            }
+
+            // final 결과 처리
             if (state.finalAccum.trim() && state.mode !== MODE.AI_SPEAKING) {
                 const text = state.finalAccum.trim();
+                console.log(LOG, '✅ 최종 인식:', text);
                 state.finalAccum = '';
                 state.interimAccum = '';
                 _clearSilenceTimer();
-                // recognition 을 먼저 중단 — onresult 가 같은 턴에서 또 발화 처리하지 않도록
                 _stopRecognition();
                 setMode(MODE.THINKING);
+                // interim 화면 비우기 신호
+                if (handlers.onInterim) {
+                    try { handlers.onInterim(''); } catch (_) {}
+                }
                 if (handlers.onUserUtterance) {
                     try { handlers.onUserUtterance(text); }
-                    catch (e) { console.warn('[ConvEngine] onUserUtterance', e); }
+                    catch (e) { console.warn(LOG, '사용자 발화 처리 실패', e); }
                 }
             }
         };
@@ -115,21 +136,21 @@
         rec.onerror = (e) => {
             const code = e && e.error;
             if (code === 'no-speech' || code === 'aborted') {
-                // 침묵 타이머가 처리. 자동 종료 후 재시작은 onend 가 담당.
-                return;
+                return; // 정상 — 침묵 타이머/재시작 흐름
             }
             if (code === 'not-allowed' || code === 'service-not-allowed' || code === 'audio-capture') {
-                console.warn('[ConvEngine] mic blocked:', code);
+                console.warn(LOG, '🚫 마이크 권한 차단:', code);
                 state.wantsRunning = false;
                 state.supported = false;
                 setMode(MODE.INACTIVE);
                 return;
             }
-            console.warn('[ConvEngine] recognition error:', code);
+            console.warn(LOG, '음성 인식 오류:', code);
         };
 
         rec.onend = () => {
-            // Chrome 은 continuous=true 라도 ~1분 후 자동 종료 → 재시작
+            console.log(LOG, '🎤 마이크 꺼짐 — 음성 인식 종료');
+            // Chrome 은 continuous=true 라도 ~1분 후 자동 종료 → LISTENING 이면 재시작
             if (state.wantsRunning && state.mode === MODE.LISTENING) {
                 _scheduleStart();
             }
@@ -142,15 +163,13 @@
     function _scheduleStart() {
         if (state.startScheduled || !state.recognition) return;
         state.startScheduled = true;
-        // 직접 start() 시 InvalidStateError 잦으므로 rAF 한 틱 미루기
         setTimeout(() => {
             if (!state.wantsRunning) { state.startScheduled = false; return; }
             try { state.recognition.start(); }
             catch (e) {
                 state.startScheduled = false;
-                // 이미 실행 중이면 무시, 아니면 약간 더 미뤄서 재시도
                 if (e && e.name !== 'InvalidStateError') {
-                    console.warn('[ConvEngine] start failed', e);
+                    console.warn(LOG, '음성 인식 시작 실패', e);
                 } else {
                     setTimeout(() => {
                         if (state.wantsRunning) {
@@ -167,9 +186,8 @@
             try { state.currentSpeakAbort.abort(); } catch (_) {}
         }
         if (handlers.onBargeIn) {
-            try { handlers.onBargeIn(); } catch (e) { console.warn('[ConvEngine] onBargeIn', e); }
+            try { handlers.onBargeIn(); } catch (e) { console.warn(LOG, '끼어들기 처리 실패', e); }
         }
-        // 모드 전환은 say() 의 catch/finally 가 처리. 여기선 abort 신호만.
     }
 
     function _startSilenceTimer() {
@@ -179,16 +197,14 @@
             if (state.mode !== MODE.LISTENING) return;
             if (Date.now() - state.lastInterimAt < SILENCE_MS) return;
             _clearSilenceTimer();
-            // 호스트에 되물음 멘트 요청
             let prompt = null;
             if (handlers.onSilencePrompt) {
                 try { prompt = handlers.onSilencePrompt(); }
-                catch (e) { console.warn('[ConvEngine] onSilencePrompt', e); }
+                catch (e) { console.warn(LOG, '침묵 프롬프트 처리 실패', e); }
             }
             if (prompt) {
                 say(prompt).then(() => endTurn()).catch(() => {});
             } else {
-                // 멘트 없으면 타이머만 갱신해 다시 대기
                 state.lastInterimAt = Date.now();
                 _startSilenceTimer();
             }
@@ -214,14 +230,13 @@
 
     function init(opts) {
         handlers = Object.assign({}, handlers, opts || {});
+        console.log(LOG, '초기화 — 음성인식 지원:', state.supported);
     }
 
     function start() {
         if (state.mode !== MODE.INACTIVE) return;
         state.wantsRunning = true;
         if (state.supported) _ensureRecognition();
-        // 첫 say() 까지 모드는 INACTIVE 유지 — 호스트가 say() 를 부르며 AI_SPEAKING 으로 진입.
-        // 호스트 입장에선 start() 직후 첫 발화만 보내면 됨.
         setMode(MODE.AI_SPEAKING);
     }
 
@@ -238,43 +253,32 @@
         setMode(MODE.INACTIVE);
     }
 
-    /**
-     * 단일 발화 — 호스트 typewriter 호출 후 promise 가 끝나면 AI_SPEAKING 모드 유지.
-     * 자동 청취는 endTurn() 호출까지 보류한다(연속 say 체이닝 지원).
-     */
+    /** 단일 발화 — host typewriter + TTS. AI_SPEAKING 모드 유지. */
     async function say(text) {
         if (!handlers.speak) {
-            console.warn('[ConvEngine] speak handler not set');
+            console.warn(LOG, '발화 핸들러 미설정');
             return;
         }
-        if (state.mode === MODE.INACTIVE) {
-            // 비활성 상태에서 say() 호출 시: 청취는 시작하지 않음. 단순 발화만.
-        }
-        // 청취 중이면 잠시 멈춤 — 자기 음성 자기인식 방지
         if (state.mode === MODE.LISTENING) {
-            _stopRecognition();
+            _stopRecognition();  // 자기 음성 자기인식 방지
         }
         _clearSilenceTimer();
         setMode(MODE.AI_SPEAKING);
 
-        // 새 AbortController — 바지인 시 외부에서 abort 호출 가능
         state.currentSpeakAbort = new AbortController();
         const signal = state.currentSpeakAbort.signal;
         try {
             await handlers.speak(text, signal);
         } catch (e) {
-            // AbortError 는 정상 컷오프
-            if (!e || e.name !== 'AbortError') console.warn('[ConvEngine] speak failed', e);
+            if (!e || e.name !== 'AbortError') console.warn(LOG, '발화 실패', e);
         } finally {
             state.currentSpeakAbort = null;
         }
     }
 
-    /**
-     * AI 발화 시퀀스가 끝났음을 알림. wantsRunning 이면 LISTENING 으로 진입.
-     */
+    /** AI 발화 끝 알림. wantsRunning 이면 LISTENING 으로 전환 + 청취 시작. */
     function endTurn() {
-        if (!state.wantsRunning) return;     // 비활성 세션이면 무시
+        if (!state.wantsRunning) return;
         if (state.mode === MODE.INACTIVE) return;
         setMode(MODE.LISTENING);
         state.finalAccum = '';
@@ -286,23 +290,39 @@
         _startSilenceTimer();
     }
 
-    /**
-     * 텍스트 입력 폴백 — Web Speech 미지원 또는 사용자가 텍스트로 입력한 경우.
-     * 음성 경로와 동일한 onUserUtterance 콜백을 호출한다.
-     */
+    /** 텍스트 입력 폴백 — 음성 우회. */
     function submitText(text) {
         const t = (text || '').trim();
         if (!t) return;
+        console.log(LOG, '⌨️ 텍스트 입력:', t);
         _clearSilenceTimer();
-        // 음성 인식기 가동 중이면 즉시 중단 — onresult 중복 발화 방지
         _stopRecognition();
         state.finalAccum = '';
         state.interimAccum = '';
-        // 활성 세션이면 모드 전환, 비활성이면 단발 처리
         if (state.wantsRunning) setMode(MODE.THINKING);
         if (handlers.onUserUtterance) {
             try { handlers.onUserUtterance(t); }
-            catch (e) { console.warn('[ConvEngine] onUserUtterance', e); }
+            catch (e) { console.warn(LOG, '사용자 발화 처리 실패', e); }
+        }
+    }
+
+    /**
+     * 명시적 바지인 — 마이크 버튼 클릭 등 사용자 의도가 명확한 경우.
+     * AI 발화 즉시 중단 + LISTENING 으로 전환 + recognition 시작.
+     */
+    function bargeIn() {
+        if (state.mode === MODE.LISTENING || state.mode === MODE.INACTIVE) return;
+        console.log(LOG, '✋ 사용자 바지인 (수동)');
+        _bargeIn();
+        if (state.wantsRunning) {
+            setMode(MODE.LISTENING);
+            state.finalAccum = '';
+            state.interimAccum = '';
+            if (state.supported) {
+                _ensureRecognition();
+                _scheduleStart();
+            }
+            _startSilenceTimer();
         }
     }
 
@@ -312,7 +332,7 @@
 
     window.ConvEngine = {
         MODE,
-        init, start, stop, say, endTurn, submitText,
+        init, start, stop, say, endTurn, submitText, bargeIn,
         isActive, getMode, isSupported
     };
 })();

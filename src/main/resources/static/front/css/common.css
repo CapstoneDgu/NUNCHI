@@ -263,31 +263,34 @@ body {
 }
 
 /* ========================================================
-   데스크톱 미리보기 프레임
-   - 실제 키오스크(뷰포트 720×1280) 에서는 아무 효과 없음
-   - 그보다 큰 창(개발용 데스크톱 브라우저)에서만
-     body 를 플렉스 센터링하고 어두운 배경을 깔아
-     .page-bg(720×1280) 가 키오스크 프레임처럼 보이게 함
+   키오스크 프레임 — 720×1280 중앙 고정
+   - 실제 키오스크(720×1280): 화면 정확히 채움 (scale = 1)
+   - 더 큰 화면: 가운데 720×1280 박스 + 어두운 레터박스
+   - 더 작은 화면: 비율 유지 자동 축소 (transform scale)
+   .page-bg 는 width/height 고정(720×1280)이고, body 가 플렉스 센터.
    ======================================================== */
 
-@media (min-width: 800px) {
-    html,
-    body {
-        min-height: 100vh;
-        height: auto;
-        background: #1E1915;            /* neutral-900 하드값 (페이지 배경과 분리) */
-    }
-    body {
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        padding: 24px 0;
-    }
-    .page-bg {
-        flex-shrink: 0;
-        border-radius: 28px;
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
-    }
+html,
+body {
+    min-height: 100vh;
+    height: auto;
+    background: #1E1915;            /* neutral-900 하드값 — 레터박스 영역 */
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-bg {
+    flex-shrink: 0;
+    border-radius: 28px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    /* 화면이 720×1280 보다 작으면 비율 유지 축소, 크면 그대로(1) */
+    transform: scale(min(calc(100vw / 720), calc(100vh / 1280), 1));
+    transform-origin: center center;
 }
 
 h1, h2, h3, h4, h5, h6 {

@@ -1,8 +1,11 @@
 package dgu.capstone.nunchi.domain.order.service;
 
+import dgu.capstone.nunchi.domain.menu.entity.Menu;
 import dgu.capstone.nunchi.domain.menu.entity.MenuOption;
+import dgu.capstone.nunchi.domain.menu.entity.SalesDaily;
 import dgu.capstone.nunchi.domain.menu.repository.MenuOptionRepository;
 import dgu.capstone.nunchi.domain.menu.repository.MenuRepository;
+import dgu.capstone.nunchi.domain.menu.repository.SalesDailyRepository;
 import dgu.capstone.nunchi.domain.order.dto.cart.CartItem;
 import dgu.capstone.nunchi.domain.order.dto.request.CartItemAddRequest;
 import dgu.capstone.nunchi.domain.order.dto.request.CartItemUpdateRequest;
@@ -29,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -43,6 +47,7 @@ public class OrderService {
     private final CartRedisRepository cartRedisRepository;
     private final MenuRepository menuRepository;
     private final MenuOptionRepository menuOptionRepository;
+    private final SalesDailyRepository salesDailyRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderItemOptionRepository orderItemOptionRepository;
@@ -100,6 +105,7 @@ public class OrderService {
                     .itemId(prev.getItemId())
                     .menuId(prev.getMenuId())
                     .menuName(prev.getMenuName())
+                    .imageUrl(prev.getImageUrl())
                     .unitPrice(prev.getUnitPrice())
                     .quantity(prev.getQuantity() + request.quantity())
                     .options(prev.getOptions())
@@ -110,6 +116,7 @@ public class OrderService {
                     .itemId(UUID.randomUUID().toString())
                     .menuId(menu.getMenuId())
                     .menuName(menu.getName())
+                    .imageUrl(menu.getImageUrl())
                     .unitPrice(menu.getPrice())
                     .quantity(request.quantity())
                     .options(cartOptions)
@@ -137,6 +144,7 @@ public class OrderService {
                                 .itemId(item.getItemId())
                                 .menuId(item.getMenuId())
                                 .menuName(item.getMenuName())
+                                .imageUrl(item.getImageUrl())
                                 .unitPrice(item.getUnitPrice())
                                 .quantity(request.quantity())
                                 .options(item.getOptions())
@@ -215,8 +223,19 @@ public class OrderService {
                 }
             }
 
-            totalAmount += (cartItem.getUnitPrice() + optionExtra) * cartItem.getQuantity();
+            int itemTotal = (cartItem.getUnitPrice() + optionExtra) * cartItem.getQuantity();
+            totalAmount += itemTotal;
             itemResponses.add(OrderItemResponse.from(orderItem, savedOptions));
+
+            // 당일 판매 집계 업서트
+            Menu menu = menuRepository.getReferenceById(cartItem.getMenuId());
+            LocalDate today = LocalDate.now();
+            salesDailyRepository.findByMenuAndSalesDate(menu, today)
+                    .ifPresentOrElse(
+                            sd -> sd.addSales(cartItem.getQuantity(), itemTotal),
+                            () -> salesDailyRepository.save(
+                                    SalesDaily.create(today, cartItem.getQuantity(), itemTotal, menu))
+                    );
         }
 
         // 총금액 업데이트 및 주문 완료 처리

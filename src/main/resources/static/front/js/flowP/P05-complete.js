@@ -134,7 +134,7 @@
     function goHome() {
         if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
         clearFlowSession();
-        location.href = '/index.html';
+        location.href = '/start';
     }
 
     /* ---------- Events ---------- */

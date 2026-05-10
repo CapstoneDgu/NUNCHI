@@ -2,6 +2,7 @@ spring:
   config:
     activate:
       on-profile: local
+    import: optional:file:./.env[.properties]
 
   application:
     name: NUNCHI
@@ -36,12 +37,26 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
-  admin:
-    password: ${ADMIN_PASSWORD}
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
 
-  jwt:
-    secret: ${JWT_SECRET}
-    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+google:
+  cloud:
+    api-key: ${GOOGLE_API_KEY:}
+    tts:
+      language-code: ko-KR
+      voice-name: ko-KR-Chirp3-HD-Pulcherrima
+      ssml-gender: FEMALE
+      audio-encoding: MP3
 
 fastapi:
   base-url: ${LOCAL_FASTAPI_URL:http://localhost:8000}
+
+admin:
+  password: ${ADMIN_PASSWORD}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}

@@ -35,6 +35,20 @@ spring:
       host: ${DEV_REDIS_HOST}
       port: ${DEV_REDIS_PORT:6379}
 
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+
+google:
+  cloud:
+    api-key: ${GOOGLE_API_KEY:}
+    tts:
+      language-code: ko-KR
+      voice-name: ko-KR-Chirp3-HD-Pulcherrima
+      ssml-gender: FEMALE
+      audio-encoding: MP3
+
 fastapi:
   base-url: ${DEV_FASTAPI_URL}
 
