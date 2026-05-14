@@ -121,6 +121,17 @@
                 '오늘은 다른 결제 수단으로 진행해주세요'
             ],
             retry: null
+        },
+        barcode_error: {
+            pill: 'B-001 · 바코드 인식 실패',
+            title: '바코드를 인식하지 못했어요',
+            desc:  '카카오톡 결제 바코드를 스캐너 위에 평평하게 다시 올려주세요. 화면 밝기를 최대로 두면 인식이 더 잘 됩니다.',
+            help:  [
+                '카카오톡 더보기 → 결제 바코드 화면을 미리 켜두세요',
+                '바코드 화면을 스캐너 정중앙에 올려주세요',
+                '인식이 계속 안 되면 다른 결제 수단을 이용해주세요'
+            ],
+            retry: 'barcode'
         }
     };
 
@@ -178,6 +189,8 @@
             location.href = '/vein';
         } else if (retryTarget === 'ic') {
             location.href = '/processing';
+        } else if (retryTarget === 'barcode') {
+            location.href = '/barcode';
         } else {
             goSwitch();
         }

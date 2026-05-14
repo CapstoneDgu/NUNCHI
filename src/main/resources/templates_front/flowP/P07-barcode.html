@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=720, initial-scale=1.0, user-scalable=no">
+    <title>카카오페이 바코드 결제 · 눈치 키오스크</title>
+
+    <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/flowP/P07-barcode.css">
+</head>
+<body>
+<div class="page-bg">
+
+    <!-- 상단바 -->
+    <header class="p-topbar">
+        <button type="button" class="p-topbar__back" data-action="back" aria-label="처음으로">
+            <i class="xi-home" aria-hidden="true"></i>
+        </button>
+        <div class="p-topbar__titles">
+            <span class="p-topbar__eyebrow" data-bind="storeName">상록원</span>
+            <h1 class="p-topbar__title">카카오페이 바코드 결제</h1>
+        </div>
+    </header>
+
+    <!-- 3-step 진행 표시 -->
+    <ol class="step-indicator" aria-label="결제 단계" style="--steps: 3;">
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">주문 확인</span>
+        </li>
+        <li class="step-indicator__item" data-state="done">
+            <span class="step-indicator__dot" aria-hidden="true"><i class="xi-check-min"></i></span>
+            <span class="step-indicator__label">결제 수단</span>
+        </li>
+        <li class="step-indicator__item" data-state="active">
+            <span class="step-indicator__dot" aria-hidden="true">3</span>
+            <span class="step-indicator__label">결제</span>
+        </li>
+    </ol>
+
+    <!-- 본문 : data-state 로 상태 전환 -->
+    <section class="p07" data-state="waiting" aria-live="polite">
+
+        <!-- 결제 비주얼 (P03 와 동일한 원형 톤) -->
+        <div class="p07__scanner" aria-hidden="true">
+            <!-- 펄스 링 -->
+            <span class="p07__pulse p07__pulse--1"></span>
+            <span class="p07__pulse p07__pulse--2"></span>
+            <span class="p07__pulse p07__pulse--3"></span>
+
+            <!-- 원형 프레임 -->
+            <div class="p07__frame">
+                <!-- 바코드 일러스트 (카드 안에 카카오 노란 배경으로 끼워넣음) -->
+                <div class="p07__card">
+                    <div class="p07__card-head">
+                        <span class="p07__card-brand">kakaopay</span>
+                    </div>
+                    <div class="p07__barcode" aria-hidden="true">
+                        <span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+                </div>
+
+                <!-- 스캔 라인 (waiting 일 때만 위→아래 반복) -->
+                <span class="p07__scanline" aria-hidden="true"></span>
+
+                <!-- 상태 오버레이 아이콘 (success) -->
+                <span class="p07__status-icon p07__status-icon--success" aria-hidden="true">
+                    <i class="xi-check"></i>
+                </span>
+            </div>
+        </div>
+
+        <!-- 상태 텍스트 -->
+        <div class="p07__text">
+            <h2 class="p07__title" data-bind="title">카카오페이 결제 바코드를<br>스캐너에 대주세요</h2>
+            <p class="p07__desc" data-bind="desc">카카오톡 더보기 → 결제 → 바코드 화면을 스캐너 정중앙에 평평하게 올려주세요</p>
+
+            <!-- 진행 프로그레스 -->
+            <div class="p07__progress" role="progressbar"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <span class="p07__progress-bar" data-bind="progressBar"></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 하단 액션 영역 -->
+    <footer class="p07__cta-wrap">
+        <!-- waiting : 취소 -->
+        <button type="button"
+                class="btn-cta btn-cta--secondary btn-cta--lg btn-cta--block p07__cta p07__cta--cancel"
+                data-action="cancel">
+            다른 결제 수단으로 변경
+        </button>
+
+        <!-- success : 자동 이동 안내 -->
+        <p class="p07__cta--success-hint" aria-live="polite">
+            잠시 후 주문 완료 화면으로 이동합니다…
+        </p>
+    </footer>
+</div>
+
+<script src="/js/common/app-state.js"></script>
+<script src="/js/common/api-client.js"></script>
+<script src="/js/common/confirm-modal.js"></script>
+<script src="/js/flowP/P07-barcode.js" defer></script>
+</body>
+</html>

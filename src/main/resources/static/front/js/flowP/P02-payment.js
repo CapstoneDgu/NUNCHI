@@ -85,6 +85,12 @@
                 hintEl.classList.add('p02__hint--selected');
                 hintTxtEl.textContent = '등록된 손바닥 정맥으로 간편하게 인증해요';
             }
+        } else if (selectedMethod === 'barcode') {
+            ctaEl.textContent = '카카오페이로 결제하기 →';
+            if (hintEl && hintTxtEl) {
+                hintEl.classList.add('p02__hint--selected');
+                hintTxtEl.textContent = '카카오톡 결제 바코드 화면을 미리 켜두세요';
+            }
         } else {
             ctaEl.textContent = '결제 수단 선택 →';
             if (hintEl && hintTxtEl) {
@@ -144,6 +150,8 @@
                 location.href = '/processing';
             } else if (selectedMethod === 'vein') {
                 location.href = '/vein';
+            } else if (selectedMethod === 'barcode') {
+                location.href = '/barcode';
             }
         });
     }
