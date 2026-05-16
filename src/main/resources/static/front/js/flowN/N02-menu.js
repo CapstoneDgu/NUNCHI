@@ -108,9 +108,15 @@
         const rawMode = (state.mode || "NORMAL").toUpperCase();
         const safeMode = (rawMode === "AVATAR") ? "AVATAR" : "NORMAL";
 
+        // S02-dine 의 dineOption (`dine_in` / `take_out`) → 백엔드 OrderType (`DINE_IN` / `TAKEOUT`)
+        // SessionCreateRequest 가 @NotNull 로 orderType 요구하므로 누락 시 400.
+        const rawDine = sessionStorage.getItem("dineOption") || "";
+        const orderType = (rawDine === "take_out") ? "TAKEOUT" : "DINE_IN";
+
         const created = await window.Api.session.create({
             mode: safeMode,
             language: "ko",
+            orderType: orderType,
         });
         state.sessionId = created.sessionId;
         sessionStorage.setItem("sessionId", String(state.sessionId));
@@ -295,9 +301,15 @@
                 ? item.options.map((o) => o.optionName).join(" · ")
                 : "";
 
+            // 썸네일 — imageUrl 있으면 background-image (cover), 없으면 메뉴명 텍스트 fallback
+            const thumbStyle = item.imageUrl
+                ? ` style="background-image:url('${item.imageUrl}');background-size:cover;background-position:center;"`
+                : "";
+            const thumbInner = item.imageUrl ? "" : item.menuName;
+
             return `
                 <li class="n02__cart-item" data-cart-item="${item.itemId}">
-                    <div class="n02__cart-item-thumb">${item.menuName}</div>
+                    <div class="n02__cart-item-thumb"${thumbStyle}>${thumbInner}</div>
                     <div class="n02__cart-item-name-row">
                         <span class="n02__cart-item-name">${item.menuName}${optionText ? ` <small>(${optionText})</small>` : ""}</span>
                         <button class="n02__cart-item-remove"

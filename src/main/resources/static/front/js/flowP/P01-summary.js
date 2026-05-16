@@ -62,6 +62,21 @@
             $('[data-price]', node).textContent = fmtWon(it.itemTotal);
             $('[data-qty-value]', node).textContent = String(it.quantity || 1);
 
+            // 썸네일 — imageUrl 있으면 <img> 채우고, 없으면 메뉴명 첫 글자 fallback
+            const thumb = $('[data-thumb]', node);
+            if (thumb) {
+                thumb.innerHTML = '';
+                if (it.imageUrl) {
+                    const img = document.createElement('img');
+                    img.src = it.imageUrl;
+                    img.alt = it.menuName || '';
+                    img.loading = 'lazy';
+                    thumb.appendChild(img);
+                } else {
+                    thumb.textContent = (it.menuName || '').slice(0, 1);
+                }
+            }
+
             const decBtn = $('[data-qty-dec]', node);
             if ((it.quantity || 1) <= 1) decBtn.disabled = true;
 

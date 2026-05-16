@@ -184,6 +184,11 @@
         create(orderId, method) {
             return request('POST', '/api/payments', { orderId, method });
         },
+        // POST /api/payments/barcode — 백엔드는 confirmOrder 완료된 orderId 가 필요하고
+        // barcodeValue 검증 없이 즉시 SUCCESS 결제 레코드를 만든다.
+        payByBarcode(orderId, barcodeValue) {
+            return request('POST', '/api/payments/barcode', { orderId, barcodeValue });
+        },
         markSuccess(paymentId) {
             return request('PATCH', `/api/payments/${encodeURIComponent(paymentId)}/success`);
         },
