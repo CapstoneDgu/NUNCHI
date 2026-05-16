@@ -108,9 +108,15 @@
         const rawMode = (state.mode || "NORMAL").toUpperCase();
         const safeMode = (rawMode === "AVATAR") ? "AVATAR" : "NORMAL";
 
+        // S02-dine 의 dineOption (`dine_in` / `take_out`) → 백엔드 OrderType (`DINE_IN` / `TAKEOUT`)
+        // SessionCreateRequest 가 @NotNull 로 orderType 요구하므로 누락 시 400.
+        const rawDine = sessionStorage.getItem("dineOption") || "";
+        const orderType = (rawDine === "take_out") ? "TAKEOUT" : "DINE_IN";
+
         const created = await window.Api.session.create({
             mode: safeMode,
             language: "ko",
+            orderType: orderType,
         });
         state.sessionId = created.sessionId;
         sessionStorage.setItem("sessionId", String(state.sessionId));

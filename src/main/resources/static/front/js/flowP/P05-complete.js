@@ -71,8 +71,9 @@
 
     function getMethodLabel() {
         const m = sessionStorage.getItem(METHOD_KEY);
-        if (m === 'vein') return '정맥 인증';
-        if (m === 'ic')   return 'IC 카드';
+        if (m === 'vein')    return '정맥 인증';
+        if (m === 'ic')      return 'IC 카드';
+        if (m === 'barcode') return '카카오 바코드';
         return 'IC 카드';
     }
 
