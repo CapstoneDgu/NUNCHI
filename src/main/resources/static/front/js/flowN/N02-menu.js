@@ -295,9 +295,15 @@
                 ? item.options.map((o) => o.optionName).join(" · ")
                 : "";
 
+            // 썸네일 — imageUrl 있으면 background-image (cover), 없으면 메뉴명 텍스트 fallback
+            const thumbStyle = item.imageUrl
+                ? ` style="background-image:url('${item.imageUrl}');background-size:cover;background-position:center;"`
+                : "";
+            const thumbInner = item.imageUrl ? "" : item.menuName;
+
             return `
                 <li class="n02__cart-item" data-cart-item="${item.itemId}">
-                    <div class="n02__cart-item-thumb">${item.menuName}</div>
+                    <div class="n02__cart-item-thumb"${thumbStyle}>${thumbInner}</div>
                     <div class="n02__cart-item-name-row">
                         <span class="n02__cart-item-name">${item.menuName}${optionText ? ` <small>(${optionText})</small>` : ""}</span>
                         <button class="n02__cart-item-remove"
