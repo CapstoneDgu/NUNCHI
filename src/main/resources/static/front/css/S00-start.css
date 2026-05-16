@@ -397,6 +397,7 @@
 
 .s00__cta {
     width: 100%;
+    max-width: 624px;        /* 슬라이더 내부 콘텐츠 폭과 일치 (664 - 좌우 padding 20*2) */
     min-height: 108px;
     font-size: 36px;
     font-weight: 800;

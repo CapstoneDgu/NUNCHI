@@ -187,6 +187,20 @@ img, svg {
     --semantic-success-bg:  #F0FDF4;
     --semantic-info-bg:     #EFF6FF;
 
+    /* 아바타 모드 마이크 상태 색상 */
+    --color-mic-listening-deep: #B02A37;   /* listening 그라데이션 끝 */
+    --color-mic-ai-turn:        #3B82F6;   /* ai-turn 그라데이션 시작 */
+    --color-mic-ai-turn-deep:   #1E40AF;   /* ai-turn 그라데이션 끝 */
+
+    /* semantic 색상 dark 변형 — 그라데이션 끝/강조용 */
+    --semantic-success-dark: #0F8A45;
+    --semantic-error-dark:   #B32535;
+
+    /* 카카오페이 브랜드 색 (P07 + 향후 결제 모듈 공용) */
+    --kakao-yellow:      #FAE100;
+    --kakao-yellow-deep: #FFB800;
+    --kakao-brown:       #3C1E1E;
+
     /* ---- Contextual · Background ---- */
     --color-bg-page:    var(--neutral-50);
     --color-bg-card:    var(--neutral-0);
@@ -266,7 +280,7 @@ body {
    키오스크 프레임 — 720×1280 중앙 고정
    - 실제 키오스크(720×1280): 화면 정확히 채움 (scale = 1)
    - 더 큰 화면: 가운데 720×1280 박스 + 어두운 레터박스
-   - 더 작은 화면: 비율 유지 자동 축소 (transform scale)
+   - 더 작은 화면: 비율 유지 자동 축소 (zoom — 박스 크기 자체가 줄어 데스크탑 dev 환경에서도 화면 안에 들어옴)
    .page-bg 는 width/height 고정(720×1280)이고, body 가 플렉스 센터.
    ======================================================== */
 
@@ -286,11 +300,12 @@ body {
 
 .page-bg {
     flex-shrink: 0;
-    border-radius: 28px;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
-    /* 화면이 720×1280 보다 작으면 비율 유지 축소, 크면 그대로(1) */
-    transform: scale(min(calc(100vw / 720), calc(100vh / 1280), 1));
-    transform-origin: center center;
+    /* 화면이 720×1280 보다 작으면 비율 유지 축소, 크면 그대로(1)
+       zoom 사용 이유: transform: scale 은 시각만 축소하고 box 크기는 그대로 → 데스크탑 dev 환경에서
+       1280px 세로가 viewport 밖으로 잘리는 문제. zoom 은 box 크기 자체를 줄여 flex center 정렬도 자연스럽다.
+       비표준이지만 Chrome/Edge/Safari 지원(키오스크 실기기는 Chrome 기반이라 영향 없음). */
+    zoom: min(calc(100vw / 720), calc(100vh / 1280), 1);
 }
 
 h1, h2, h3, h4, h5, h6 {
