@@ -19,7 +19,7 @@
 
     const STYLES = `
         .confirm-modal__overlay {
-            position: fixed; inset: 0;
+            position: absolute; inset: 0;
             background: var(--color-bg-overlay, rgba(30, 25, 21, 0.4));
             display: flex; align-items: center; justify-content: center;
             z-index: 9999;
@@ -162,7 +162,7 @@
                 if (e.target === $overlay) cleanup(false);
             });
             document.addEventListener('keydown', onKey);
-            document.body.appendChild($overlay);
+            (document.querySelector('.page-bg') || document.body).appendChild($overlay);
             // 포커스 — 확인 버튼
             $confirmBtn.focus();
         });
