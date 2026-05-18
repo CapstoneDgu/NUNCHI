@@ -56,7 +56,7 @@
     border-radius: 50%;
     background: linear-gradient(135deg,
         var(--semantic-error, #DC3545) 0%,
-        #B32535 100%);
+        var(--semantic-error-dark) 100%);
     color: var(--color-text-inverse);
     font-size: 68px;
     font-weight: 800;
@@ -199,7 +199,7 @@
 
 .p06__cta-row {
     display: grid;
-    grid-template-columns: 1fr 1.2fr;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
 }
 .p06__cta-row--single {

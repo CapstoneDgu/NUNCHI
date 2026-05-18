@@ -300,6 +300,32 @@
             if (body.nunchi_signal) payload.nunchi_signal = body.nunchi_signal;
             return requestRaw('POST', '/ai/order/chat', payload);
         },
+        /**
+         * 추천/옵션 선택 후 메뉴를 장바구니에 직접 담음 (옵션 선택 UI 거친 뒤 사용).
+         * @param {{session_id:number, menu_id:number, quantity:number, option_ids:number[]}} body
+         * @returns {Promise<{sessionId, items, totalAmount}>}
+         */
+        cartAdd(body) {
+            if (!body || body.session_id == null || body.menu_id == null) {
+                throw new Error('Ai.cartAdd: session_id, menu_id 필수');
+            }
+            const payload = {
+                session_id: body.session_id,
+                menu_id: body.menu_id,
+                quantity: body.quantity || 1,
+                option_ids: Array.isArray(body.option_ids) ? body.option_ids : [],
+            };
+            return requestRaw('POST', '/ai/api/order/cart/add', payload);
+        },
+        /**
+         * AI 대화 없이 현재 장바구니를 즉시 조회.
+         * @param {number} sessionId
+         * @returns {Promise<{sessionId, items, totalAmount}>}
+         */
+        cartGet(sessionId) {
+            if (sessionId == null) throw new Error('Ai.cartGet: sessionId 필수');
+            return requestRaw('GET', `/ai/api/order/cart/${encodeURIComponent(sessionId)}`);
+        },
     };
 
     // ---------- 글로벌 노출 ----------

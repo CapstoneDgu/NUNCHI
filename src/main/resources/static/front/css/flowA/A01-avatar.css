@@ -2,7 +2,7 @@
    A01-avatar.css — 아바타 모드 (크롱이와 대화)
    - 720 × 1280 키오스크
    - common.css / components.css 토큰만 사용 (하드코딩 금지)
-   - 영역 비율: 56 + 720 + 44 + 200 + 140 + 120 = 1280
+   - 영역 비율: 64 + 720 + 44 + 196 + 140 + 116 = 1280
    ======================================================== */
 
 /* ========================================================
@@ -729,7 +729,7 @@
 
 /* listening 상태: 3겹 ripple + 글로우 */
 .a01__btn-mic--listening {
-    background: linear-gradient(135deg, var(--semantic-error) 0%, #B02A37 100%);
+    background: linear-gradient(135deg, var(--semantic-error) 0%, var(--color-mic-listening-deep) 100%);
     animation: a01-mic-glow 1.4s var(--ease-out) infinite;
 }
 .a01__btn-mic--listening .a01__btn-mic-ripple {
@@ -750,7 +750,7 @@
 
 /* AI 발화 중: 사용자 끼어들기(barge-in) 가능함을 시각적으로 안내 */
 .a01__btn-mic--ai-turn {
-    background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+    background: linear-gradient(135deg, var(--color-mic-ai-turn) 0%, var(--color-mic-ai-turn-deep) 100%);
     box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
     animation: a01-mic-pulse-blue 1.8s var(--ease-out) infinite;
 }
@@ -775,7 +775,7 @@
    ======================================================== */
 
 .a01__toast {
-    position: fixed;
+    position: absolute;
     left: 50%;
     bottom: 160px;
     transform: translateX(-50%) translateY(8px);

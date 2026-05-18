@@ -31,7 +31,7 @@
         THINKING: 'THINKING'
     };
 
-    const SILENCE_MS = 3000;     // 침묵 N 초 → 되물음
+    const SILENCE_MS = 1200;     // 침묵 N 초 → 되물음 (시끄러운 환경: 0.8~1.2초 권장)
     const SILENCE_TICK = 200;    // 타이머 폴링 간격
 
     let handlers = {
