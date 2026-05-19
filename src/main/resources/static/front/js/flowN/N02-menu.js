@@ -557,10 +557,13 @@
                 if ($micStatusDesc && interim) $micStatusDesc.textContent = "…" + interim;
             },
             onUserUtterance: async (text) => {
+                console.log("[N02 mic] user 발화 final:", text, "micActive=" + state.micActive);
                 pushChatBubble("user", text);
                 setMicStatus("thinking");
                 await dispatchUserUtterance(text);
-                // 처리 끝났으면 다시 LISTENING 으로
+                // 처리 끝났으면 다시 LISTENING 으로 — 단 페이지 이동 중이면 무의미
+                console.log("[N02 mic] dispatch 종료, endTurn 시도. micActive=" + state.micActive
+                    + ", convMode=" + (window.ConvEngine && window.ConvEngine.getMode && window.ConvEngine.getMode()));
                 if (state.micActive && window.ConvEngine) {
                     window.ConvEngine.endTurn();
                     setMicStatus("listening");
@@ -568,12 +571,19 @@
             },
             onSilencePrompt: () => null,  // 침묵 시 자동 재촉발화 안 함
             onBargeIn: () => {},
-            onModeChange: (m) => { /* 디버깅 시 사용 */ },
+            onModeChange: (m) => console.log("[N02 mic] ConvEngine mode →", m),
         });
         _convEngineInited = true;
     }
 
     async function dispatchUserUtterance(text) {
+        // 1) JS quick-action — 결정론적 명령(결제하기/뒤로/층/결제수단 등)은 LLM 없이 0ms 처리
+        if (window.QuickAction && window.QuickAction.try(text, { page: location.pathname })) {
+            pushChatBubble("system", "✓ 처리했어요");
+            return;
+        }
+
+        // 2) 세션 보장
         if (!state.sessionId) {
             try { await ensureServerSession(); } catch (e) {
                 logApiError("세션 발급", e);
@@ -581,7 +591,7 @@
             }
         }
 
-        // 일시적 nginx/FastAPI 502 대응: 1회 재시도 (1초 대기)
+        // 3) FastAPI/LangGraph 호출 — 502/504 1회 재시도
         const callAi = () => window.Api.Ai.chat({
             session_id: state.sessionId,
             text: text,
@@ -600,14 +610,16 @@
                 res = await callAi();
             }
 
-            if (res && res.reply) {
-                pushChatBubble("system", res.reply);
-            }
+            if (res && res.reply) pushChatBubble("system", res.reply);
+
             // AI 가 백엔드 카트를 변경했을 수 있으므로 서버 카트 재동기화
             await syncCartFromServer();
 
-            // 향후 응답 스키마의 action 필드 처리 (현재 백엔드 미구현)
-            if (res && res.action) handleAiAction(res.action);
+            // 4) AI 응답의 화면 명령(action) + 추천 시각화
+            if (window.AiAction) {
+                if (res && res.action)          window.AiAction.handle(res.action);
+                if (res && res.recommendations) window.AiAction.handleRecommendations(res.recommendations);
+            }
         } catch (e) {
             console.error("[N02] AI 응답 최종 실패", e);
             const friendly = (e && (e.status === 502 || e.status === 504))
@@ -617,7 +629,7 @@
         }
     }
 
-    // 향후 백엔드가 action 필드 채워 보내면 화면 컨트롤. 지금은 navigate 만 지원.
+    // 미사용 (AiAction 모듈로 이관). 페이지 전용 액션 필요 시만 활용.
     function handleAiAction(action) {
         if (!action || !action.type) return;
         switch (action.type) {
@@ -821,6 +833,13 @@
         renderStoreList();
         renderMenuGrid();
         renderCartBar();
+
+        // QuickAction / AiAction 모듈이 호출할 수 있는 핸들러 노출
+        window.__N02_gotoCheckout = gotoCheckout;
+        window.__N02_openDetail   = openDetail;
+
+        // 외부에서 마이크 강제 종료 (QuickAction "마이크 꺼" 명령) 수신
+        window.addEventListener("voice:stop", () => { if (state.micActive) stopMic(); });
 
         // 운영 상태는 1분마다 갱신
         setInterval(renderStoreList, 60 * 1000);
