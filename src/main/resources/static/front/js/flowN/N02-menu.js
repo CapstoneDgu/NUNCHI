@@ -256,7 +256,7 @@
                         <span class="n02__menu-card-detail-chip">
                             상세 <i class="xi xi-angle-right-thin"></i>
                         </span>
-                        <span class="n02__menu-card-thumb-text">${m.name}</span>
+                        ${m.imageUrl ? "" : `<span class="n02__menu-card-thumb-text">${m.name}</span>`}
                         ${qty > 0 ? `
                             <span class="n02__menu-card-qty-badge">${qty}</span>` : ""}
                     </div>
@@ -485,69 +485,173 @@
         $chatDim.setAttribute("aria-hidden", "true");
     }
 
+    // ---------- 채팅 패널 ----------
+    // chatLog 메모리 누적은 더 이상 사용 안 함 (JSON export 제거).
+    // 대화 영속은 서버(POST /api/sessions/{id}/messages) 에 LangGraph 가 자동 저장.
     function pushChatBubble(role, text) {
-        const item = { role: role, text: text, ts: nowHHMM() };
-        state.chatLog.push(item);
-        renderChatBubble(item);
-        // 패널 열려 있으면 자동 스크롤
+        // role: "user" | "system" | "tool"
+        const node = document.createElement("div");
+        node.className = "ai-chat-bubble ai-chat-bubble--" + role;
+        const iconHtml = role === "system"
+            ? '<i class="xi xi-message"></i>'
+            : (role === "tool" ? '<i class="xi xi-lightning"></i>' : '');
+        node.innerHTML = `
+            <div class="ai-chat-bubble__body"></div>
+            <div class="ai-chat-bubble__time">${iconHtml}<span>${nowHHMM()}</span></div>
+        `;
+        // textContent 로 안전하게 (XSS 방지)
+        node.querySelector(".ai-chat-bubble__body").textContent = text;
+        $chatMessages.appendChild(node);
+
         if ($chatPanel.classList.contains("ai-chat-panel--open")) {
             $chatMessages.scrollTop = $chatMessages.scrollHeight;
         }
     }
 
-    function renderChatBubble(item) {
-        const cls = "ai-chat-bubble--" + item.role;
-        const iconHtml = item.role === "system"
-            ? '<i class="xi xi-message"></i>'
-            : (item.role === "tool"
-                ? '<i class="xi xi-lightning"></i>'
-                : '');
-        const node = document.createElement("div");
-        node.className = "ai-chat-bubble " + cls;
-        node.innerHTML = `
-            <div class="ai-chat-bubble__body">${item.text}</div>
-            <div class="ai-chat-bubble__time">${iconHtml}<span>${item.ts}</span></div>
-        `;
-        $chatMessages.appendChild(node);
-    }
-
     function renderChatInitial() {
-        $chatSession.textContent = state.sessionId;
+        if ($chatSession) $chatSession.textContent = state.sessionId ?? "—";
         $chatMessages.innerHTML = "";
-        // 디폴트 인사말
         pushChatBubble("system",
-            "안녕하세요! 상록원 AI 주문 도우미입니다. 음성으로 편하게 주문하세요 😊 핀 마이크가 항상 켜져 있어 버튼을 누르지 않아도 돼요.");
+            "안녕하세요! 상록원 AI 주문 도우미입니다. 상단 마이크 버튼을 눌러 음성으로 주문해보세요.");
     }
 
-    function exportChatJson() {
-        const blob = new Blob(
-            [JSON.stringify({ sessionId: state.sessionId, log: state.chatLog }, null, 2)],
-            { type: "application/json" }
-        );
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `nunchi-session-${state.sessionId}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+    // 패널 헤더의 마이크 상태 표시 (off / listening / thinking)
+    const $micStatusEl       = document.querySelector('[data-mic-status]');
+    const $micStatusTitle    = document.querySelector('[data-mic-status-title]');
+    const $micStatusDesc     = document.querySelector('[data-mic-status-desc]');
+    const $micStatusBadge    = document.querySelector('[data-mic-status-badge]');
+    function setMicStatus(kind) {
+        if (!$micStatusEl) return;
+        $micStatusEl.dataset.mic = kind;
+        const COPY = {
+            off:       { title: "마이크 꺼짐",        desc: "상단 마이크 버튼을 눌러 음성 주문을 시작하세요", badge: "OFF" },
+            listening: { title: "듣고 있어요",        desc: "편하게 말씀해 주세요",                            badge: "LIVE" },
+            thinking:  { title: "응답을 준비 중…",    desc: "잠시만 기다려주세요",                              badge: "…"   },
+        };
+        const c = COPY[kind] || COPY.off;
+        if ($micStatusTitle) $micStatusTitle.textContent = c.title;
+        if ($micStatusDesc)  $micStatusDesc.textContent  = c.desc;
+        if ($micStatusBadge) $micStatusBadge.textContent = c.badge;
     }
 
     function resetChat() {
-        state.chatLog = [];
-        state.sessionId = generateSessionId();
-        sessionStorage.setItem("aiSessionId", state.sessionId);
+        // 서버 세션은 유지 — UI 만 초기 인사말로 되돌림
         renderChatInitial();
     }
 
-    // ---------- 마이크 토글 ----------
-    function toggleMic() {
-        state.micActive = !state.micActive;
-        $micBtn.classList.toggle("app-topbar__action-icon--mic-active", state.micActive);
-        if (state.micActive) {
-            pushChatBubble("system", "🎙️ 청취 시작 — 편하게 말씀해 주세요");
-        } else {
-            pushChatBubble("system", "🔇 청취 일시 정지");
+    // ---------- 마이크 / ConvEngine ----------
+    // ConvEngine 은 사용자 발화 → onUserUtterance(text) 콜백으로 final 텍스트 전달.
+    // 우리는 그 텍스트를 FastAPI /ai/order/chat 으로 보내고 응답을 채팅 패널에 표시한다.
+    // TTS 는 일반 모드에서는 사용하지 않으므로 speak 핸들러 없음.
+    let _convEngineInited = false;
+    function initConvEngineOnce() {
+        if (_convEngineInited) return;
+        if (!window.ConvEngine || !window.ConvEngine.isSupported || !window.ConvEngine.isSupported()) {
+            console.warn("[N02] Web Speech API 미지원");
+            pushChatBubble("system", "이 브라우저는 음성 인식을 지원하지 않아 채팅으로만 안내드려요.");
+            return;
         }
+        window.ConvEngine.init({
+            onInterim: (interim) => {
+                // 실시간 자막 — 상태 패널 desc 자리에 짧게 노출
+                if ($micStatusDesc && interim) $micStatusDesc.textContent = "…" + interim;
+            },
+            onUserUtterance: async (text) => {
+                pushChatBubble("user", text);
+                setMicStatus("thinking");
+                await dispatchUserUtterance(text);
+                // 처리 끝났으면 다시 LISTENING 으로
+                if (state.micActive && window.ConvEngine) {
+                    window.ConvEngine.endTurn();
+                    setMicStatus("listening");
+                }
+            },
+            onSilencePrompt: () => null,  // 침묵 시 자동 재촉발화 안 함
+            onBargeIn: () => {},
+            onModeChange: (m) => { /* 디버깅 시 사용 */ },
+        });
+        _convEngineInited = true;
+    }
+
+    async function dispatchUserUtterance(text) {
+        if (!state.sessionId) {
+            try { await ensureServerSession(); } catch (e) {
+                logApiError("세션 발급", e);
+                return;
+            }
+        }
+
+        // 일시적 nginx/FastAPI 502 대응: 1회 재시도 (1초 대기)
+        const callAi = () => window.Api.Ai.chat({
+            session_id: state.sessionId,
+            text: text,
+            mode: "NORMAL",
+        });
+
+        try {
+            let res;
+            try {
+                res = await callAi();
+            } catch (firstErr) {
+                const isGateway = firstErr && (firstErr.status === 502 || firstErr.status === 504);
+                if (!isGateway) throw firstErr;
+                console.warn("[N02] AI 응답 502/504, 1회 재시도");
+                await new Promise(r => setTimeout(r, 1000));
+                res = await callAi();
+            }
+
+            if (res && res.reply) {
+                pushChatBubble("system", res.reply);
+            }
+            // AI 가 백엔드 카트를 변경했을 수 있으므로 서버 카트 재동기화
+            await syncCartFromServer();
+
+            // 향후 응답 스키마의 action 필드 처리 (현재 백엔드 미구현)
+            if (res && res.action) handleAiAction(res.action);
+        } catch (e) {
+            console.error("[N02] AI 응답 최종 실패", e);
+            const friendly = (e && (e.status === 502 || e.status === 504))
+                ? "AI 서버가 잠시 응답이 느려요. 잠시 후 다시 말씀해주세요."
+                : "응답을 가져오지 못했어요. 다시 시도해 주세요.";
+            pushChatBubble("system", friendly);
+        }
+    }
+
+    // 향후 백엔드가 action 필드 채워 보내면 화면 컨트롤. 지금은 navigate 만 지원.
+    function handleAiAction(action) {
+        if (!action || !action.type) return;
+        switch (action.type) {
+            case "navigate":
+                if (action.page) location.href = action.page;
+                break;
+            default:
+                console.log("[N02] 미지원 action:", action);
+        }
+    }
+
+    function startMic() {
+        initConvEngineOnce();
+        if (!window.ConvEngine || !window.ConvEngine.isSupported()) return;
+        window.ConvEngine.start();
+        window.ConvEngine.endTurn();   // 인사 발화 없이 즉시 LISTENING
+        state.micActive = true;
+        $micBtn.classList.add("app-topbar__action-icon--mic-active");
+        setMicStatus("listening");
+        pushChatBubble("system", "🎙️ 음성 인식을 시작했어요. 편하게 말씀해주세요.");
+        if (!$chatPanel.classList.contains("ai-chat-panel--open")) openChat();
+    }
+
+    function stopMic() {
+        if (window.ConvEngine) window.ConvEngine.stop();
+        state.micActive = false;
+        $micBtn.classList.remove("app-topbar__action-icon--mic-active");
+        setMicStatus("off");
+        pushChatBubble("system", "🔇 음성 인식을 멈췄어요.");
+    }
+
+    function toggleMic() {
+        if (state.micActive) stopMic();
+        else                  startMic();
     }
 
     // ---------- 결제 ----------
@@ -655,7 +759,6 @@
         document.addEventListener("click", (e) => {
             if (e.target.closest('[data-action="open-chat"]'))   openChat();
             if (e.target.closest('[data-action="close-chat"]'))  closeChat();
-            if (e.target.closest('[data-action="export-chat"]')) exportChatJson();
             if (e.target.closest('[data-action="reset-chat"]'))  resetChat();
         });
         $chatDim.addEventListener("click", closeChat);

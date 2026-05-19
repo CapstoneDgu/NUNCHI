@@ -118,4 +118,11 @@ public class Menu extends BaseEntity {
     public void markAvailable() {
         this.isSoldOut = false;
     }
+
+    /** 데이터 마이그레이션용 — 매장 라벨(층/식당명/운영시간) 일괄 갱신 */
+    public void relabel(Integer floor, String restaurantName, String operatingHours) {
+        this.floor = floor;
+        this.restaurantName = restaurantName;
+        this.operatingHours = operatingHours;
+    }
 }
