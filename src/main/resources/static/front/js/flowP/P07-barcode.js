@@ -79,6 +79,12 @@
         if (progressEl) progressEl.setAttribute('aria-valuenow', String(Math.round(clamped)));
     }
 
+    /* ---------- 아바타 음성 안내 — 상태별 멘트 ---------- */
+    const AVATAR_GUIDE = {
+        waiting: '카카오페이 바코드를 스캐너에 비춰주세요.',
+        success: '결제가 완료됐어요.'
+    };
+
     /* ---------- State setter ---------- */
     function setState(nextState) {
         clearAllTimers();
@@ -87,6 +93,10 @@
         const copy = COPY[nextState] || COPY.waiting;
         if (titleEl) titleEl.innerHTML = copy.title;
         if (descEl)  descEl.textContent = copy.desc;
+
+        if (window.AvatarGuide && AVATAR_GUIDE[nextState]) {
+            window.AvatarGuide.speak(AVATAR_GUIDE[nextState]);
+        }
 
         if (nextState === 'waiting') {
             startScanning();

@@ -185,4 +185,9 @@
     /* ---------- Init ---------- */
     renderAll();
     fetchCart();
+
+    // 아바타 모드 — 진입 음성 안내. NORMAL 모드면 AvatarGuide 가 no-op.
+    if (window.AvatarGuide) {
+        window.AvatarGuide.speak('주문하신 메뉴를 확인하시고 결제 버튼을 눌러주세요.');
+    }
 })();

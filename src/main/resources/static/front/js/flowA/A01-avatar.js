@@ -6,8 +6,11 @@
 //   2) 대기 화면: FastAPI greeting 을 typewriter 로 노출
 //   3) 마이크 클릭: ConvEngine.start() → enterState('opening')
 //   4) 사용자 발화 → POST /ai/order/chat → reply 발화
-//   5) reply 키워드(ReplyKeywords)로 카트 갱신/완료 라우팅 분기
-//   6) 정상 모드 전환 → PATCH /api/sessions/{id}/complete
+//   5) 응답 current_step 기반 단계 인디케이터 갱신(BROWSE/SELECT/CONFIGURE/CHECKOUT)
+//      + CHECKOUT 진입 시 /summary 라우팅 (FastAPI 가 PATCH /sessions/{id}/step 으로
+//      Spring 에 동기화한 단계를 chat 응답에서 echo 받는 구조)
+//   6) reply 키워드(ReplyKeywords)는 카트 변경 감지 / step 누락 시 라우팅 폴백 용도
+//   7) 정상 모드 전환 → PATCH /api/sessions/{id}/complete
 //
 // 의존:
 //   - window.Api          (api.js)              — Spring + FastAPI 호출
@@ -509,14 +512,29 @@
             })
         );
 
+        // 디버그 — FastAPI chat 응답 전체 + step 필드 즉시 로깅
+        console.log('[A01] FastAPI chat 응답:', res);
+        if (res) {
+            console.log('[A01] current_step:', res.current_step, '| currentStep:', res.currentStep, '| step:', res.step);
+        }
+
         if (!res || !res.reply) {
             // 폴백 멘트 추가 금지 — 청취만 재개
             if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
             return;
         }
 
-        // 단계 인디케이터 갱신 — 서버 currentStep 우선, fallback 으로 reply 키워드 추정
+        // 단계 인디케이터 갱신 — 서버 currentStep 우선, fallback 으로 reply 키워드 추정.
+        // CHECKOUT 진입(승/전 → 결) 감지를 위해 prev fsm 저장.
+        const prevFsm = state.fsm;
         applyStep(res);
+        const enteredCheckout = state.fsm === 'confirm' && prevFsm !== 'confirm';
+        console.log('[A01] step 분석:', {
+            prevFsm,
+            currFsm: state.fsm,
+            enteredCheckout,
+            replyComplete: !!(window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(res.reply))
+        });
 
         await aiSpeakChained(res.reply);
 
@@ -525,7 +543,10 @@
         if (window.ReplyKeywords && window.ReplyKeywords.replyHasCartChange(reply)) {
             await refreshCart();
         }
-        if (window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply)) {
+        // 결제 라우팅 — FastAPI 가 동기화한 current_step==CHECKOUT 진입 시 P01 이동(명세 정합).
+        // 폴백: step 누락 응답 대비 replyHasComplete 키워드 매칭 유지.
+        const replyComplete = window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply);
+        if (enteredCheckout || replyComplete) {
             await goToPayment();
             return;
         }
@@ -679,6 +700,7 @@
         const result = await callApi('장바구니 조회', () =>
             window.Api.cart.get(state.sessionId)
         );
+        console.log('[A01] refreshCart (Spring sessionId=' + state.sessionId + ') →', result);
         if (result) applyCartResponse(result);
     }
 
@@ -857,6 +879,8 @@
             $icon.classList.add('xi-volume-up');
         }
         if (state.currentAudio) state.currentAudio.muted = state.muted;
+        // P-flow 의 AvatarGuide 가 동일 상태 참조 — sessionStorage 로 공유
+        AppState.set('AVATAR_MUTED', state.muted ? '1' : '0');
     }
 
     // ========================================================
@@ -1013,6 +1037,48 @@
     function bootVideos() {
         $videos.forEach(($v) => { try { $v.play(); } catch (_) {} });
     }
+
+    // 디버그 헬퍼 — devtools 콘솔에서 수동 호출:
+    //   window.__a01.goPayment()     강제 /summary 라우팅 (cart/session 검증은 그대로)
+    //   window.__a01.state           내부 state 스냅샷
+    //   window.__a01.simulateStep('CHECKOUT')  current_step 도달 시뮬레이션
+    //     - CHECKOUT 으로 호출하면 인디케이터 갱신 + 무조건 /summary 라우팅 (반복 호출 가능)
+    //     - 그 외 step 은 인디케이터만 갱신
+    //   window.__a01.diagnoseCart()  Spring 카트 vs FastAPI 카트 동시 비교
+    //   window.__a01.forceGoPayment() 카트 검증 우회 + /summary 강제 이동
+    window.__a01 = {
+        goPayment: () => goToPayment(),
+        get state() { return state; },
+        simulateStep(step) {
+            const prev = state.fsm;
+            applyStep({ current_step: step });
+            console.log('[A01] simulateStep', { from: prev, to: state.fsm, step });
+            if (String(step).toUpperCase() === 'CHECKOUT') {
+                console.log('[A01] simulateStep → CHECKOUT, /summary 이동');
+                return goToPayment();
+            }
+        },
+        async diagnoseCart() {
+            console.log('━━━━━ 카트 진단 ━━━━━');
+            console.log('Spring sessionId:', state.sessionId);
+            console.log('AI sessionId:   ', state.aiSessionId);
+            try {
+                const springCart = await window.Api.cart.get(state.sessionId);
+                console.log('[Spring cart]', springCart);
+            } catch (e) { console.warn('Spring cart 조회 실패', e && e.message); }
+            try {
+                const aiCart = await window.Api.Ai.cartGet(state.aiSessionId);
+                console.log('[AI cart]   ', aiCart);
+            } catch (e) { console.warn('AI cart 조회 실패', e && e.message); }
+            console.log('A01 state.cart:', state.cart);
+        },
+        forceGoPayment() {
+            console.warn('[A01] forceGoPayment — 카트 검증 우회');
+            AppState.set('CURRENT_STEP', 'P01');
+            if (window.ConvEngine) window.ConvEngine.stop();
+            location.href = '/summary';
+        }
+    };
 
     document.addEventListener('DOMContentLoaded', async () => {
         AppState.set('CURRENT_STEP', 'A01');
