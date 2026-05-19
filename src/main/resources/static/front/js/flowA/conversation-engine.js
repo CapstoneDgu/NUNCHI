@@ -31,7 +31,7 @@
         THINKING: 'THINKING'
     };
 
-    const SILENCE_MS = 1200;     // 침묵 N 초 → 되물음 (시끄러운 환경: 0.8~1.2초 권장)
+    const SILENCE_MS = 1000;     // 침묵 1초 → 누적 텍스트 있으면 즉시 final, 없으면 onSilencePrompt 콜백
     const SILENCE_TICK = 200;    // 타이머 폴링 간격
 
     let handlers = {
@@ -197,6 +197,26 @@
             if (state.mode !== MODE.LISTENING) return;
             if (Date.now() - state.lastInterimAt < SILENCE_MS) return;
             _clearSilenceTimer();
+
+            // 1) 1초 침묵 + 누적 interim/final 있으면 즉시 final 로 강제 처리
+            //    (Web Speech API 의 자체 isFinal 기다리지 않음 → 응답 체감 ~1초 단축)
+            const accum = (state.finalAccum + state.interimAccum).trim();
+            if (accum) {
+                state.finalAccum = '';
+                state.interimAccum = '';
+                _stopRecognition();
+                setMode(MODE.THINKING);
+                if (handlers.onInterim) {
+                    try { handlers.onInterim(''); } catch (_) {}
+                }
+                if (handlers.onUserUtterance) {
+                    try { handlers.onUserUtterance(accum); }
+                    catch (e) { console.warn(LOG, '사용자 발화 처리 실패', e); }
+                }
+                return;
+            }
+
+            // 2) 누적 없으면 호스트가 안내 발화 (현재 N02 는 null → 그냥 timer 재시작)
             let prompt = null;
             if (handlers.onSilencePrompt) {
                 try { prompt = handlers.onSilencePrompt(); }
