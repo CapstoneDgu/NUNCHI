@@ -1047,3 +1047,20 @@
     margin-top: 12px;
 }
 
+
+/* ========================================================
+   AI 추천/액션 강조 효과
+   AiAction.highlightMenu / handleRecommendations 가 사용
+   ======================================================== */
+@keyframes ai-pulse-kf {
+    0%   { box-shadow: 0 0 0 0   rgba(232, 96, 10, 0.55); }
+    60%  { box-shadow: 0 0 0 14px rgba(232, 96, 10, 0);    }
+    100% { box-shadow: 0 0 0 0   rgba(232, 96, 10, 0);    }
+}
+.ai-pulse {
+    animation: ai-pulse-kf 1.6s ease-out 1;
+    outline: 2px solid var(--primary-500, #e8600a);
+    outline-offset: 2px;
+    border-radius: inherit;
+    transition: outline-color 240ms ease;
+}
