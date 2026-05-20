@@ -63,6 +63,8 @@
     const $detailNutC     = document.querySelector('[data-detail-nut-carb]');
     const $detailNutF     = document.querySelector('[data-detail-nut-fat]');
     const $detailCtaPrice = document.querySelector('[data-detail-cta-price]');
+    const $detailOptions        = document.querySelector('[data-detail-options]');
+    const $detailOptionsSection = document.querySelector('[data-detail-options-section]');
 
     const $chatPanel      = document.querySelector('[data-chat-panel]');
     const $chatDim        = document.querySelector('[data-chat-dim]');
@@ -345,6 +347,128 @@
         $cartArrowNext.hidden = !showArrows;
     }
 
+    // ---------- 메뉴 상세 옵션 ----------
+    // detailOptionGroups: [{groupId, groupName, options:[{optionId, name, extraPrice}]}]
+    // detailSelected:     { [groupId]: optionId }  (그룹당 1개 — 라디오)
+    let detailOptionGroups = [];
+    const detailSelected = {};
+    let detailBasePrice = 0;
+
+    function renderDetailOptions(groups, basePrice) {
+        detailOptionGroups = Array.isArray(groups) ? groups : [];
+        detailBasePrice = basePrice || 0;
+        Object.keys(detailSelected).forEach((k) => delete detailSelected[k]);
+
+        if (!detailOptionGroups.length) {
+            if ($detailOptionsSection) $detailOptionsSection.hidden = true;
+            if ($detailOptions) $detailOptions.innerHTML = "";
+            recomputeDetailPrice();
+            return;
+        }
+
+        const html = detailOptionGroups.map((g) => {
+            const first = g.options && g.options[0];
+            if (first) detailSelected[g.groupId] = first.optionId;   // 첫 옵션 기본 선택
+            const choices = (g.options || []).map((o) => {
+                const sel = first && o.optionId === first.optionId ? " is-selected" : "";
+                const price = o.extraPrice > 0
+                    ? `<span class="n02__detail-opt-price">+${fmt(o.extraPrice)}</span>` : "";
+                return `<button type="button" class="n02__detail-opt${sel}"
+                                data-group-id="${g.groupId}" data-option-id="${o.optionId}">
+                            <span class="n02__detail-opt-name">${o.name}</span>${price}
+                        </button>`;
+            }).join("");
+            return `<div class="n02__detail-optgroup" data-optgroup="${g.groupId}">
+                        <div class="n02__detail-optgroup-head">
+                            <span class="n02__detail-optgroup-name">${g.groupName}</span>
+                            <span class="n02__detail-optgroup-req">필수</span>
+                        </div>
+                        <div class="n02__detail-optgroup-choices">${choices}</div>
+                    </div>`;
+        }).join("");
+
+        if ($detailOptions) $detailOptions.innerHTML = html;
+        if ($detailOptionsSection) $detailOptionsSection.hidden = false;
+        recomputeDetailPrice();
+    }
+
+    function selectDetailOption(groupId, optionId) {
+        detailSelected[groupId] = optionId;
+        const group = $detailOptions && $detailOptions.querySelector(`[data-optgroup="${groupId}"]`);
+        if (group) {
+            group.querySelectorAll(".n02__detail-opt").forEach((b) => {
+                b.classList.toggle("is-selected", b.getAttribute("data-option-id") === String(optionId));
+            });
+        }
+        recomputeDetailPrice();
+    }
+
+    function recomputeDetailPrice() {
+        let total = detailBasePrice;
+        for (const g of detailOptionGroups) {
+            const opt = (g.options || []).find((o) => o.optionId === detailSelected[g.groupId]);
+            if (opt && opt.extraPrice) total += opt.extraPrice;
+        }
+        if ($detailPrice)    $detailPrice.textContent = fmt(total);
+        if ($detailCtaPrice) $detailCtaPrice.textContent = "· " + fmt(total);
+    }
+
+    function getDetailSelectedOptionIds() {
+        return detailOptionGroups
+            .map((g) => detailSelected[g.groupId])
+            .filter((v) => v != null);
+    }
+
+    // 옵션명과 발화가 매칭되는지 — STT 오인식/축약 고려해 느슨하게.
+    const _OPT_GENERIC = ["추가", "선택", "없음", "기본", "변경", "옵션"];
+    function _optNameMatches(spoken, optName) {
+        const t = (spoken || "").replace(/\s/g, "");
+        const n = (optName || "").replace(/\s/g, "");
+        if (!t || !n) return false;
+        if (t.includes(n) || n.includes(t)) return true;          // 전체 포함
+        // 옵션명에서 일반어 뺀 핵심 토큰(2자+) 중 하나라도 발화에 있으면 매치
+        const tokens = (optName || "").split(/\s+/)
+            .filter((w) => w.length >= 2 && !_OPT_GENERIC.includes(w));
+        return tokens.some((w) => t.includes(w));
+    }
+
+    // 상세 오버레이가 열려 있을 때의 음성 처리 — 옵션 선택 / 담기 / 닫기.
+    // 처리하면 true(LLM 안 넘김), 닫혀 있거나 해당 없으면 false.
+    function tryDetailVoice(text) {
+        if (!$detail || $detail.hidden || openDetailMenuId == null) return false;
+        const t = (text || "").replace(/\s/g, "");
+        if (!t) return false;
+
+        // 1) 옵션명 매칭 → 선택 (느슨)
+        for (const g of detailOptionGroups) {
+            for (const o of (g.options || [])) {
+                if (_optNameMatches(text, o.name)) {
+                    selectDetailOption(g.groupId, o.optionId);
+                    const btn = $detailOptions && $detailOptions.querySelector(`[data-option-id="${o.optionId}"]`);
+                    if (btn) { btn.classList.add("ai-pulse"); setTimeout(() => btn.classList.remove("ai-pulse"), 1200); }
+                    pushChatBubble("system", `${g.groupName}: ${o.name} 선택했어요`);
+                    return true;
+                }
+            }
+        }
+
+        // 2) 담기 / 확정 (선택된 옵션과 함께)
+        if (/(담아|담기|넣어|이걸로|장바구니|주문할|완료)/.test(t) && !/(안|말고|취소|아니|그만)/.test(t)) {
+            addToCart(openDetailMenuId, { optionIds: getDetailSelectedOptionIds() });
+            closeDetail();
+            return true;
+        }
+
+        // 3) 닫기 / 취소
+        if (/(닫아|닫기|취소|그만|뒤로|나가)/.test(t)) {
+            closeDetail();
+            pushChatBubble("system", "상세를 닫았어요");
+            return true;
+        }
+
+        return false;
+    }
+
     // ---------- 메뉴 상세 오버레이 ----------
     function openDetail(menuId) {
         const found = window.MenuData.findMenuById(menuId);
@@ -387,8 +511,15 @@
         $detailNutC.textContent    = meta.nutrition.carb;
         $detailNutF.textContent    = meta.nutrition.fat;
 
-        // CTA 가격
+        // CTA 가격 (옵션 로딩 전 base 가격)
         $detailCtaPrice.textContent = "· " + fmt(m.price);
+
+        // 옵션 — 우선 비우고, 상세 API 로 그룹 fetch 후 렌더 (없으면 섹션 숨김)
+        renderDetailOptions([], m.price);
+        window.Api.menu.detail(menuId).then((d) => {
+            if (openDetailMenuId !== menuId) return;   // 그새 다른 메뉴 열렸으면 무시
+            renderDetailOptions(d && d.optionGroups, m.price);
+        }).catch((e) => console.warn("[N02] 옵션 조회 실패", e));
 
         $detail.hidden = false;
         $detail.setAttribute("aria-hidden", "false");
@@ -412,7 +543,7 @@
                 sessionId: sessionId,
                 menuId: menuId,
                 quantity: 1,
-                optionIds: [],
+                optionIds: Array.isArray(opts.optionIds) ? opts.optionIds : [],
             });
             applyCartResponse(res);
 
@@ -577,6 +708,9 @@
     }
 
     async function dispatchUserUtterance(text) {
+        // 0) 상세 오버레이가 열려 있으면 옵션 선택/담기/닫기를 우선 처리 (LLM 없이)
+        if (tryDetailVoice(text)) return;
+
         // 1) JS quick-action — 결정론적 명령(결제하기/뒤로/층/결제수단 등)은 LLM 없이 0ms 처리
         if (window.QuickAction && window.QuickAction.try(text, { page: location.pathname })) {
             pushChatBubble("system", "✓ 처리했어요");
@@ -615,12 +749,28 @@
             // AI 가 백엔드 카트를 변경했을 수 있으므로 서버 카트 재동기화
             await syncCartFromServer();
 
-            // 4) AI 응답의 화면 명령(action) + 추천 시각화
-            if (window.AiAction) {
-                if (res && res.action)          window.AiAction.handle(res.action);
-                if (res && res.recommendations) window.AiAction.handleRecommendations(res.recommendations);
+            // 4) 옵션 필요한 메뉴 → 상세(옵션 UI) 자동 오픈 → 사용자가 옵션 고르고 "담아줘"
+            if (res && res.menu_options && res.menu_options.menu_id != null) {
+                openDetail(res.menu_options.menu_id);
+            } else if (window.AiAction && res && res.action) {
+                const a = res.action;
+                // 빈 카트로 결제/주문확인 화면 이동 금지 — 메뉴부터 담게 안내
+                if (a.type === "navigate" && (a.page === "/summary" || a.page === "/payment") && !state.cart.length) {
+                    pushChatBubble("system", "장바구니가 비어 있어요. 메뉴를 먼저 담아주세요.");
+                } else {
+                    window.AiAction.handle(a);
+                }
+            }
+            // 5) 추천 시각화
+            if (window.AiAction && res && res.recommendations) {
+                window.AiAction.handleRecommendations(res.recommendations);
             }
         } catch (e) {
+            // 처리 중 중첩으로 버려진 발화 — 에러 아님, 조용히 무시(직전 요청이 곧 응답).
+            if (e && e._busy) {
+                console.log("[N02] 처리 중 — 중복 발화 무시:", text);
+                return;
+            }
             console.error("[N02] AI 응답 최종 실패", e);
             const friendly = (e && (e.status === 502 || e.status === 504))
                 ? "AI 서버가 잠시 응답이 느려요. 잠시 후 다시 말씀해주세요."
@@ -647,6 +797,7 @@
         window.ConvEngine.start();
         window.ConvEngine.endTurn();   // 인사 발화 없이 즉시 LISTENING
         state.micActive = true;
+        try { sessionStorage.setItem("voiceMicOn", "1"); } catch (_) {}  // 결제 화면까지 ON 유지
         $micBtn.classList.add("app-topbar__action-icon--mic-active");
         setMicStatus("listening");
         pushChatBubble("system", "🎙️ 음성 인식을 시작했어요. 편하게 말씀해주세요.");
@@ -656,6 +807,7 @@
     function stopMic() {
         if (window.ConvEngine) window.ConvEngine.stop();
         state.micActive = false;
+        try { sessionStorage.setItem("voiceMicOn", "0"); } catch (_) {}  // 명시적 OFF
         $micBtn.classList.remove("app-topbar__action-icon--mic-active");
         setMicStatus("off");
         pushChatBubble("system", "🔇 음성 인식을 멈췄어요.");
@@ -758,11 +910,22 @@
             if (btn) closeDetail();
         });
 
+        // 상세 옵션 선택 (그룹당 라디오)
+        if ($detailOptions) {
+            $detailOptions.addEventListener("click", (e) => {
+                const opt = e.target.closest(".n02__detail-opt");
+                if (!opt) return;
+                const groupId  = Number(opt.getAttribute("data-group-id"));
+                const optionId = Number(opt.getAttribute("data-option-id"));
+                selectDetailOption(groupId, optionId);
+            });
+        }
+
         // 상세에서 카트 담기
         document.addEventListener("click", (e) => {
             const btn = e.target.closest('[data-action="add-from-detail"]');
             if (btn && openDetailMenuId != null) {
-                addToCart(openDetailMenuId);
+                addToCart(openDetailMenuId, { optionIds: getDetailSelectedOptionIds() });
                 closeDetail();
             }
         });
@@ -840,6 +1003,13 @@
 
         // 외부에서 마이크 강제 종료 (QuickAction "마이크 꺼" 명령) 수신
         window.addEventListener("voice:stop", () => { if (state.micActive) stopMic(); });
+
+        // 직전 화면(결제 등)에서 마이크가 켜져 있었으면 자동으로 다시 켠다.
+        try {
+            if (sessionStorage.getItem("voiceMicOn") === "1" && !state.micActive) {
+                startMic();
+            }
+        } catch (_) {}
 
         // 운영 상태는 1분마다 갱신
         setInterval(renderStoreList, 60 * 1000);

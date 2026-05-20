@@ -162,4 +162,13 @@
 
     setTimeout(markReceiptDone, 3000);
     startCountdown();
+
+    // ---------- 음성 컨트롤 ----------
+    if (window.VoiceController) {
+        window.VoiceController.init({
+            getSessionId: getSessionId,
+            mode: 'NORMAL',
+            onAiReply: (data) => console.log('[P05] AI reply:', data && data.reply),
+        });
+    }
 })();

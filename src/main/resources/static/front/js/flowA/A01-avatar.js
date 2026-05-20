@@ -520,6 +520,13 @@
 
         await aiSpeakChained(res.reply);
 
+        // AI 화면 원격조작 — navigate 등 (음성=터치). LLM 이 준 화면 명령을 그대로 반영.
+        // navigate 면 페이지를 떠나므로 이후 후처리는 생략.
+        if (window.AiAction && res.action) {
+            window.AiAction.handle(res.action);
+            if (res.action.type === 'navigate' && res.action.page) return;
+        }
+
         // reply 후처리
         const reply = res.reply;
         if (window.ReplyKeywords && window.ReplyKeywords.replyHasCartChange(reply)) {

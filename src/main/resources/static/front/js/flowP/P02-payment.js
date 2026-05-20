@@ -159,4 +159,15 @@
     /* ---------- Init ---------- */
     renderAll();
     fetchCart();
+
+    // ---------- 음성 컨트롤 ----------
+    if (window.VoiceController) {
+        window.VoiceController.init({
+            getSessionId: getSessionId,
+            mode: 'NORMAL',
+            onAiReply: (data) => {
+                console.log('[P02] AI reply:', data && data.reply);
+            },
+        });
+    }
 })();

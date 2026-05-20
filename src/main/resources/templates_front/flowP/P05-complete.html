@@ -15,7 +15,11 @@
 
     <!-- 상단바 (뒤로가기 없음 · 완료 단계이므로 홈 닫기만) -->
     <header class="p-topbar p05__topbar">
-        <div class="p05__topbar-spacer" aria-hidden="true"></div>
+        <button class="p-topbar__mic app-topbar__action-icon" type="button"
+                data-action="toggle-mic"
+                aria-label="마이크 토글">
+            <i class="xi xi-microphone" aria-hidden="true"></i>
+        </button>
         <div class="p-topbar__titles">
             <span class="p-topbar__eyebrow">결제 완료</span>
             <h1 class="p-topbar__title">주문이 접수되었어요</h1>
@@ -116,6 +120,11 @@
 
 <script src="/js/common/app-state.js"></script>
 <script src="/js/common/api-client.js"></script>
+<script src="/js/common/api.js"></script>
+<script src="/js/common/quick-action.js"></script>
+<script src="/js/common/ai-action.js"></script>
+<script src="/js/flowA/conversation-engine.js"></script>
+<script src="/js/common/voice-controller.js"></script>
 <script src="/js/flowP/P05-complete.js" defer></script>
 </body>
 </html>

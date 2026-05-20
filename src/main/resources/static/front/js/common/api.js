@@ -22,16 +22,18 @@
 
     const LOG = '[Api]';
     // 로컬 개발: 페이지가 localhost 면 Spring 은 same-origin(`''`),
-    //           FastAPI(/ai/**) 는 운영 도메인 — nginx 가 매핑.
-    // 운영: 둘 다 same-origin (`''`).
-    const PROD_DOMAIN = 'https://43-201-20-11.sslip.io';
+    //           FastAPI(/ai/**) 는 로컬 FastAPI(localhost:8000).
+    //           ※ 로컬 Spring 과 로컬 FastAPI 가 같은 로컬 DB/세션을 공유해야
+    //             세션 검증이 일치한다. (운영 FastAPI 를 가리키면 세션 불일치로 502)
+    // 운영: 둘 다 same-origin (`''`) — nginx 가 /ai/** 를 FastAPI 로 매핑.
+    const LOCAL_FASTAPI = 'http://localhost:8000';   // 로컬 NUNCHI-AI
     const isLocalHost = (typeof location !== 'undefined') &&
         (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 
-    /** path 별 base URL 결정. /ai/** 는 항상 FastAPI(운영), 그 외는 Spring. */
+    /** path 별 base URL 결정. /ai/** 는 FastAPI(로컬=8000, 운영=same-origin), 그 외는 Spring. */
     function resolveUrl(path) {
         if (path.startsWith('/ai/')) {
-            return (isLocalHost ? PROD_DOMAIN : '') + path;
+            return (isLocalHost ? LOCAL_FASTAPI : '') + path;
         }
         return path; // Spring 은 same-origin
     }
@@ -268,6 +270,12 @@
         }
     };
 
+    // /ai/order/chat 동시 호출 차단용 락.
+    // 운영 FastAPI 는 chat 1건이 5~16초(LangGraph 다단계 LLM)라 처리 중에
+    // 두 번째 요청이 겹치면 nginx 가 빈 업스트림을 못 얻어 즉시 502 를 낸다.
+    // 음성 루프는 발화/소음/재시도로 요청이 상시 겹치므로, 진행 중이면 새 요청을 버린다(큐잉X).
+    let _chatInFlight = false;
+
     // /ai/order/* — FastAPI AI 서버 (nginx /ai/** 매핑)
     const Ai = {
         /**
@@ -292,13 +300,21 @@
             if (!body || body.session_id == null || !body.text) {
                 throw new Error('Ai.chat: session_id, text 필수');
             }
+            // 이미 처리 중이면 새 발화는 버린다 — 중첩이 운영 서버 502 의 원인.
+            if (_chatInFlight) {
+                const busy = new ApiError(429, '이전 음성 요청을 처리하고 있어요.', 0, '/ai/order/chat');
+                busy._busy = true;
+                return Promise.reject(busy);
+            }
             const payload = {
                 session_id: body.session_id,
                 text: body.text,
                 mode: body.mode || 'AVATAR',
             };
             if (body.nunchi_signal) payload.nunchi_signal = body.nunchi_signal;
-            return requestRaw('POST', '/ai/order/chat', payload);
+            _chatInFlight = true;
+            return requestRaw('POST', '/ai/order/chat', payload)
+                .finally(() => { _chatInFlight = false; });
         },
         /**
          * 추천/옵션 선택 후 메뉴를 장바구니에 직접 담음 (옵션 선택 UI 거친 뒤 사용).
@@ -335,8 +351,10 @@
         session, menu, cart, order, payment, recommend, Ai, Voice,
     };
 
-    window.NunchiApi = Api;
     window.Api = Api; // 짧은 별칭 (페이지 JS 에서 권장)
+    // api-client.js(대문자 NunchiApi.Cart/Sessions/...) 가 이미 로드된 페이지에서는
+    // 그 객체를 덮어쓰지 않는다. (P 화면들은 api-client.js 의 NunchiApi 를 사용)
+    if (!window.NunchiApi) window.NunchiApi = Api;
 
     // 디버그 모드 토글: 콘솔에서 window.__NUNCHI_API_DEBUG__ = true
 })();

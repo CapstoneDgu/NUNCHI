@@ -178,11 +178,22 @@
         }
     });
 
-    backEl.addEventListener('click', () => confirmGoHome());
+    if (backEl) backEl.addEventListener('click', () => confirmGoHome());
 
     ctaEl.addEventListener('click', goNext);
 
     /* ---------- Init ---------- */
     renderAll();
     fetchCart();
+
+    // ---------- 음성 컨트롤 ----------
+    if (window.VoiceController) {
+        window.VoiceController.init({
+            getSessionId: getSessionId,
+            mode: 'NORMAL',
+            onAiReply: (data) => {
+                console.log('[P01] AI reply:', data && data.reply);
+            },
+        });
+    }
 })();

@@ -15,12 +15,24 @@
 
     <!-- 상단바 -->
     <header class="p-topbar">
-        <button type="button" class="p-topbar__back" data-action="back" aria-label="처음으로">
-            <i class="xi-home" aria-hidden="true"></i>
+        <button type="button" class="p-topbar__back" data-action="nav-back" aria-label="뒤로">
+            <i class="xi-angle-left-thin" aria-hidden="true"></i>
         </button>
         <div class="p-topbar__titles">
             <span class="p-topbar__eyebrow" data-bind="storeName">상록원</span>
             <h1 class="p-topbar__title">결제</h1>
+        </div>
+        <div class="p-topbar__actions">
+            <button class="app-topbar__action-icon" type="button"
+                    data-action="open-chat"
+                    aria-label="대화 보기">
+                <i class="xi xi-comment" aria-hidden="true"></i>
+            </button>
+            <button class="p-topbar__mic app-topbar__action-icon" type="button"
+                    data-action="toggle-mic"
+                    aria-label="마이크 토글">
+                <i class="xi xi-microphone" aria-hidden="true"></i>
+            </button>
         </div>
     </header>
 
@@ -95,7 +107,12 @@
 
 <script src="/js/common/app-state.js"></script>
 <script src="/js/common/api-client.js"></script>
+<script src="/js/common/api.js"></script>
 <script src="/js/common/confirm-modal.js"></script>
+<script src="/js/common/quick-action.js"></script>
+<script src="/js/common/ai-action.js"></script>
+<script src="/js/flowA/conversation-engine.js"></script>
+<script src="/js/common/voice-controller.js"></script>
 <script src="/js/flowP/P01-summary.js" defer></script>
 </body>
 </html>

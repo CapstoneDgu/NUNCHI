@@ -237,4 +237,13 @@
     const initial = getQuery('state');
     if (initial && COPY[initial]) setState(initial, { transition: false });
     else setState('inserting', { transition: false });
+
+    // ---------- 음성 컨트롤 ----------
+    if (window.VoiceController) {
+        window.VoiceController.init({
+            getSessionId: getSessionId,
+            mode: 'NORMAL',
+            onAiReply: (data) => console.log('[P04] AI reply:', data && data.reply),
+        });
+    }
 })();

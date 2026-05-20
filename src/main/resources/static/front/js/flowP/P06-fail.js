@@ -240,4 +240,17 @@
     if (switchEl) switchEl.addEventListener('click', goSwitch);
     if (retryEl)  retryEl.addEventListener('click', () => goRetry(config.retry));
     if (homeEl)   homeEl.addEventListener('click', goHome);
+
+    // ---------- 음성 컨트롤 ----------
+    if (window.VoiceController) {
+        window.VoiceController.init({
+            getSessionId: () => {
+                const raw = sessionStorage.getItem('sessionId');
+                const n = raw ? Number(raw) : NaN;
+                return Number.isFinite(n) ? n : null;
+            },
+            mode: 'NORMAL',
+            onAiReply: (data) => console.log('[P06] AI reply:', data && data.reply),
+        });
+    }
 })();
