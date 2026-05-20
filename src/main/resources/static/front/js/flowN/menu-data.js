@@ -106,14 +106,33 @@
             });
         }
 
-        // Map → 정렬된 배열 (층 번호 오름차순)
+        // 식당 우선순위: 솥앤누들 → 분식당 → (그 외 가나다)
+        const RESTAURANT_PRIORITY = { "솥앤누들": 0, "분식당": 1 };
+        function storeSortKey(store) {
+            const p = RESTAURANT_PRIORITY[store.name];
+            return p == null ? [99, store.name] : [p, ""];
+        }
+
+        // Map → 정렬된 배열
+        //   floors : 층 번호 오름차순
+        //   stores : 우선순위 → 가나다
+        //   menus  : menuId 오름차순 (분식당의 공기밥 같은 추가메뉴가 자연스럽게 마지막)
         const floors = Array.from(floorMap.values())
             .sort((a, b) => (a.num ?? 99) - (b.num ?? 99))
-            .map((f) => ({
-                id:     f.id,
-                label:  f.label,
-                stores: Array.from(f.stores.values()),
-            }));
+            .map((f) => {
+                const stores = Array.from(f.stores.values())
+                    .map((s) => ({
+                        ...s,
+                        menus: [...s.menus].sort((m1, m2) => Number(m1.id) - Number(m2.id)),
+                    }))
+                    .sort((a, b) => {
+                        const [pa, na] = storeSortKey(a);
+                        const [pb, nb] = storeSortKey(b);
+                        if (pa !== pb) return pa - pb;
+                        return na.localeCompare(nb);
+                    });
+                return { id: f.id, label: f.label, stores };
+            });
 
         return floors;
     }

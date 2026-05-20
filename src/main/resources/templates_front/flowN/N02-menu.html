@@ -243,34 +243,22 @@
             </button>
         </div>
 
-        <!--
-            ⚠️ 이 영역의 카피("청취/마이크/LIVE")는 현재 데모용 시뮬레이션 표기입니다.
-            실제 마이크 캡처 / STT 연동 시 다음을 별도 이슈로 함께 처리해야 합니다:
-              · 녹음 시작/종료 토글 가시화 (data-action="toggle-mic" 의 실제 권한·상태 표기)
-              · 음성 데이터 보관 정책(세션 단위 폐기, 서버 전송 여부) 안내 문구
-              · 일시중지 / 마이크 OFF 옵션 노출
-        -->
-        <div class="ai-chat-panel__status">
+        <!-- 음성 인식 상태 — JS 가 data-mic 속성으로 갱신 (off/listening/thinking) -->
+        <div class="ai-chat-panel__status" data-mic-status data-mic="off">
             <div class="ai-chat-panel__status-text">
-                <strong>📝 데모: AI 음성 시뮬레이션</strong>
-                <span>실 마이크 미연동 · 화면 시연용 표기입니다</span>
+                <strong data-mic-status-title>마이크 꺼짐</strong>
+                <span data-mic-status-desc>상단 마이크 버튼을 눌러 음성 주문을 시작하세요</span>
             </div>
-            <span class="ai-chat-panel__live">DEMO</span>
+            <span class="ai-chat-panel__live" data-mic-status-badge>OFF</span>
         </div>
 
-        <p class="ai-chat-panel__memory-note">대화 기록 · 세션 단위 메모리 (브라우저 세션 종료 시 폐기)</p>
+        <p class="ai-chat-panel__memory-note">대화는 서버에 자동 저장됩니다 (세션 종료 시 메뉴/주문/결제 기록만 보존)</p>
 
         <div class="ai-chat-panel__messages" data-chat-messages>
             <!-- JS 동적 -->
         </div>
 
         <div class="ai-chat-panel__footer">
-            <button class="ai-chat-panel__footer-btn ai-chat-panel__footer-btn--save"
-                    type="button"
-                    data-action="export-chat">
-                <i class="xi xi-download" aria-hidden="true"></i>
-                <span>JSON 저장</span>
-            </button>
             <button class="ai-chat-panel__footer-btn ai-chat-panel__footer-btn--reset"
                     type="button"
                     data-action="reset-chat">
@@ -286,6 +274,7 @@
 <script src="/js/common/confirm-modal.js"></script>
 <script src="/js/common/app-state.js"></script>
 <script src="/js/common/api.js"></script>
+<script src="/js/flowA/conversation-engine.js"></script>
 <script src="/js/flowN/menu-data.js"></script>
 <script src="/js/flowN/N02-menu.js"></script>
 </body>

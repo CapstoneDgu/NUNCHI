@@ -167,7 +167,7 @@
 }
 
 .p01__del:active {
-    background-color: #FDD4D4;
+    background-color: var(--semantic-error-bg);
     transform: scale(0.92);
 }
 

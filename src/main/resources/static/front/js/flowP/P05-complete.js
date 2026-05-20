@@ -151,14 +151,23 @@
     renderAll();
     try { sessionStorage.setItem(STATUS_KEY, 'approved'); } catch (_) {}
 
-    // 세션 종료 — 정리 전에 sessionId 캡처해서 PATCH /api/sessions/{id}/complete 호출
+    // 세션 종료 — 정리 전에 sessionId 캡처해서 PATCH /api/sessions/{id}/complete 호출.
+    // 아바타 모드면 FastAPI 세션도 함께 정리 (별도 종료 엔드포인트가 없어 sessionStorage 제거만).
     (function completeBackendSession() {
         const sessionId = sessionStorage.getItem(SESSION_ID_KEY);
         if (sessionId && window.NunchiApi) {
             window.NunchiApi.Sessions.complete(sessionId)
                 .catch((e) => console.warn('[P05] session.complete 실패', e));
         }
+        if (window.AppState && window.AppState.get('MODE') === 'AVATAR') {
+            window.AppState.remove('AI_SESSION_ID');
+        }
     })();
+
+    // 아바타 모드 — 완료 안내
+    if (window.AvatarGuide) {
+        window.AvatarGuide.speak('결제가 완료됐어요. 맛있게 드세요.');
+    }
 
     setTimeout(markReceiptDone, 3000);
     startCountdown();

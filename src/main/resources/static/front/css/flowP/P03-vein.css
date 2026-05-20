@@ -113,8 +113,8 @@
     pointer-events: none;
 }
 
-.p03__status-icon--success { background-color: var(--semantic-success, #1F9254); }
-.p03__status-icon--fail    { background-color: var(--semantic-error,   #E02D3C); }
+.p03__status-icon--success { background-color: var(--semantic-success); }
+.p03__status-icon--fail    { background-color: var(--semantic-error); }
 
 /* ===========================
    2) 상태 텍스트
@@ -233,7 +233,7 @@
 
 /* ---- success ---- */
 .p03[data-state="success"] .p03__frame {
-    border-color: var(--semantic-success, #1F9254);
+    border-color: var(--semantic-success);
     background: radial-gradient(circle at 50% 50%,
         rgba(31, 146, 84, 0.1) 0%,
         var(--neutral-0) 70%);
@@ -241,7 +241,7 @@
                 0 12px 40px rgba(31, 146, 84, 0.25);
 }
 .p03[data-state="success"] .p03__palm {
-    color: var(--semantic-success, #1F9254);
+    color: var(--semantic-success);
     transform: scale(0.94);
     opacity: 0.25;
 }
@@ -249,14 +249,14 @@
     opacity: 1;
     transform: scale(1);
 }
-.p03[data-state="success"] .p03__title { color: var(--semantic-success, #1F9254); }
+.p03[data-state="success"] .p03__title { color: var(--semantic-success); }
 .p03[data-state="success"] .p03__cta--cancel       { display: none; }
 .p03[data-state="success"] .p03__cta--fail-actions { display: none; }
 .p03[data-state="success"] .p03__cta--success-hint { display: block; }
 
 /* ---- fail ---- */
 .p03[data-state="fail"] .p03__frame {
-    border-color: var(--semantic-error, #E02D3C);
+    border-color: var(--semantic-error);
     background: radial-gradient(circle at 50% 50%,
         rgba(224, 45, 60, 0.08) 0%,
         var(--neutral-0) 70%);
@@ -265,7 +265,7 @@
     animation: p03-shake 0.4s var(--ease-out) 1;
 }
 .p03[data-state="fail"] .p03__palm {
-    color: var(--semantic-error, #E02D3C);
+    color: var(--semantic-error);
     transform: scale(0.94);
     opacity: 0.22;
 }
@@ -273,7 +273,7 @@
     opacity: 1;
     transform: scale(1);
 }
-.p03[data-state="fail"] .p03__title { color: var(--semantic-error, #E02D3C); }
+.p03[data-state="fail"] .p03__title { color: var(--semantic-error); }
 .p03[data-state="fail"] .p03__cta--cancel       { display: none; }
 .p03[data-state="fail"] .p03__cta--fail-actions { display: grid; }
 .p03[data-state="fail"] .p03__cta--success-hint { display: none; }

@@ -6,8 +6,11 @@
 //   2) 대기 화면: FastAPI greeting 을 typewriter 로 노출
 //   3) 마이크 클릭: ConvEngine.start() → enterState('opening')
 //   4) 사용자 발화 → POST /ai/order/chat → reply 발화
-//   5) reply 키워드(ReplyKeywords)로 카트 갱신/완료 라우팅 분기
-//   6) 정상 모드 전환 → PATCH /api/sessions/{id}/complete
+//   5) 응답 current_step 기반 단계 인디케이터 갱신(BROWSE/SELECT/CONFIGURE/CHECKOUT)
+//      + CHECKOUT 진입 시 /summary 라우팅 (FastAPI 가 PATCH /sessions/{id}/step 으로
+//      Spring 에 동기화한 단계를 chat 응답에서 echo 받는 구조)
+//   6) reply 키워드(ReplyKeywords)는 카트 변경 감지 / step 누락 시 라우팅 폴백 용도
+//   7) 정상 모드 전환 → PATCH /api/sessions/{id}/complete
 //
 // 의존:
 //   - window.Api          (api.js)              — Spring + FastAPI 호출
@@ -61,7 +64,9 @@
         currentAudioUrl: null,      // revokeObjectURL 대상
         // 추천 시트에서 담은 메뉴의 image_url 캐시 (menuId → url)
         // 카트 응답엔 image_url 이 없어서 추천 응답을 통해서만 채움
-        menuImageCache: new Map()
+        menuImageCache: new Map(),
+        // 추천 시트가 열려있을 때 음성 매칭에 사용할 컨텍스트
+        recommendCtx: null
     };
 
     // ========================================================
@@ -341,11 +346,6 @@
         if (signal && signal.aborted) return;
 
         appendLog('ai', text);
-        if (state.sessionId) {
-            window.Api.session
-                .saveMessage(state.sessionId, { role: 'ASSISTANT', text })
-                .catch(() => {});
-        }
 
         // TTS 시작 + duration 받아서 typewriter 속도 동기화
         const ttsPromise = startTtsPlayback(text, signal);
@@ -371,11 +371,6 @@
         const t = (text || '').trim();
         if (!t) return;
         appendLog('user', t);
-        if (state.sessionId) {
-            window.Api.session
-                .saveMessage(state.sessionId, { role: 'USER', text: t })
-                .catch(() => {});
-        }
         if (!opts || !opts.silent) {
             handleUserUtterance(t);
         }
@@ -500,12 +495,28 @@
             return;
         }
 
+        // 추천 시트 열려있을 때 음성을 자연어로 변환 ("1번" → "데리야끼... 담아줘") 후 시트 닫음.
+        // chat 은 항상 호출 — AI 가 컨텍스트로 처리 (옵션 유무, 다음 단계 안내 등)
+        let chatText = text;
+        const mapped = matchRecommendVoice(text);
+        if (mapped) chatText = mapped;
+        if (window.RecommendSheet && window.RecommendSheet.isOpen()) {
+            window.RecommendSheet.close();
+            state.recommendCtx = null;
+        }
+
         const res = await callApi('AI 응답', () =>
             window.Api.Ai.chat({
                 session_id: state.aiSessionId,
-                text
+                text: chatText
             })
         );
+
+        // 디버그 — FastAPI chat 응답 전체 + step 필드 즉시 로깅
+        console.log('[A01] FastAPI chat 응답:', res);
+        if (res) {
+            console.log('[A01] current_step:', res.current_step, '| currentStep:', res.currentStep, '| step:', res.step);
+        }
 
         if (!res || !res.reply) {
             // 폴백 멘트 추가 금지 — 청취만 재개
@@ -513,8 +524,17 @@
             return;
         }
 
-        // 단계 인디케이터 갱신 — 서버 currentStep 우선, fallback 으로 reply 키워드 추정
+        // 단계 인디케이터 갱신 — 서버 currentStep 우선, fallback 으로 reply 키워드 추정.
+        // CHECKOUT 진입(승/전 → 결) 감지를 위해 prev fsm 저장.
+        const prevFsm = state.fsm;
         applyStep(res);
+        const enteredCheckout = state.fsm === 'confirm' && prevFsm !== 'confirm';
+        console.log('[A01] step 분석:', {
+            prevFsm,
+            currFsm: state.fsm,
+            enteredCheckout,
+            replyComplete: !!(window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(res.reply))
+        });
 
         await aiSpeakChained(res.reply);
 
@@ -523,15 +543,27 @@
         if (window.ReplyKeywords && window.ReplyKeywords.replyHasCartChange(reply)) {
             await refreshCart();
         }
-        if (window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply)) {
+        // 결제 라우팅 — FastAPI 가 동기화한 current_step==CHECKOUT 진입 시 P01 이동(명세 정합).
+        // 폴백: step 누락 응답 대비 replyHasComplete 키워드 매칭 유지.
+        const replyComplete = window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply);
+        if (enteredCheckout || replyComplete) {
             await goToPayment();
             return;
         }
 
-        // 추천 메뉴가 응답에 포함되면 하단 시트로 표시
+        // suggestions → 퀵바 chip 렌더 (분기 전 우선 갱신, 없으면 비움)
+        renderChips(res.suggestions);
+
+        // 옵션 선택이 필요한 메뉴 → 옵션 시트
+        if (res.menu_options) {
+            openOptionSheet(res.menu_options);
+            return;
+        }
+
+        // 추천 메뉴 → 추천 시트 (시트 열린 동안에도 마이크 ON 유지)
         if (Array.isArray(res.recommendations) && res.recommendations.length > 0) {
             openRecommendSheet(res.recommendations);
-            return; // 시트 열린 동안 청취 재개 보류 — 시트 닫힐 때 endTurn
+            return;
         }
 
         if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
@@ -553,25 +585,92 @@
             const url = m.image_url || m.imageUrl;
             if (id != null && url) state.menuImageCache.set(id, url);
         });
-        window.RecommendSheet.open({
-            menus,
-            onPick: async (menu) => {
-                // FastAPI 추천 menu_id → Spring 카트 add
-                const ok = await addToCart(menu.menu_id || menu.menuId, 1);
-                if (ok) {
-                    await aiSpeakChained(`${menu.name} 담아드렸어요!`);
-                }
-                if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
-            },
-            onAnother: () => {
-                // 사용자가 직접 다시 추천 요청한 것처럼 처리
-                handleUserUtterance('다른 거 추천해주세요');
+        const onPick = (menu) => {
+            // 사용자 액션을 자연어로 chat 에 알림 — FastAPI 가 옵션 유무 판단해서 처리
+            // (옵션 있으면 menu_options 응답 → 옵션 시트, 없으면 카트 추가 + reply)
+            state.recommendCtx = null;
+            handleUserUtterance(`${menu.name} 담아줘`);
+        };
+        const onAnother = () => {
+            state.recommendCtx = null;
+            handleUserUtterance('다른 거 추천해주세요');
+        };
+        const onCancel = () => {
+            state.recommendCtx = null;
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+        };
+
+        // 시트 열려있는 동안 음성 매칭에 사용할 컨텍스트 등록
+        state.recommendCtx = { menus, onPick, onAnother, onCancel };
+
+        window.RecommendSheet.open({ menus, onPick, onAnother, onCancel });
+
+        // 시트가 뜨면 즉시 LISTENING 전환 — 음성+터치 둘 다 받게 마이크 ON 유지
+        if (state.engineStarted && window.ConvEngine.isActive()) {
+            window.ConvEngine.endTurn();
+        }
+    }
+
+    /**
+     * 추천 시트 열려있을 때 사용자 음성을 자연어로 변환만 (FastAPI 호출은 그대로 진행).
+     * @returns {string|null} 매칭된 자연어 (예: "데리야끼치킨솥밥 담아줘") 또는 null
+     */
+    function matchRecommendVoice(text) {
+        const ctx = state.recommendCtx;
+        if (!ctx || !window.RecommendSheet || !window.RecommendSheet.isOpen()) return null;
+        const t = (text || '').trim();
+        if (!t) return null;
+
+        if (/(다른\s*(거|것|메뉴|걸)|더\s*추천)/.test(t)) return '다른 메뉴 추천해줘';
+        if (/(취소|그만|안\s*할래|닫|다음에|선택\s*안)/.test(t)) return '선택 안 할래';
+
+        const idxMap = [
+            { re: /(1번|첫\s*(째|번째)|첫번째)/, idx: 0 },
+            { re: /(2번|두\s*(째|번째)|두번째|둘째)/, idx: 1 },
+            { re: /(3번|세\s*(째|번째)|세번째|셋째)/, idx: 2 }
+        ];
+        for (const { re, idx } of idxMap) {
+            if (re.test(t) && ctx.menus[idx]) {
+                return `${ctx.menus[idx].name} 담아줘`;
+            }
+        }
+        if (ctx.menus.length === 1 && /(담|그거|이거|좋아|할래)/.test(t)) {
+            return `${ctx.menus[0].name} 담아줘`;
+        }
+        return null;
+    }
+
+    /**
+     * 옵션 선택 시트 열기. 선택 후 cart/add 직접 호출 + chat 알림 (AI 컨텍스트 동기화).
+     */
+    function openOptionSheet(menuOptions) {
+        if (!window.OptionSheet) {
+            console.warn('[A01] OptionSheet 모듈 미로드');
+            return;
+        }
+        window.OptionSheet.open({
+            menuOptions,
+            onConfirm: async (selectedOptionIds) => {
+                const cart = await callApi('옵션 담기', () =>
+                    window.Api.Ai.cartAdd({
+                        session_id: state.aiSessionId,
+                        menu_id: menuOptions.menu_id,
+                        quantity: 1,
+                        option_ids: selectedOptionIds
+                    })
+                );
+                if (cart) applyCartResponse(cart);
+                // 자연어로 AI 에게 알림 — 다음 단계 reply + suggestions 받기
+                handleUserUtterance(`방금 ${menuOptions.menu_name} 담았어`);
             },
             onCancel: () => {
-                // 폴백 멘트 X — 시트만 닫고 청취 재개
                 if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
             }
         });
+        // 시트 뜨면 즉시 LISTENING — 음성+터치 둘 다 받게 마이크 ON
+        if (state.engineStarted && window.ConvEngine.isActive()) {
+            window.ConvEngine.endTurn();
+        }
     }
 
     /** 카트 추가 — 작업 1 에서 제거됐던 함수 재도입 (추천 시트 onPick 용). */
@@ -601,6 +700,7 @@
         const result = await callApi('장바구니 조회', () =>
             window.Api.cart.get(state.sessionId)
         );
+        console.log('[A01] refreshCart (Spring sessionId=' + state.sessionId + ') →', result);
         if (result) applyCartResponse(result);
     }
 
@@ -686,15 +786,21 @@
         ]
     };
 
-    function renderChips() {
+    /**
+     * 퀵바 chip 렌더 — FastAPI chat 응답의 suggestions 배열 기반.
+     * 인자 없거나 빈 배열이면 chip-row 비움.
+     */
+    function renderChips(suggestions) {
         $chipRow.innerHTML = '';
-        const list = CHIPS[state.fsm] || [];
-        list.forEach((c) => {
+        if (!Array.isArray(suggestions) || suggestions.length === 0) return;
+        suggestions.slice(0, 3).forEach((sText) => {
+            const text = (sText || '').trim();
+            if (!text) return;
             const $btn = document.createElement('button');
             $btn.type = 'button';
-            $btn.className = 'a01__chip' + (c.cta ? ' a01__chip--cta' : '');
-            $btn.textContent = c.label;
-            $btn.addEventListener('click', () => userSay(c.text));
+            $btn.className = 'a01__chip';
+            $btn.textContent = text;
+            $btn.addEventListener('click', () => userSay(text));
             $chipRow.appendChild($btn);
         });
     }
@@ -773,6 +879,8 @@
             $icon.classList.add('xi-volume-up');
         }
         if (state.currentAudio) state.currentAudio.muted = state.muted;
+        // P-flow 의 AvatarGuide 가 동일 상태 참조 — sessionStorage 로 공유
+        AppState.set('AVATAR_MUTED', state.muted ? '1' : '0');
     }
 
     // ========================================================
@@ -905,7 +1013,7 @@
         if (!$t) {
             $t = document.createElement('div');
             $t.className = 'a01__toast';
-            document.body.appendChild($t);
+            (document.querySelector('.page-bg') || document.body).appendChild($t);
         }
         $t.textContent = msg;
         $t.classList.add('is-visible');
@@ -929,6 +1037,48 @@
     function bootVideos() {
         $videos.forEach(($v) => { try { $v.play(); } catch (_) {} });
     }
+
+    // 디버그 헬퍼 — devtools 콘솔에서 수동 호출:
+    //   window.__a01.goPayment()     강제 /summary 라우팅 (cart/session 검증은 그대로)
+    //   window.__a01.state           내부 state 스냅샷
+    //   window.__a01.simulateStep('CHECKOUT')  current_step 도달 시뮬레이션
+    //     - CHECKOUT 으로 호출하면 인디케이터 갱신 + 무조건 /summary 라우팅 (반복 호출 가능)
+    //     - 그 외 step 은 인디케이터만 갱신
+    //   window.__a01.diagnoseCart()  Spring 카트 vs FastAPI 카트 동시 비교
+    //   window.__a01.forceGoPayment() 카트 검증 우회 + /summary 강제 이동
+    window.__a01 = {
+        goPayment: () => goToPayment(),
+        get state() { return state; },
+        simulateStep(step) {
+            const prev = state.fsm;
+            applyStep({ current_step: step });
+            console.log('[A01] simulateStep', { from: prev, to: state.fsm, step });
+            if (String(step).toUpperCase() === 'CHECKOUT') {
+                console.log('[A01] simulateStep → CHECKOUT, /summary 이동');
+                return goToPayment();
+            }
+        },
+        async diagnoseCart() {
+            console.log('━━━━━ 카트 진단 ━━━━━');
+            console.log('Spring sessionId:', state.sessionId);
+            console.log('AI sessionId:   ', state.aiSessionId);
+            try {
+                const springCart = await window.Api.cart.get(state.sessionId);
+                console.log('[Spring cart]', springCart);
+            } catch (e) { console.warn('Spring cart 조회 실패', e && e.message); }
+            try {
+                const aiCart = await window.Api.Ai.cartGet(state.aiSessionId);
+                console.log('[AI cart]   ', aiCart);
+            } catch (e) { console.warn('AI cart 조회 실패', e && e.message); }
+            console.log('A01 state.cart:', state.cart);
+        },
+        forceGoPayment() {
+            console.warn('[A01] forceGoPayment — 카트 검증 우회');
+            AppState.set('CURRENT_STEP', 'P01');
+            if (window.ConvEngine) window.ConvEngine.stop();
+            location.href = '/summary';
+        }
+    };
 
     document.addEventListener('DOMContentLoaded', async () => {
         AppState.set('CURRENT_STEP', 'A01');

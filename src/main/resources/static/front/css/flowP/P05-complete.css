@@ -75,7 +75,7 @@
     border-radius: 50%;
     background: linear-gradient(135deg,
         var(--semantic-success, #16A34A) 0%,
-        #0F8A45 100%);
+        var(--semantic-success-dark) 100%);
     color: var(--color-text-inverse);
     font-size: 78px;
     font-weight: 800;

@@ -22,7 +22,7 @@
 
     const STYLES = `
         .rec-sheet__overlay {
-            position: fixed; inset: 0;
+            position: absolute; inset: 0;
             background: rgba(30, 25, 21, 0.35);
             z-index: 9000;
             font-family: var(--font-sans, "Pretendard", sans-serif);
@@ -245,7 +245,7 @@
             }
         });
 
-        document.body.appendChild($overlay);
+        (document.querySelector('.page-bg') || document.body).appendChild($overlay);
         activeOverlay = $overlay;
     }
 

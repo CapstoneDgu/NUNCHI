@@ -96,6 +96,13 @@
      *   true 일 때만 백엔드 markSuccess 호출. URL 강제 진입(?state=approved) 같은
      *   수동 진입에서는 false 라서 markSuccess 가 중복 호출되지 않는다.
      */
+    /* ---------- 아바타 음성 안내 — 상태별 멘트 ---------- */
+    const AVATAR_GUIDE = {
+        inserting:  'IC칩이 위로 향하도록 카드를 넣어주세요.',
+        processing: '결제를 처리하고 있어요. 잠시만 기다려주세요.',
+        approved:   '결제가 완료됐어요.'
+    };
+
     function setState(nextState, opts) {
         const transition = !!(opts && opts.transition);
         clearAllTimers();
@@ -104,6 +111,10 @@
         const copy = COPY[nextState] || COPY.inserting;
         if (titleEl) titleEl.textContent = copy.title;
         if (descEl)  descEl.textContent  = copy.desc;
+
+        if (window.AvatarGuide && AVATAR_GUIDE[nextState]) {
+            window.AvatarGuide.speak(AVATAR_GUIDE[nextState]);
+        }
 
         if (nextState === 'inserting') {
             setProgress(0);
