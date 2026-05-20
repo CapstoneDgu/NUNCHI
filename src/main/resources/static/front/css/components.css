@@ -797,6 +797,15 @@
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+    flex: 1;              /* 제목이 공간을 채워 우측 액션(대화/마이크)을 오른쪽으로 정렬 */
+}
+
+/* 상단바 우측 액션 묶음(대화·마이크)이 여러 개여도 오른쪽에 모이도록 */
+.p-topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
 }
 
 .p-topbar__eyebrow {

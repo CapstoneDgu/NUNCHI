@@ -823,6 +823,115 @@
     letter-spacing: -0.2px;
 }
 
+/* ───────── 옵션 선택 ───────── */
+.n02__detail-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.n02__detail-optgroup {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.n02__detail-optgroup-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.n02__detail-optgroup-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--neutral-800);
+    letter-spacing: -0.2px;
+}
+
+.n02__detail-optgroup-req {
+    display: inline-flex;
+    align-items: center;
+    height: 19px;
+    padding: 0 7px;
+    border-radius: 9999px;
+    background: var(--primary-500);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+}
+
+.n02__detail-optgroup-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* 옵션 버튼 — 미선택 기본 */
+.n02__detail-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 15px;
+    background: var(--color-bg-card, #fff);
+    border: 1.5px solid var(--neutral-200);
+    border-radius: 12px;
+    color: var(--neutral-700);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 라디오 점 */
+.n02__detail-opt::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    border: 2px solid var(--neutral-300);
+    box-sizing: border-box;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.n02__detail-opt-name { white-space: nowrap; }
+
+.n02__detail-opt-price {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-secondary, var(--neutral-500));
+}
+
+/* 옵션 버튼 — 선택됨 */
+.n02__detail-opt.is-selected {
+    border-color: var(--primary-500);
+    background: var(--primary-50);
+    color: var(--primary-700);
+}
+
+.n02__detail-opt.is-selected::before {
+    border-color: var(--primary-500);
+    box-shadow: inset 0 0 0 4px var(--primary-500);
+}
+
+.n02__detail-opt.is-selected .n02__detail-opt-price {
+    color: var(--primary-600);
+}
+
+/* 음성으로 방금 선택된 옵션 펄스 */
+.n02__detail-opt.ai-pulse {
+    animation: n02OptPulse 1.2s ease;
+}
+@keyframes n02OptPulse {
+    0%   { box-shadow: 0 0 0 0 var(--primary-200); }
+    100% { box-shadow: 0 0 0 10px transparent; }
+}
+
 /* 원재료 리스트 */
 .n02__detail-ingredients {
     display: flex;

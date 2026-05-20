@@ -16,6 +16,23 @@
 
     const LOG = '[QuickAction]';
 
+    // 진행 의도가 담긴 발화면 결제 CTA 까지 누른다 (부정형이면 진행 안 함).
+    const _PROCEED_RE = /(결제|진행|할게|해줘|해줄래|주문|이걸로|다음)/;
+    const _PROCEED_NEG_RE = /(안|못|말고|그만|취소|싫어|아니|잠깐|아직|나중에)/;
+
+    function _selectMethodMaybeProceed(method, text) {
+        const card = document.querySelector(`[data-method="${method}"]`);
+        if (card) card.click();
+        const t = text || '';
+        if (_PROCEED_RE.test(t) && !_PROCEED_NEG_RE.test(t)) {
+            // 카드 선택으로 CTA 가 활성화될 시간을 한 틱 준 뒤 클릭
+            setTimeout(() => {
+                const next = document.querySelector('[data-action="next"]');
+                if (next && !next.disabled) next.click();
+            }, 60);
+        }
+    }
+
     /**
      * 룰: { match, guard?, allowOn?, run }
      *  - match:   substring 정규식 — 어디에 있어도 잡음
@@ -24,19 +41,26 @@
      *  - run:     실행 콜백 (m: 정규식 match 객체)
      */
     const RULES = [
-        // ───────── 결제하기 (critical — 부정 가드 + 카트 가드) ─────────
+        // ───────── 결제/다음단계 진행 (critical — 부정 가드) ─────────
+        // 터치의 "다음/결제하기" 버튼을 음성으로 누른 것과 동일하게 페이지별로 전진시킨다.
+        //   /menu    → 주문확인(/summary) (N02 가 카트 비었으면 자체 차단)
+        //   /summary → [data-action="next"] 클릭 → /payment
+        //   (/payment 의 "결제 진행" 은 결제수단 룰/ pay_proceed 가 담당)
         {
             name: 'checkout',
-            match: /결제/,
+            match: /(결제|주문\s*확인\s*완료|다음\s*단계|다음으로)/,
             guard: /(안|못|말고|그만|취소|싫어|아니|잠깐|아직|나중에)/,
             allowOn: (p) => p === '/menu' || p === '/summary',
             run: () => {
-                // N02 에서는 카트 비어있으면 발동 안 함 (N02 가 노출한 함수가 알아서 처리)
-                if (typeof window.__N02_gotoCheckout === 'function') {
-                    window.__N02_gotoCheckout();
-                } else {
-                    location.href = '/summary';
+                if (location.pathname === '/menu') {
+                    if (typeof window.__N02_gotoCheckout === 'function') window.__N02_gotoCheckout();
+                    else location.href = '/summary';
+                    return;
                 }
+                // /summary — 화면의 다음(결제하기) CTA 를 누른다 → /payment
+                const next = document.querySelector('[data-action="next"]');
+                if (next && !next.disabled) next.click();
+                else location.href = '/payment';
             },
         },
 
@@ -83,24 +107,39 @@
             run: (m) => document.querySelector(`[data-floor="F${m[1]}"]`)?.click(),
         },
 
-        // ───────── P02 결제수단 (안전 — 카드 선택만, CTA 누르지 않음) ─────────
+        // ───────── P02 결제수단 선택 (+ 진행어 있으면 결제까지 진행) ─────────
+        // 터치처럼: 결제수단 카드 클릭 → ("결제/진행/할게/해줘" 포함 시) 결제 CTA 까지 클릭.
+        //   "카카오페이"        → 카드 선택만
+        //   "카카오페이로 결제" → 카드 선택 + 결제 진행
         {
             name: 'pay_kakao',
             match: /(카카오\s*페이?|카카오\s*바코드|카톡\s*페이?|바코드)/,
             allowOn: (p) => p === '/payment',
-            run: () => document.querySelector('[data-method="barcode"]')?.click(),
+            run: (m) => _selectMethodMaybeProceed('barcode', m.input),
         },
         {
             name: 'pay_ic',
             match: /(IC\s*카드|아이씨\s*카드|신용\s*카드|체크\s*카드|카드(?!오))/i,
             allowOn: (p) => p === '/payment',
-            run: () => document.querySelector('[data-method="ic"]')?.click(),
+            run: (m) => _selectMethodMaybeProceed('ic', m.input),
         },
         {
             name: 'pay_vein',
             match: /(정맥|손바닥\s*정맥|손바닥\s*인증)/,
             allowOn: (p) => p === '/payment',
-            run: () => document.querySelector('[data-method="vein"]')?.click(),
+            run: (m) => _selectMethodMaybeProceed('vein', m.input),
+        },
+
+        // ───────── P02 결제 진행 (결제수단 이미 선택된 상태에서 "결제하기/진행") ─────────
+        {
+            name: 'pay_proceed',
+            match: /(결제하기|결제\s*진행|이걸로\s*(결제|해|할게)|진행해|결제할게|결제해|결제\s*완료|다음으로|다음\s*단계)/,
+            guard: /(안|못|말고|그만|취소|싫어|아니|잠깐|아직|나중에)/,
+            allowOn: (p) => p === '/payment',
+            run: () => {
+                const next = document.querySelector('[data-action="next"]');
+                if (next && !next.disabled) next.click();
+            },
         },
 
         // ───────── 마이크 끄기 (안전) ─────────
