@@ -41,17 +41,23 @@ public class SessionService {
         return SessionResponse.from(session);
     }
 
+    /**
+     * 세션 종료 — 멱등 처리.
+     * 아바타 모드에서 FastAPI MCP Tool 이 결제 완료 시 자동으로 종료를 호출하고,
+     * 프론트(P05) 도 결제 완료 페이지 진입 시 동일 API 를 호출하는 흐름이 있어
+     * 같은 세션에 대해 종료가 두 번 들어올 수 있다.
+     * 단말기 연동 후엔 프론트가 결제 승인 후 단독으로 호출하므로 이 경로가 사라지지만,
+     * 안전망으로 멱등 응답을 유지한다.
+     * 이미 COMPLETED/EXPIRED 상태면 상태 변경 없이 현재 스냅샷을 반환한다.
+     */
     @Transactional
     public SessionResponse completeSession(Long sessionId) {
         KioskSession session = kioskSessionRepository.findByIdWithLock(sessionId)
                 .orElseThrow(() -> new SessionException(SessionErrorCode.NOT_FOUND_SESSION));
 
-        // 이미 종료된 세션이면 예외 처리
-        if (session.getSessionStatus() != SessionStatus.ACTIVE) {
-            throw new SessionException(SessionErrorCode.SESSION_ALREADY_ENDED);
+        if (session.getSessionStatus() == SessionStatus.ACTIVE) {
+            session.complete();
         }
-
-        session.complete();
         return SessionResponse.from(session);
     }
 
