@@ -2,7 +2,8 @@
 // A01-avatar.js — 아바타 모드(동대맘) 통합 로직 (FastAPI 연결 + 턴테이킹)
 //
 // 흐름:
-//   1) 진입: Spring 세션 생성(POST /api/sessions, mode=AVATAR) + FastAPI 세션 생성(POST /ai/order/start)
+//   1) 진입: FastAPI 세션 시작(POST /ai/order/start) — FastAPI 가 Spring 에
+//      세션을 생성한 뒤 동일한 sessionId 를 응답. 프론트는 단일 ID 사용.
 //   2) 대기 화면: FastAPI greeting 을 typewriter 로 노출
 //   3) 마이크 클릭: ConvEngine.start() → enterState('opening')
 //   4) 사용자 발화 → POST /ai/order/chat → reply 발화
@@ -18,8 +19,8 @@
 //   - window.ConvEngine   (conversation-engine.js)
 //
 // 세션 키:
-//   sessionId    — Spring Long ID (P-flow 호환, 메시지/카트/주문)
-//   aiSessionId  — FastAPI 세션 ID (대화 흐름)
+//   sessionId    — Spring/FastAPI 공유 단일 sessionId (FastAPI start 응답값)
+//   aiSessionId  — sessionId 와 동일 값. FastAPI API 시그니처 호환 용도로 별도 보관.
 //   cart, currentStep, mode, dineOption, orderId, currentStoreName
 // ========================================================
 
@@ -50,8 +51,8 @@
     // ========================================================
     const state = {
         fsm: 'opening',
-        sessionId: null,            // Spring Long sessionId
-        aiSessionId: null,          // FastAPI session_id
+        sessionId: null,            // Spring/FastAPI 공유 sessionId (FastAPI start 응답값)
+        aiSessionId: null,          // sessionId 와 동일 값 — FastAPI 호출 시그니처 호환용
         bootGreeting: null,         // FastAPI 첫 인사말
         cart: { items: [], totalAmount: 0 },
         chatLog: [],
@@ -128,59 +129,9 @@
     }
 
     // ========================================================
-    // 5. 세션 영속 — Spring 세션
-    // ========================================================
-    /**
-     * sessionStorage 의 sessionId 가 양의 정수인지 엄격 검사.
-     * mock 잔재('a01-...') 또는 소수, 음수, 0 은 폐기.
-     */
-    function readStoredSessionId() {
-        const raw = AppState.get('SESSION_ID');
-        if (!raw) return null;
-        if (!/^[1-9][0-9]*$/.test(raw)) return null;
-        const n = Number(raw);
-        if (!Number.isInteger(n) || n <= 0 || !Number.isSafeInteger(n)) return null;
-        return n;
-    }
-
-    /**
-     * 저장된 세션 ID 가 서버에 실제로 존재하는지 가벼운 ping 으로 검증.
-     * 별도 GET /sessions/{id} 엔드포인트가 없어 tool-logs 조회로 대체.
-     */
-    async function verifyStoredSession(sessionId) {
-        try {
-            await window.Api.session.getToolLogs(sessionId, 1);
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    async function loadOrCreateSpringSession() {
-        const stored = readStoredSessionId();
-        if (stored) {
-            const ok = await verifyStoredSession(stored);
-            if (ok) {
-                state.sessionId = stored;
-                return;
-            }
-            AppState.remove('SESSION_ID');
-        }
-        const res = await callApi('Spring 세션 생성', () =>
-            window.Api.session.create({
-                mode: 'AVATAR',
-                language: 'ko',
-                orderType: resolveOrderType()
-            })
-        );
-        if (res && res.sessionId) {
-            state.sessionId = res.sessionId;
-            AppState.set('SESSION_ID', res.sessionId);
-        }
-    }
-
-    // ========================================================
-    // 5b. 세션 영속 — FastAPI 세션
+    // 5. 세션 시작 — FastAPI 가 내부에서 Spring 세션을 생성하고
+    // 동일한 sessionId 를 응답으로 돌려준다. 프론트는 이 단일 ID 를
+    // Spring(미니카트/결제) 및 FastAPI(대화) 양쪽 호출에 그대로 사용.
     // ========================================================
     async function startAiSession() {
         const res = await callApi('AI 세션 시작', () =>
@@ -191,7 +142,10 @@
             })
         );
         if (res && res.session_id != null) {
+            // Spring/FastAPI 가 공유하는 단일 sessionId — 두 변수에 동일 값 저장
+            state.sessionId = res.session_id;
             state.aiSessionId = res.session_id;
+            AppState.set('SESSION_ID', res.session_id);
             AppState.set('AI_SESSION_ID', res.session_id);
             state.bootGreeting = res.greeting || null;
             return true;
@@ -1060,8 +1014,8 @@
         },
         async diagnoseCart() {
             console.log('━━━━━ 카트 진단 ━━━━━');
-            console.log('Spring sessionId:', state.sessionId);
-            console.log('AI sessionId:   ', state.aiSessionId);
+            console.log('sessionId (공유):', state.sessionId);
+            console.log('aiSessionId    :', state.aiSessionId, '(sessionId 와 동일해야 함)');
             try {
                 const springCart = await window.Api.cart.get(state.sessionId);
                 console.log('[Spring cart]', springCart);
@@ -1107,11 +1061,8 @@
 
         onConvModeChange('INACTIVE');
 
-        // Spring + FastAPI 세션 병렬 시작
-        await Promise.all([
-            loadOrCreateSpringSession(),
-            startAiSession()
-        ]);
+        // FastAPI 가 Spring 세션을 함께 생성 — 단일 sessionId 사용
+        await startAiSession();
         if (state.sessionId) await refreshCart();
 
         // 자동 청취 시작 — ConvEngine.start() 가 AI_SPEAKING 으로 진입,
