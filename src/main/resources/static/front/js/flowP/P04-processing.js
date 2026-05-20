@@ -159,7 +159,18 @@
         }
     }
 
-    /* ---------- 백엔드 결제 확정 (승인 분기) ---------- */
+    /* ---------- 백엔드 결제 확정 (승인 분기) ----------
+     * 정책 (이슈 #109):
+     *   [현재 — 단말기 미연동, 결제 더미]
+     *     confirm → payment.create → markSuccess 를 여기서 일괄 호출.
+     *     아바타 모드는 별도 경로로 FastAPI MCP Tool 이 백엔드를 자동 처리하지만,
+     *     N02·A01 공통으로 결제 흐름이 P04 를 거치므로 여기 호출도 유지된다
+     *     (session.complete 멱등 처리로 중복 안전).
+     *   [단말기 연동 후]
+     *     아래 markSuccess 호출은 단말기 승인 결과 콜백 시점으로 이동해야 한다.
+     *     즉 confirm + payment.create 까지만 P04 진입 시 호출하고,
+     *     단말기 → 프론트 승인 이벤트 수신 후 markSuccess + (P05 의) session.complete.
+     */
     let finalizing = false;
     async function finalizePaymentThenGoComplete() {
         if (finalizing) return;
@@ -192,6 +203,7 @@
             paymentId = payment.paymentId;
             sessionStorage.setItem('paymentId', String(paymentId));
 
+            // TODO(단말기 연동): 아래 markSuccess 호출은 단말기 승인 콜백 시점으로 이동.
             await window.NunchiApi.Payments.markSuccess(paymentId);
 
             approvedTimer = setTimeout(() => {
