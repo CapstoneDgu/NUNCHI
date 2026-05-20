@@ -2,12 +2,16 @@
 // A01-avatar.js — 아바타 모드(동대맘) 통합 로직 (FastAPI 연결 + 턴테이킹)
 //
 // 흐름:
-//   1) 진입: Spring 세션 생성(POST /api/sessions, mode=AVATAR) + FastAPI 세션 생성(POST /ai/order/start)
+//   1) 진입: FastAPI 세션 시작(POST /ai/order/start) — FastAPI 가 Spring 에
+//      세션을 생성한 뒤 동일한 sessionId 를 응답. 프론트는 단일 ID 사용.
 //   2) 대기 화면: FastAPI greeting 을 typewriter 로 노출
 //   3) 마이크 클릭: ConvEngine.start() → enterState('opening')
 //   4) 사용자 발화 → POST /ai/order/chat → reply 발화
-//   5) reply 키워드(ReplyKeywords)로 카트 갱신/완료 라우팅 분기
-//   6) 정상 모드 전환 → PATCH /api/sessions/{id}/complete
+//   5) 응답 current_step 기반 단계 인디케이터 갱신(BROWSE/SELECT/CONFIGURE/CHECKOUT)
+//      + CHECKOUT 진입 시 /summary 라우팅 (FastAPI 가 PATCH /sessions/{id}/step 으로
+//      Spring 에 동기화한 단계를 chat 응답에서 echo 받는 구조)
+//   6) reply 키워드(ReplyKeywords)는 카트 변경 감지 / step 누락 시 라우팅 폴백 용도
+//   7) 정상 모드 전환 → PATCH /api/sessions/{id}/complete
 //
 // 의존:
 //   - window.Api          (api.js)              — Spring + FastAPI 호출
@@ -15,8 +19,8 @@
 //   - window.ConvEngine   (conversation-engine.js)
 //
 // 세션 키:
-//   sessionId    — Spring Long ID (P-flow 호환, 메시지/카트/주문)
-//   aiSessionId  — FastAPI 세션 ID (대화 흐름)
+//   sessionId    — Spring/FastAPI 공유 단일 sessionId (FastAPI start 응답값)
+//   aiSessionId  — sessionId 와 동일 값. FastAPI API 시그니처 호환 용도로 별도 보관.
 //   cart, currentStep, mode, dineOption, orderId, currentStoreName
 // ========================================================
 
@@ -47,8 +51,8 @@
     // ========================================================
     const state = {
         fsm: 'opening',
-        sessionId: null,            // Spring Long sessionId
-        aiSessionId: null,          // FastAPI session_id
+        sessionId: null,            // Spring/FastAPI 공유 sessionId (FastAPI start 응답값)
+        aiSessionId: null,          // sessionId 와 동일 값 — FastAPI 호출 시그니처 호환용
         bootGreeting: null,         // FastAPI 첫 인사말
         cart: { items: [], totalAmount: 0 },
         chatLog: [],
@@ -125,59 +129,9 @@
     }
 
     // ========================================================
-    // 5. 세션 영속 — Spring 세션
-    // ========================================================
-    /**
-     * sessionStorage 의 sessionId 가 양의 정수인지 엄격 검사.
-     * mock 잔재('a01-...') 또는 소수, 음수, 0 은 폐기.
-     */
-    function readStoredSessionId() {
-        const raw = AppState.get('SESSION_ID');
-        if (!raw) return null;
-        if (!/^[1-9][0-9]*$/.test(raw)) return null;
-        const n = Number(raw);
-        if (!Number.isInteger(n) || n <= 0 || !Number.isSafeInteger(n)) return null;
-        return n;
-    }
-
-    /**
-     * 저장된 세션 ID 가 서버에 실제로 존재하는지 가벼운 ping 으로 검증.
-     * 별도 GET /sessions/{id} 엔드포인트가 없어 tool-logs 조회로 대체.
-     */
-    async function verifyStoredSession(sessionId) {
-        try {
-            await window.Api.session.getToolLogs(sessionId, 1);
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    async function loadOrCreateSpringSession() {
-        const stored = readStoredSessionId();
-        if (stored) {
-            const ok = await verifyStoredSession(stored);
-            if (ok) {
-                state.sessionId = stored;
-                return;
-            }
-            AppState.remove('SESSION_ID');
-        }
-        const res = await callApi('Spring 세션 생성', () =>
-            window.Api.session.create({
-                mode: 'AVATAR',
-                language: 'ko',
-                orderType: resolveOrderType()
-            })
-        );
-        if (res && res.sessionId) {
-            state.sessionId = res.sessionId;
-            AppState.set('SESSION_ID', res.sessionId);
-        }
-    }
-
-    // ========================================================
-    // 5b. 세션 영속 — FastAPI 세션
+    // 5. 세션 시작 — FastAPI 가 내부에서 Spring 세션을 생성하고
+    // 동일한 sessionId 를 응답으로 돌려준다. 프론트는 이 단일 ID 를
+    // Spring(미니카트/결제) 및 FastAPI(대화) 양쪽 호출에 그대로 사용.
     // ========================================================
     async function startAiSession() {
         const res = await callApi('AI 세션 시작', () =>
@@ -188,7 +142,10 @@
             })
         );
         if (res && res.session_id != null) {
+            // Spring/FastAPI 가 공유하는 단일 sessionId — 두 변수에 동일 값 저장
+            state.sessionId = res.session_id;
             state.aiSessionId = res.session_id;
+            AppState.set('SESSION_ID', res.session_id);
             AppState.set('AI_SESSION_ID', res.session_id);
             state.bootGreeting = res.greeting || null;
             return true;
@@ -509,14 +466,29 @@
             })
         );
 
+        // 디버그 — FastAPI chat 응답 전체 + step 필드 즉시 로깅
+        console.log('[A01] FastAPI chat 응답:', res);
+        if (res) {
+            console.log('[A01] current_step:', res.current_step, '| currentStep:', res.currentStep, '| step:', res.step);
+        }
+
         if (!res || !res.reply) {
             // 폴백 멘트 추가 금지 — 청취만 재개
             if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
             return;
         }
 
-        // 단계 인디케이터 갱신 — 서버 currentStep 우선, fallback 으로 reply 키워드 추정
+        // 단계 인디케이터 갱신 — 서버 currentStep 우선, fallback 으로 reply 키워드 추정.
+        // CHECKOUT 진입(승/전 → 결) 감지를 위해 prev fsm 저장.
+        const prevFsm = state.fsm;
         applyStep(res);
+        const enteredCheckout = state.fsm === 'confirm' && prevFsm !== 'confirm';
+        console.log('[A01] step 분석:', {
+            prevFsm,
+            currFsm: state.fsm,
+            enteredCheckout,
+            replyComplete: !!(window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(res.reply))
+        });
 
         await aiSpeakChained(res.reply);
 
@@ -532,7 +504,10 @@
         if (window.ReplyKeywords && window.ReplyKeywords.replyHasCartChange(reply)) {
             await refreshCart();
         }
-        if (window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply)) {
+        // 결제 라우팅 — FastAPI 가 동기화한 current_step==CHECKOUT 진입 시 P01 이동(명세 정합).
+        // 폴백: step 누락 응답 대비 replyHasComplete 키워드 매칭 유지.
+        const replyComplete = window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply);
+        if (enteredCheckout || replyComplete) {
             await goToPayment();
             return;
         }
@@ -686,6 +661,7 @@
         const result = await callApi('장바구니 조회', () =>
             window.Api.cart.get(state.sessionId)
         );
+        console.log('[A01] refreshCart (Spring sessionId=' + state.sessionId + ') →', result);
         if (result) applyCartResponse(result);
     }
 
@@ -864,6 +840,8 @@
             $icon.classList.add('xi-volume-up');
         }
         if (state.currentAudio) state.currentAudio.muted = state.muted;
+        // P-flow 의 AvatarGuide 가 동일 상태 참조 — sessionStorage 로 공유
+        AppState.set('AVATAR_MUTED', state.muted ? '1' : '0');
     }
 
     // ========================================================
@@ -1021,6 +999,48 @@
         $videos.forEach(($v) => { try { $v.play(); } catch (_) {} });
     }
 
+    // 디버그 헬퍼 — devtools 콘솔에서 수동 호출:
+    //   window.__a01.goPayment()     강제 /summary 라우팅 (cart/session 검증은 그대로)
+    //   window.__a01.state           내부 state 스냅샷
+    //   window.__a01.simulateStep('CHECKOUT')  current_step 도달 시뮬레이션
+    //     - CHECKOUT 으로 호출하면 인디케이터 갱신 + 무조건 /summary 라우팅 (반복 호출 가능)
+    //     - 그 외 step 은 인디케이터만 갱신
+    //   window.__a01.diagnoseCart()  Spring 카트 vs FastAPI 카트 동시 비교
+    //   window.__a01.forceGoPayment() 카트 검증 우회 + /summary 강제 이동
+    window.__a01 = {
+        goPayment: () => goToPayment(),
+        get state() { return state; },
+        simulateStep(step) {
+            const prev = state.fsm;
+            applyStep({ current_step: step });
+            console.log('[A01] simulateStep', { from: prev, to: state.fsm, step });
+            if (String(step).toUpperCase() === 'CHECKOUT') {
+                console.log('[A01] simulateStep → CHECKOUT, /summary 이동');
+                return goToPayment();
+            }
+        },
+        async diagnoseCart() {
+            console.log('━━━━━ 카트 진단 ━━━━━');
+            console.log('sessionId (공유):', state.sessionId);
+            console.log('aiSessionId    :', state.aiSessionId, '(sessionId 와 동일해야 함)');
+            try {
+                const springCart = await window.Api.cart.get(state.sessionId);
+                console.log('[Spring cart]', springCart);
+            } catch (e) { console.warn('Spring cart 조회 실패', e && e.message); }
+            try {
+                const aiCart = await window.Api.Ai.cartGet(state.aiSessionId);
+                console.log('[AI cart]   ', aiCart);
+            } catch (e) { console.warn('AI cart 조회 실패', e && e.message); }
+            console.log('A01 state.cart:', state.cart);
+        },
+        forceGoPayment() {
+            console.warn('[A01] forceGoPayment — 카트 검증 우회');
+            AppState.set('CURRENT_STEP', 'P01');
+            if (window.ConvEngine) window.ConvEngine.stop();
+            location.href = '/summary';
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', async () => {
         AppState.set('CURRENT_STEP', 'A01');
         AppState.set('MODE', 'AVATAR');
@@ -1048,11 +1068,8 @@
 
         onConvModeChange('INACTIVE');
 
-        // Spring + FastAPI 세션 병렬 시작
-        await Promise.all([
-            loadOrCreateSpringSession(),
-            startAiSession()
-        ]);
+        // FastAPI 가 Spring 세션을 함께 생성 — 단일 sessionId 사용
+        await startAiSession();
         if (state.sessionId) await refreshCart();
 
         // 자동 청취 시작 — ConvEngine.start() 가 AI_SPEAKING 으로 진입,

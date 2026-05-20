@@ -74,6 +74,14 @@
         if (progressRaf)  { cancelAnimationFrame(progressRaf); progressRaf = null; }
     }
 
+    /* ---------- 아바타 음성 안내 — 상태별 멘트 ---------- */
+    const AVATAR_GUIDE = {
+        prepare:  '손바닥을 인식기 위에 올려주세요.',
+        scanning: '정맥을 인식하고 있어요. 손바닥을 움직이지 마세요.',
+        success:  '인증이 완료됐어요.',
+        fail:     '인식하지 못했어요. 다시 시도하거나 다른 결제 수단을 골라주세요.'
+    };
+
     /* ---------- State setter ---------- */
     function setState(nextState) {
         clearAllTimers();
@@ -82,6 +90,10 @@
         const copy = COPY[nextState] || COPY.prepare;
         if (titleEl) titleEl.textContent = copy.title;
         if (descEl)  descEl.textContent  = copy.desc;
+
+        if (window.AvatarGuide && AVATAR_GUIDE[nextState]) {
+            window.AvatarGuide.speak(AVATAR_GUIDE[nextState]);
+        }
 
         if (nextState === 'scanning') {
             startScanning();

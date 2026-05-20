@@ -151,14 +151,34 @@
     renderAll();
     try { sessionStorage.setItem(STATUS_KEY, 'approved'); } catch (_) {}
 
-    // 세션 종료 — 정리 전에 sessionId 캡처해서 PATCH /api/sessions/{id}/complete 호출
+    // 세션 종료 정책 (이슈 #109)
+    //
+    //   [현재 — 단말기 미연동, 결제 더미]
+    //   - 일반(N02) 모드: P04 markSuccess 후 P05 진입 → 여기서 session.complete 호출.
+    //   - 아바타(A01) 모드: 사용자 "결제해줘" 발화 시 FastAPI MCP Tool 이
+    //     주문 확인 → 결제 요청(더미) → 세션 종료까지 자동 수행. 이후 프론트가
+    //     동일 흐름으로 P05 에 도달하면서 여기서 또 한 번 호출하지만,
+    //     서버 측 complete 가 멱등이라 안전 (이미 COMPLETED 면 상태 변경 없이 응답).
+    //
+    //   [단말기 연동 후]
+    //   - FastAPI MCP Tool 은 주문 확인 + 결제 요청까지만 수행.
+    //   - 단말기 승인 결과를 프론트가 받으면 결제 성공 처리(POST /api/payments/{id}/success)
+    //     후 여기서 세션 종료. 즉 단일 호출 경로로 정리되며 본 호출이 정식 종료 지점이 된다.
     (function completeBackendSession() {
         const sessionId = sessionStorage.getItem(SESSION_ID_KEY);
         if (sessionId && window.NunchiApi) {
             window.NunchiApi.Sessions.complete(sessionId)
                 .catch((e) => console.warn('[P05] session.complete 실패', e));
         }
+        if (window.AppState && window.AppState.get('MODE') === 'AVATAR') {
+            window.AppState.remove('AI_SESSION_ID');
+        }
     })();
+
+    // 아바타 모드 — 완료 안내
+    if (window.AvatarGuide) {
+        window.AvatarGuide.speak('결제가 완료됐어요. 맛있게 드세요.');
+    }
 
     setTimeout(markReceiptDone, 3000);
     startCountdown();

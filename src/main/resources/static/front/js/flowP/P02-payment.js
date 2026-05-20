@@ -170,4 +170,8 @@
             },
         });
     }
+    // 아바타 모드 — 결제 수단 선택 안내
+    if (window.AvatarGuide) {
+        window.AvatarGuide.speak('결제 수단을 골라주세요.');
+    }
 })();

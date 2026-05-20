@@ -233,6 +233,11 @@
     renderStoreAndTotal();
     renderReason(config);
 
+    // 아바타 모드 — 실패 안내
+    if (window.AvatarGuide) {
+        window.AvatarGuide.speak('결제가 실패했어요. 다시 시도하거나 다른 결제 수단을 골라주세요.');
+    }
+
     /* ---------- Events ---------- */
     if (backEl) {
         backEl.addEventListener('click', () => confirmGoHome());

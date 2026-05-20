@@ -56,6 +56,7 @@
         PAYMENT_ID:           'paymentId',
         PAYMENT_METHOD:       'paymentMethod',
         PAYMENT_STATUS:       'paymentStatus',
+        AVATAR_MUTED:         'avatarMuted',
     });
 
     // JSON 직렬화 대상 키 — set 시 stringify, get 시 parse
