@@ -2,6 +2,15 @@
     box-sizing: border-box;
 }
 
+:root {
+    --admin-primary: #f97316;
+    --admin-primary-hover: #ea580c;
+    --admin-primary-disabled: #fdba74;
+    --admin-primary-soft: #fff7ed;
+    --admin-primary-border: #fed7aa;
+    --admin-track: #e5e7eb;
+}
+
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -69,7 +78,7 @@ input {
     height: 48px;
     margin-top: 20px;
     border-radius: 12px;
-    background: #2563eb;
+    background: var(--admin-primary);
     color: #ffffff;
     font-size: 16px;
     border: none;
@@ -77,9 +86,14 @@ input {
     font-weight: 700;
 }
 
+#loginButton:hover {
+    background: var(--admin-primary-hover);
+}
+
 #loginButton:disabled {
-    background: #93c5fd;
+    background: var(--admin-primary-disabled);
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .error-message {
@@ -149,6 +163,11 @@ input {
     border: none;
     cursor: pointer;
     font-weight: 700;
+}
+
+.secondary-button:hover {
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary-hover);
 }
 
 .dashboard-grid {
@@ -266,19 +285,29 @@ input {
     font-weight: 700;
 }
 
+.secondary-link:hover {
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary-hover);
+}
+
 .primary-button {
     padding: 10px 16px;
     border-radius: 10px;
-    background: #2563eb;
+    background: var(--admin-primary);
     color: #ffffff;
     border: none;
     cursor: pointer;
     font-weight: 700;
 }
 
+.primary-button:hover {
+    background: var(--admin-primary-hover);
+}
+
 .primary-button:disabled {
-    background: #93c5fd;
+    background: var(--admin-primary-disabled);
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .admin-form {
@@ -496,14 +525,15 @@ input {
 .bar-track {
     height: 14px;
     border-radius: 999px;
-    background: #e5e7eb;
+    background: var(--admin-track);
     overflow: hidden;
 }
 
 .bar-fill {
     height: 100%;
     border-radius: 999px;
-    background: #2563eb;
+    background: linear-gradient(90deg, #fb923c 0%, #f97316 100%);
+    transition: width 0.25s ease;
 }
 
 .bar-value {
@@ -531,13 +561,70 @@ input {
     border: 1px dashed #d1d5db;
 }
 
+.top-menu-row {
+    grid-template-columns: 160px 1fr 130px;
+    gap: 16px;
+}
+
+.top-menu-label-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.chart-rank-badge {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: 0 2px 6px rgba(249, 115, 22, 0.18);
+}
+
+.chart-rank-badge.rank-1 {
+    background: #ea580c;
+}
+
+.chart-rank-badge.rank-2 {
+    background: #f97316;
+}
+
+.chart-rank-badge.rank-3 {
+    background: #fb923c;
+}
+
+.chart-rank-badge.rank-4,
+.chart-rank-badge.rank-5 {
+    background: #fdba74;
+    color: #7c2d12;
+}
+
+.top-menu-fill {
+    background: linear-gradient(90deg, #fb923c 0%, #f97316 100%);
+}
+
 @media (max-width: 760px) {
     .bar-row {
         grid-template-columns: 80px 1fr;
     }
 
+    .top-menu-row {
+        grid-template-columns: 1fr;
+    }
+
     .bar-value {
         grid-column: 2;
+        align-items: flex-start;
+    }
+
+    .top-menu-row .bar-value {
+        grid-column: 1;
         align-items: flex-start;
     }
 }
@@ -574,6 +661,6 @@ input {
 }
 
 .admin-input:focus {
-    outline: 2px solid #2563eb;
+    outline: 2px solid var(--admin-primary);
     outline-offset: 2px;
 }

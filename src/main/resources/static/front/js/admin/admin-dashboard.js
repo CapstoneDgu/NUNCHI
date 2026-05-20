@@ -39,14 +39,18 @@ document.addEventListener("DOMContentLoaded", () => {
     loadAnalytics();
 });
 
-logoutButton.addEventListener("click", () => {
-    clearAdminToken();
-    window.location.href = "/admin/login.html";
-});
+if (logoutButton) {
+    logoutButton.addEventListener("click", () => {
+        clearAdminToken();
+        window.location.href = "/admin/login.html";
+    });
+}
 
-refreshDashboardButton.addEventListener("click", () => {
-    loadDashboard();
-});
+if (refreshDashboardButton) {
+    refreshDashboardButton.addEventListener("click", () => {
+        loadDashboard();
+    });
+}
 
 if (refreshAnalyticsButton) {
     refreshAnalyticsButton.addEventListener("click", () => {
@@ -61,6 +65,10 @@ if (downloadSalesExcelButton) {
 }
 
 async function loadDashboard() {
+    if (!dashboardLoading || !dashboardContent || !dashboardError) {
+        return;
+    }
+
     dashboardLoading.classList.remove("hidden");
     dashboardContent.classList.add("hidden");
     dashboardError.textContent = "";
@@ -70,11 +78,11 @@ async function loadDashboard() {
 
         if (!data) return;
 
-        todayOrderCount.textContent = data.todayOrderCount ?? 0;
-        todaySalesAmount.textContent = formatCurrency(data.todaySalesAmount);
-        totalOrderCount.textContent = data.totalOrderCount ?? 0;
-        soldOutMenuCount.textContent = data.soldOutMenuCount ?? 0;
-        recommendedMenuCount.textContent = data.recommendedMenuCount ?? 0;
+        if (todayOrderCount) todayOrderCount.textContent = data.todayOrderCount ?? 0;
+        if (todaySalesAmount) todaySalesAmount.textContent = formatCurrency(data.todaySalesAmount);
+        if (totalOrderCount) totalOrderCount.textContent = data.totalOrderCount ?? 0;
+        if (soldOutMenuCount) soldOutMenuCount.textContent = data.soldOutMenuCount ?? 0;
+        if (recommendedMenuCount) recommendedMenuCount.textContent = data.recommendedMenuCount ?? 0;
 
         renderRecentOrders(data.recentOrders || []);
 
@@ -87,7 +95,7 @@ async function loadDashboard() {
 }
 
 async function loadAnalytics() {
-    if (!analyticsLoading || !analyticsContent) {
+    if (!analyticsLoading || !analyticsContent || !analyticsError) {
         return;
     }
 
@@ -113,6 +121,8 @@ async function loadAnalytics() {
 }
 
 function renderRecentOrders(orders) {
+    if (!recentOrdersBody) return;
+
     if (!orders.length) {
         recentOrdersBody.innerHTML = `
             <tr>
@@ -157,28 +167,62 @@ function renderHourlySalesChart(items) {
 }
 
 function renderTopMenuChart(items) {
-    renderBarChart(topMenuChart, items, {
-        label: item => item.menuName || "-",
-        value: item => item.quantitySold || 0,
-        subText: item => formatCurrency(item.salesAmount || 0),
-        valueText: value => `${value}개`,
-        emptyMessage: "TOP 판매 메뉴 데이터가 없습니다."
-    });
+    if (!topMenuChart) return;
+
+    if (!items || !items.length) {
+        topMenuChart.innerHTML = `<div class="empty-chart">TOP 판매 메뉴 데이터가 없습니다.</div>`;
+        return;
+    }
+
+    const maxQuantity = Math.max(
+        ...items.map(item => Number(item.quantitySold) || 0),
+        1
+    );
+
+    topMenuChart.innerHTML = items.map((item, index) => {
+        const rank = index + 1;
+        const quantity = Number(item.quantitySold) || 0;
+        const salesAmount = Number(item.salesAmount) || 0;
+        const width = calculateTopMenuBarWidth(quantity, maxQuantity);
+
+        return `
+            <div class="bar-row top-menu-row">
+                <div class="top-menu-label-wrap">
+                    <span class="chart-rank-badge rank-${rank}">${rank}</span>
+                    <span class="bar-label">${escapeHtml(item.menuName || "-")}</span>
+                </div>
+
+                <div class="bar-track">
+                    <div class="bar-fill top-menu-fill" style="width: ${width}%"></div>
+                </div>
+
+                <div class="bar-value">
+                    <strong>${escapeHtml(`${quantity}개`)}</strong>
+                    <span>${escapeHtml(formatCurrency(salesAmount))}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
 }
 
 function renderBarChart(target, items, options) {
     if (!target) return;
 
     if (!items.length) {
-        target.innerHTML = `<div class="empty-chart">${options.emptyMessage}</div>`;
+        target.innerHTML = `<div class="empty-chart">${escapeHtml(options.emptyMessage)}</div>`;
         return;
     }
 
-    const maxValue = Math.max(...items.map(options.value), 1);
+    const values = items.map(item => Number(options.value(item)) || 0);
+    const maxValue = Math.max(...values, 1);
+
+    const MAX_BAR_PERCENT = 70;
+    const MIN_BAR_PERCENT = 5;
 
     target.innerHTML = items.map(item => {
-        const value = options.value(item);
-        const width = Math.max((value / maxValue) * 100, value > 0 ? 6 : 0);
+        const value = Number(options.value(item)) || 0;
+        const rawWidth = (value / maxValue) * MAX_BAR_PERCENT;
+        const width = value > 0 ? Math.max(rawWidth, MIN_BAR_PERCENT) : 0;
 
         return `
             <div class="bar-row">
@@ -193,6 +237,19 @@ function renderBarChart(target, items, options) {
             </div>
         `;
     }).join("");
+}
+
+function calculateTopMenuBarWidth(value, maxValue) {
+    if (!value || !maxValue) {
+        return 0;
+    }
+
+    const ratio = value / maxValue;
+
+    const MIN_BAR_PERCENT = 18;
+    const MAX_BAR_PERCENT = 68;
+
+    return MIN_BAR_PERCENT + (MAX_BAR_PERCENT - MIN_BAR_PERCENT) * ratio;
 }
 
 function formatShortDate(value) {
