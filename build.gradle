@@ -63,8 +63,8 @@ dependencies {
 
 	implementation 'org.apache.poi:poi-ooxml:5.4.1'
 
-	// Google Cloud STT/TTS — REST API 직접 호출 (API key 인증)
-	// 별도 SDK 의존성 없음. Spring 내장 RestClient 사용.
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
 }
 
 tasks.named('test') {

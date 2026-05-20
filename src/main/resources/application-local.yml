@@ -14,8 +14,8 @@ spring:
         - classpath:/templates_front/
 
   datasource:
-    url: ${LOCAL_DB_URL}
-    username: ${LOCAL_DB_USERNAME}
+    url: ${LOCAL_DB_URL:jdbc:postgresql://127.0.0.1:5433/nunchi}
+    username: ${LOCAL_DB_USERNAME:nunchi}
     password: ${LOCAL_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
@@ -44,19 +44,28 @@ spring:
 
 google:
   cloud:
-    api-key: ${GOOGLE_API_KEY:}
+    apiKey: ${GOOGLE_CLOUD_API_KEY:dummy-google-api-key}
     tts:
       language-code: ko-KR
       voice-name: ko-KR-Chirp3-HD-Pulcherrima
       ssml-gender: FEMALE
       audio-encoding: MP3
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
 fastapi:
   base-url: ${LOCAL_FASTAPI_URL:http://localhost:8000}
 
 admin:
-  password: ${ADMIN_PASSWORD}
+  password: ${ADMIN_PASSWORD:1234}
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:your-very-long-secret-key-your-very-long-secret-key}
   expiration-ms: ${JWT_EXPIRATION_MS:3600000}
