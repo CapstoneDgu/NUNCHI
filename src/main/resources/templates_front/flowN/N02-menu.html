@@ -161,6 +161,16 @@
             <div class="n02__detail-body" data-detail-body>
                 <p class="n02__detail-desc" data-detail-desc></p>
 
+                <!-- 옵션 선택 (옵션 있는 메뉴에서만 노출 — JS 가 채움) -->
+                <section class="n02__detail-section n02__detail-section--options"
+                         data-detail-options-section hidden>
+                    <h3 class="n02__detail-section-title">
+                        <i class="xi xi-check-circle-o" aria-hidden="true"></i>
+                        옵션 선택
+                    </h3>
+                    <div class="n02__detail-options" data-detail-options></div>
+                </section>
+
                 <section class="n02__detail-section">
                     <h3 class="n02__detail-section-title">
                         <i class="xi xi-restaurant" aria-hidden="true"></i>
@@ -274,6 +284,8 @@
 <script src="/js/common/confirm-modal.js"></script>
 <script src="/js/common/app-state.js"></script>
 <script src="/js/common/api.js"></script>
+<script src="/js/common/quick-action.js"></script>
+<script src="/js/common/ai-action.js"></script>
 <script src="/js/flowA/conversation-engine.js"></script>
 <script src="/js/flowN/menu-data.js"></script>
 <script src="/js/flowN/N02-menu.js"></script>

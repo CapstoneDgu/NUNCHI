@@ -22,6 +22,11 @@
             <span class="p-topbar__eyebrow" data-bind="storeName">상록원</span>
             <h1 class="p-topbar__title">결제 실패</h1>
         </div>
+        <button class="p-topbar__mic app-topbar__action-icon" type="button"
+                data-action="toggle-mic"
+                aria-label="마이크 토글">
+            <i class="xi xi-microphone" aria-hidden="true"></i>
+        </button>
     </header>
 
     <!-- 3-step : 3단계 error -->
@@ -105,8 +110,13 @@
 
 <script src="/js/common/app-state.js"></script>
 <script src="/js/common/api-client.js"></script>
+<script src="/js/common/api.js"></script>
 <script src="/js/common/avatar-voice-guide.js"></script>
 <script src="/js/common/confirm-modal.js"></script>
+<script src="/js/common/quick-action.js"></script>
+<script src="/js/common/ai-action.js"></script>
+<script src="/js/flowA/conversation-engine.js"></script>
+<script src="/js/common/voice-controller.js"></script>
 <script src="/js/flowP/P06-fail.js" defer></script>
 </body>
 </html>

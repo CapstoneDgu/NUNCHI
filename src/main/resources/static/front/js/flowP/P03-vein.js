@@ -238,4 +238,17 @@
         try { sessionStorage.setItem(METHOD_KEY, 'vein'); } catch (_) {}
         setState('prepare');
     }
+
+    // ---------- 음성 컨트롤 ----------
+    if (window.VoiceController) {
+        window.VoiceController.init({
+            getSessionId: () => {
+                const raw = sessionStorage.getItem('sessionId');
+                const n = raw ? Number(raw) : NaN;
+                return Number.isFinite(n) ? n : null;
+            },
+            mode: 'NORMAL',
+            onAiReply: (data) => console.log('[P03] AI reply:', data && data.reply),
+        });
+    }
 })();
