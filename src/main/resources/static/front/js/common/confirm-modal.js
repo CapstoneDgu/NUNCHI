@@ -173,11 +173,18 @@
      * @param {Function} [beforeNav] 이동 직전 정리 콜백 (e.g. clearAllTimers)
      */
     async function confirmGoHome(beforeNav) {
+        // 머무르기 버튼은 현재 화면에 맞춰 목적어를 넣어 명확히 (QA #10)
+        const p = (typeof location !== 'undefined') ? location.pathname : '';
+        let stayLabel = '계속하기';
+        if (p === '/menu') stayLabel = '메뉴 계속 보기';
+        else if (p === '/summary' || p === '/payment' || p === '/processing'
+                 || p === '/vein' || p === '/barcode') stayLabel = '결제 계속하기';
+
         const ok = await show({
             title: '홈으로 돌아가시겠습니까?',
             message: '진행 중인 주문은 취소됩니다.',
-            confirmLabel: '돌아가기',
-            cancelLabel: '계속하기'
+            confirmLabel: '홈으로 돌아가기',
+            cancelLabel: stayLabel
         });
         if (!ok) return;
         if (typeof beforeNav === 'function') {

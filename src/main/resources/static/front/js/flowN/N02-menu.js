@@ -63,8 +63,8 @@
     const $detailNutC     = document.querySelector('[data-detail-nut-carb]');
     const $detailNutF     = document.querySelector('[data-detail-nut-fat]');
     const $detailCtaPrice = document.querySelector('[data-detail-cta-price]');
-    const $detailOptions        = document.querySelector('[data-detail-options]');
-    const $detailOptionsSection = document.querySelector('[data-detail-options-section]');
+    const $detailAiSection      = document.querySelector('[data-detail-ai-section]');
+    const $detailAiReason       = document.querySelector('[data-detail-ai-reason]');
 
     const $chatPanel      = document.querySelector('[data-chat-panel]');
     const $chatDim        = document.querySelector('[data-chat-dim]');
@@ -165,17 +165,41 @@
         return state.cart.reduce((sum, i) => sum + (i.itemTotal || 0), 0);
     }
 
-    // 서버 응답으로 받은 카트로 state.cart 교체 후 UI 재렌더
+    // 서버 응답으로 받은 카트로 state.cart 교체 후 UI 갱신
+    // 카트만 바뀐 경우 그리드를 통째로 다시 그리지 않고(이미지 재로드 방지 — QA #14)
+    // 카드의 담김 표시/수량 뱃지만 제자리에서 갱신한다.
     function applyCartResponse(cartResponse) {
         state.cart = (cartResponse && cartResponse.items) ? cartResponse.items : [];
-        renderMenuGrid();
+        syncCardCartState();
         renderCartBar();
+    }
+
+    // 메뉴 카드의 in-cart 강조 + 수량 뱃지만 제자리 갱신 (DOM 재생성 X → 이미지 재요청 없음)
+    function syncCardCartState() {
+        if (!$menuGrid) return;
+        $menuGrid.querySelectorAll(".n02__menu-card[data-menu]").forEach((card) => {
+            const id = Number(card.getAttribute("data-menu"));
+            const qty = getCartQty(id);
+            card.classList.toggle("n02__menu-card--in-cart", qty > 0);
+            const thumb = card.querySelector(".n02__menu-card-thumb");
+            let badge = card.querySelector(".n02__menu-card-qty-badge");
+            if (qty > 0) {
+                if (!badge && thumb) {
+                    badge = document.createElement("span");
+                    badge.className = "n02__menu-card-qty-badge";
+                    thumb.appendChild(badge);
+                }
+                if (badge) badge.textContent = String(qty);
+            } else if (badge) {
+                badge.remove();
+            }
+        });
     }
 
     function logApiError(label, e) {
         console.error("[N02] " + label, e);
         const msg = (e && e.message) ? e.message : "요청 실패";
-        pushChatBubble("system", "⚠ " + label + " 실패: " + msg);
+        showN02Toast("⚠ " + label + " 실패: " + msg);
     }
 
     // ---------- 렌더링: 층 탭 ----------
@@ -347,28 +371,26 @@
         $cartArrowNext.hidden = !showArrows;
     }
 
-    // ---------- 메뉴 상세 옵션 ----------
-    // detailOptionGroups: [{groupId, groupName, options:[{optionId, name, extraPrice}]}]
-    // detailSelected:     { [groupId]: optionId }  (그룹당 1개 — 라디오)
-    let detailOptionGroups = [];
-    const detailSelected = {};
-    let detailBasePrice = 0;
+    // ---------- 옵션 선택 모달 (담기 시 — QA #9) ----------
+    // optGroups: [{groupId, groupName, options:[{optionId, name, extraPrice}]}]
+    // optSelected: { [groupId]: optionId } (그룹당 1개 — 라디오)
+    const $optModal    = document.querySelector('[data-opt-modal]');
+    const $optName     = document.querySelector('[data-opt-name]');
+    const $optPrice    = document.querySelector('[data-opt-price]');
+    const $optGroupsEl = document.querySelector('[data-opt-groups]');
 
-    function renderDetailOptions(groups, basePrice) {
-        detailOptionGroups = Array.isArray(groups) ? groups : [];
-        detailBasePrice = basePrice || 0;
-        Object.keys(detailSelected).forEach((k) => delete detailSelected[k]);
+    let optMenuId = null;
+    let optGroups = [];
+    const optSelected = {};
+    let optBasePrice = 0;
 
-        if (!detailOptionGroups.length) {
-            if ($detailOptionsSection) $detailOptionsSection.hidden = true;
-            if ($detailOptions) $detailOptions.innerHTML = "";
-            recomputeDetailPrice();
-            return;
-        }
-
-        const html = detailOptionGroups.map((g) => {
+    function renderOptGroups() {
+        Object.keys(optSelected).forEach((k) => delete optSelected[k]);
+        if (!$optGroupsEl) return;
+        if (!optGroups.length) { $optGroupsEl.innerHTML = ""; recomputeOptPrice(); return; }
+        $optGroupsEl.innerHTML = optGroups.map((g) => {
             const first = g.options && g.options[0];
-            if (first) detailSelected[g.groupId] = first.optionId;   // 첫 옵션 기본 선택
+            if (first) optSelected[g.groupId] = first.optionId;
             const choices = (g.options || []).map((o) => {
                 const sel = first && o.optionId === first.optionId ? " is-selected" : "";
                 const price = o.extraPrice > 0
@@ -381,42 +403,71 @@
             return `<div class="n02__detail-optgroup" data-optgroup="${g.groupId}">
                         <div class="n02__detail-optgroup-head">
                             <span class="n02__detail-optgroup-name">${g.groupName}</span>
-                            <span class="n02__detail-optgroup-req">필수</span>
                         </div>
                         <div class="n02__detail-optgroup-choices">${choices}</div>
                     </div>`;
         }).join("");
-
-        if ($detailOptions) $detailOptions.innerHTML = html;
-        if ($detailOptionsSection) $detailOptionsSection.hidden = false;
-        recomputeDetailPrice();
+        recomputeOptPrice();
     }
 
-    function selectDetailOption(groupId, optionId) {
-        detailSelected[groupId] = optionId;
-        const group = $detailOptions && $detailOptions.querySelector(`[data-optgroup="${groupId}"]`);
+    function selectOpt(groupId, optionId) {
+        optSelected[groupId] = optionId;
+        const group = $optGroupsEl && $optGroupsEl.querySelector(`[data-optgroup="${groupId}"]`);
         if (group) {
             group.querySelectorAll(".n02__detail-opt").forEach((b) => {
                 b.classList.toggle("is-selected", b.getAttribute("data-option-id") === String(optionId));
             });
         }
-        recomputeDetailPrice();
+        recomputeOptPrice();
     }
 
-    function recomputeDetailPrice() {
-        let total = detailBasePrice;
-        for (const g of detailOptionGroups) {
-            const opt = (g.options || []).find((o) => o.optionId === detailSelected[g.groupId]);
+    function recomputeOptPrice() {
+        let total = optBasePrice;
+        for (const g of optGroups) {
+            const opt = (g.options || []).find((o) => o.optionId === optSelected[g.groupId]);
             if (opt && opt.extraPrice) total += opt.extraPrice;
         }
-        if ($detailPrice)    $detailPrice.textContent = fmt(total);
-        if ($detailCtaPrice) $detailCtaPrice.textContent = "· " + fmt(total);
+        if ($optPrice) $optPrice.textContent = fmt(total);
     }
 
-    function getDetailSelectedOptionIds() {
-        return detailOptionGroups
-            .map((g) => detailSelected[g.groupId])
-            .filter((v) => v != null);
+    function getOptSelectedIds() {
+        return optGroups.map((g) => optSelected[g.groupId]).filter((v) => v != null);
+    }
+
+    // 메뉴 담기 진입점 (터치·음성 공통) — 옵션 있으면 모달, 없으면 바로 담기
+    function openOptionModal(menuId) {
+        const found = window.MenuData.findMenuById(menuId);
+        if (!found || found.menu.soldOut) return;
+        const m = found.menu;
+        window.Api.menu.detail(menuId).then((d) => {
+            const groups = (d && d.optionGroups) || [];
+            if (!groups.length) { addToCart(menuId, { optionIds: [] }); return; }
+            optMenuId = menuId;
+            optGroups = groups;
+            optBasePrice = m.price;
+            if ($optName) $optName.textContent = m.name;
+            renderOptGroups();
+            if ($optModal) $optModal.hidden = false;
+        }).catch((e) => {
+            console.warn("[N02] 옵션 조회 실패", e);
+            addToCart(menuId, { optionIds: [] });
+        });
+    }
+
+    function closeOptModal() {
+        optMenuId = null;
+        optGroups = [];
+        if ($optModal) $optModal.hidden = true;
+    }
+
+    // 더 담기(thenCheckout=false): 담고 닫고 계속 / 바로 주문(true): 담고 결제로
+    async function optModalAdd(thenCheckout) {
+        if (optMenuId == null) return;
+        const id = optMenuId;
+        const ids = getOptSelectedIds();
+        closeOptModal();
+        await addToCart(id, { optionIds: ids });
+        if (thenCheckout) gotoCheckout();
     }
 
     // 옵션명과 발화가 매칭되는지 — STT 오인식/축약 고려해 느슨하게.
@@ -425,47 +476,48 @@
         const t = (spoken || "").replace(/\s/g, "");
         const n = (optName || "").replace(/\s/g, "");
         if (!t || !n) return false;
-        if (t.includes(n) || n.includes(t)) return true;          // 전체 포함
-        // 옵션명에서 일반어 뺀 핵심 토큰(2자+) 중 하나라도 발화에 있으면 매치
-        const tokens = (optName || "").split(/\s+/)
-            .filter((w) => w.length >= 2 && !_OPT_GENERIC.includes(w));
+        if (t.includes(n) || n.includes(t)) return true;
+        const tokens = (optName || "").split(/\s+/).filter((w) => w.length >= 2 && !_OPT_GENERIC.includes(w));
         return tokens.some((w) => t.includes(w));
     }
 
-    // 상세 오버레이가 열려 있을 때의 음성 처리 — 옵션 선택 / 담기 / 닫기.
-    // 처리하면 true(LLM 안 넘김), 닫혀 있거나 해당 없으면 false.
-    function tryDetailVoice(text) {
-        if (!$detail || $detail.hidden || openDetailMenuId == null) return false;
+    // 옵션 모달이 열려 있을 때의 음성 처리 (선택 / 바로주문 / 더담기 / 닫기) — MCP 원격조작도 동일
+    function tryOptModalVoice(text) {
+        if (!$optModal || $optModal.hidden || optMenuId == null) return false;
         const t = (text || "").replace(/\s/g, "");
         if (!t) return false;
-
-        // 1) 옵션명 매칭 → 선택 (느슨)
-        for (const g of detailOptionGroups) {
+        for (const g of optGroups) {
             for (const o of (g.options || [])) {
                 if (_optNameMatches(text, o.name)) {
-                    selectDetailOption(g.groupId, o.optionId);
-                    const btn = $detailOptions && $detailOptions.querySelector(`[data-option-id="${o.optionId}"]`);
+                    selectOpt(g.groupId, o.optionId);
+                    const btn = $optGroupsEl && $optGroupsEl.querySelector(`[data-option-id="${o.optionId}"]`);
                     if (btn) { btn.classList.add("ai-pulse"); setTimeout(() => btn.classList.remove("ai-pulse"), 1200); }
-                    pushChatBubble("system", `${g.groupName}: ${o.name} 선택했어요`);
                     return true;
                 }
             }
         }
+        if (/(바로\s*주문|주문할|결제|주문해)/.test(text) && !/(안|말고|취소|아니|그만)/.test(text)) {
+            optModalAdd(true); return true;
+        }
+        if (/(더\s*담|담아|담기|넣어|추가|이걸로)/.test(text) && !/(안|말고|취소|아니|그만)/.test(text)) {
+            optModalAdd(false); return true;
+        }
+        if (/(닫아|닫기|취소|그만|나가)/.test(t)) { closeOptModal(); return true; }
+        return false;
+    }
 
-        // 2) 담기 / 확정 (선택된 옵션과 함께)
-        if (/(담아|담기|넣어|이걸로|장바구니|주문할|완료)/.test(t) && !/(안|말고|취소|아니|그만)/.test(t)) {
-            addToCart(openDetailMenuId, { optionIds: getDetailSelectedOptionIds() });
+    // 상세(정보) 오버레이 음성 — 담기는 옵션 모달로 연결, 닫기.
+    function tryDetailVoice(text) {
+        if (!$detail || $detail.hidden || openDetailMenuId == null) return false;
+        const t = (text || "").replace(/\s/g, "");
+        if (!t) return false;
+        if (/(담아|담기|넣어|이걸로|주문|추가|시킬)/.test(t) && !/(안|말고|취소|아니|그만)/.test(t)) {
+            const id = openDetailMenuId;
             closeDetail();
+            openOptionModal(id);
             return true;
         }
-
-        // 3) 닫기 / 취소
-        if (/(닫아|닫기|취소|그만|뒤로|나가)/.test(t)) {
-            closeDetail();
-            pushChatBubble("system", "상세를 닫았어요");
-            return true;
-        }
-
+        if (/(닫아|닫기|취소|그만|뒤로|나가)/.test(t)) { closeDetail(); return true; }
         return false;
     }
 
@@ -514,12 +566,17 @@
         // CTA 가격 (옵션 로딩 전 base 가격)
         $detailCtaPrice.textContent = "· " + fmt(m.price);
 
-        // 옵션 — 우선 비우고, 상세 API 로 그룹 fetch 후 렌더 (없으면 섹션 숨김)
-        renderDetailOptions([], m.price);
+        // AI 추천 이유 — 우선 숨기고, 상세 API 응답에 aiReason 있으면 노출 (QA #5, 백엔드 제공 전제)
+        // (옵션 선택은 상세가 아니라 담기 시 옵션 모달에서 처리 — QA #9)
+        if ($detailAiSection) $detailAiSection.hidden = true;
         window.Api.menu.detail(menuId).then((d) => {
             if (openDetailMenuId !== menuId) return;   // 그새 다른 메뉴 열렸으면 무시
-            renderDetailOptions(d && d.optionGroups, m.price);
-        }).catch((e) => console.warn("[N02] 옵션 조회 실패", e));
+            const reason = d && (d.aiReason || d.aiRecommendReason);
+            if (reason && $detailAiSection && $detailAiReason) {
+                $detailAiReason.textContent = reason;
+                $detailAiSection.hidden = false;
+            }
+        }).catch((e) => console.warn("[N02] 상세 조회 실패", e));
 
         $detail.hidden = false;
         $detail.setAttribute("aria-hidden", "false");
@@ -547,9 +604,9 @@
             });
             applyCartResponse(res);
 
+            // 담기 피드백은 토스트로 — 대화기록(채팅)에는 실제 대화만 남긴다 (QA #6)
             if (!opts.silent) {
-                pushChatBubble("system", `${found.menu.name}을(를) 장바구니에 담았어요! ${fmt(found.menu.price)}`);
-                pushChatBubble("tool",   `🛒 ${found.menu.name} 담기 실행`);
+                showN02Toast(`${found.menu.name} 담았어요`);
             }
         } catch (e) {
             logApiError("장바구니 추가", e);
@@ -579,7 +636,7 @@
             const res = await window.Api.cart.removeItem(state.sessionId, itemId);
             applyCartResponse(res);
             if (!opts.silent && item) {
-                pushChatBubble("system", `${item.menuName}을(를) 장바구니에서 뺐어요.`);
+                showN02Toast(`${item.menuName} 뺐어요`);
             }
         } catch (e) {
             logApiError("장바구니 삭제", e);
@@ -620,10 +677,11 @@
     // chatLog 메모리 누적은 더 이상 사용 안 함 (JSON export 제거).
     // 대화 영속은 서버(POST /api/sessions/{id}/messages) 에 LangGraph 가 자동 저장.
     function pushChatBubble(role, text) {
-        // role: "user" | "system" | "tool"
+        // 대화기록에는 실제 대화만 남긴다 — role: "user"(내 발화) | "ai"(AI 응답)
+        // 담기/처리 같은 로컬 피드백은 채팅이 아니라 토스트/화면으로 처리한다.
         const node = document.createElement("div");
         node.className = "ai-chat-bubble ai-chat-bubble--" + role;
-        const iconHtml = role === "system"
+        const iconHtml = (role === "ai" || role === "system")
             ? '<i class="xi xi-message"></i>'
             : (role === "tool" ? '<i class="xi xi-lightning"></i>' : '');
         node.innerHTML = `
@@ -642,7 +700,7 @@
     function renderChatInitial() {
         if ($chatSession) $chatSession.textContent = state.sessionId ?? "—";
         $chatMessages.innerHTML = "";
-        pushChatBubble("system",
+        pushChatBubble("ai",
             "안녕하세요! 상록원 AI 주문 도우미입니다. 상단 마이크 버튼을 눌러 음성으로 주문해보세요.");
     }
 
@@ -679,7 +737,7 @@
         if (_convEngineInited) return;
         if (!window.ConvEngine || !window.ConvEngine.isSupported || !window.ConvEngine.isSupported()) {
             console.warn("[N02] Web Speech API 미지원");
-            pushChatBubble("system", "이 브라우저는 음성 인식을 지원하지 않아 채팅으로만 안내드려요.");
+            pushChatBubble("ai", "이 브라우저는 음성 인식을 지원하지 않아 채팅으로만 안내드려요.");
             return;
         }
         window.ConvEngine.init({
@@ -708,12 +766,12 @@
     }
 
     async function dispatchUserUtterance(text) {
-        // 0) 상세 오버레이가 열려 있으면 옵션 선택/담기/닫기를 우선 처리 (LLM 없이)
+        // 0) 옵션 모달/상세가 열려 있으면 그 안에서 우선 처리 (LLM 없이) — QA #9
+        if (tryOptModalVoice(text)) return;
         if (tryDetailVoice(text)) return;
 
         // 1) JS quick-action — 결정론적 명령(결제하기/뒤로/층/결제수단 등)은 LLM 없이 0ms 처리
         if (window.QuickAction && window.QuickAction.try(text, { page: location.pathname })) {
-            pushChatBubble("system", "✓ 처리했어요");
             return;
         }
 
@@ -744,19 +802,19 @@
                 res = await callAi();
             }
 
-            if (res && res.reply) pushChatBubble("system", res.reply);
+            if (res && res.reply) pushChatBubble("ai", res.reply);
 
             // AI 가 백엔드 카트를 변경했을 수 있으므로 서버 카트 재동기화
             await syncCartFromServer();
 
             // 4) 옵션 필요한 메뉴 → 상세(옵션 UI) 자동 오픈 → 사용자가 옵션 고르고 "담아줘"
             if (res && res.menu_options && res.menu_options.menu_id != null) {
-                openDetail(res.menu_options.menu_id);
+                openOptionModal(res.menu_options.menu_id);   // 옵션 모달로 (QA #9, MCP 동일 플로우)
             } else if (window.AiAction && res && res.action) {
                 const a = res.action;
                 // 빈 카트로 결제/주문확인 화면 이동 금지 — 메뉴부터 담게 안내
                 if (a.type === "navigate" && (a.page === "/summary" || a.page === "/payment") && !state.cart.length) {
-                    pushChatBubble("system", "장바구니가 비어 있어요. 메뉴를 먼저 담아주세요.");
+                    pushChatBubble("ai", "장바구니가 비어 있어요. 메뉴를 먼저 담아주세요.");
                 } else {
                     window.AiAction.handle(a);
                 }
@@ -775,7 +833,7 @@
             const friendly = (e && (e.status === 502 || e.status === 504))
                 ? "AI 서버가 잠시 응답이 느려요. 잠시 후 다시 말씀해주세요."
                 : "응답을 가져오지 못했어요. 다시 시도해 주세요.";
-            pushChatBubble("system", friendly);
+            pushChatBubble("ai", friendly);
         }
     }
 
@@ -800,8 +858,7 @@
         try { sessionStorage.setItem("voiceMicOn", "1"); } catch (_) {}  // 결제 화면까지 ON 유지
         $micBtn.classList.add("app-topbar__action-icon--mic-active");
         setMicStatus("listening");
-        pushChatBubble("system", "🎙️ 음성 인식을 시작했어요. 편하게 말씀해주세요.");
-        if (!$chatPanel.classList.contains("ai-chat-panel--open")) openChat();
+        // 마이크만 켠다 — 대화기록 패널은 자동으로 열지 않는다 (QA #7, 패널은 대화기록 버튼으로만)
     }
 
     function stopMic() {
@@ -810,7 +867,6 @@
         try { sessionStorage.setItem("voiceMicOn", "0"); } catch (_) {}  // 명시적 OFF
         $micBtn.classList.remove("app-topbar__action-icon--mic-active");
         setMicStatus("off");
-        pushChatBubble("system", "🔇 음성 인식을 멈췄어요.");
     }
 
     function toggleMic() {
@@ -825,6 +881,106 @@
             sessionStorage.setItem("currentStep", "P01");
         } catch (e) { /* noop */ }
         location.href = PAY_NEXT_URL;
+    }
+
+    // ---------- 매장/포장 토글 (QA #3) ----------
+    const DINE_KEY = 'dineOption';
+    function getDine() {
+        return sessionStorage.getItem(DINE_KEY) === 'take_out' ? 'take_out' : 'dine_in';
+    }
+    function renderDineLabel() {
+        const el = document.querySelector('[data-bind="dineLabel"]');
+        if (el) el.textContent = getDine() === 'take_out' ? '포장' : '매장';
+    }
+    function toggleDine() {
+        const next = getDine() === 'take_out' ? 'dine_in' : 'take_out';
+        try { sessionStorage.setItem(DINE_KEY, next); } catch (_) {}
+        renderDineLabel();
+        showN02Toast(next === 'take_out'
+            ? '포장으로 변경했어요'
+            : '매장 식사로 변경했어요');
+    }
+
+    // ---------- 토스트 ----------
+    function showN02Toast(msg) {
+        let t = document.querySelector('.n02__toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.className = 'n02__toast';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.classList.add('is-visible');
+        clearTimeout(showN02Toast._timer);
+        showN02Toast._timer = setTimeout(() => t.classList.remove('is-visible'), 2000);
+    }
+
+    // ---------- 첫 진입 가이드 오버레이 (QA #13) ----------
+    // 회색 쉐이드 위 가이드, 화면 터치하면 해제. 한 세션(주문)당 1회만.
+    function initGuideOverlay() {
+        const $guide = document.querySelector('[data-guide]');
+        if (!$guide) return;
+        let seen = false;
+        try { seen = sessionStorage.getItem('n02GuideSeen') === '1'; } catch (_) {}
+        if (seen) return;
+        $guide.hidden = false;
+
+        // 실제 버튼 위치를 재서 점선 + 화살표를 그림 (메뉴 카드는 동적이라 좌표를 고정할 수 없음)
+        drawGuideLines($guide);
+
+        $guide.addEventListener('click', () => {
+            $guide.hidden = true;
+            try { sessionStorage.setItem('n02GuideSeen', '1'); } catch (_) {}
+            window.removeEventListener('resize', $guide._redraw);
+        }, { once: true });
+
+        // 창 크기 변동 시 다시 그림
+        $guide._redraw = () => drawGuideLines($guide);
+        window.addEventListener('resize', $guide._redraw);
+    }
+
+    // 콜아웃(data-guide-target)에서 실제 대상 버튼까지 점선 화살표를 그림.
+    // .page-bg 의 zoom 스케일은 svg/콜아웃/대상이 모두 동일하게 받으므로
+    // svg 표시 영역 기준 비율로 환산하면 viewBox(720x1280) 좌표가 정확히 맞는다.
+    function drawGuideLines($guide) {
+        const $svg   = $guide.querySelector('.n02-guide__svg');
+        const $lines = $guide.querySelector('[data-guide-lines]');
+        if (!$svg || !$lines) return;
+
+        const svgRect = $svg.getBoundingClientRect();
+        if (!svgRect.width || !svgRect.height) return;
+        const toVX = (px) => (px - svgRect.left) / svgRect.width  * 720;
+        const toVY = (py) => (py - svgRect.top)  / svgRect.height * 1280;
+
+        $lines.innerHTML = "";
+
+        $guide.querySelectorAll('.n02-guide__callout').forEach((callout) => {
+            const sel = callout.getAttribute('data-guide-target');
+            const target = sel ? document.querySelector(sel) : null;
+            // 대상이 화면에 없으면(예: 추천 메뉴 없음) 콜아웃도 숨김
+            if (!target || target.offsetParent === null) {
+                callout.style.display = "none";
+                return;
+            }
+            callout.style.display = "";
+
+            const tr = target.getBoundingClientRect();
+            const cr = callout.getBoundingClientRect();
+            const tx = toVX(tr.left + tr.width / 2);
+            const ty = toVY(tr.top + tr.height / 2);
+
+            // 콜아웃에서 선이 나가는 지점 (anchor 변의 중앙)
+            const anchor = callout.getAttribute('data-guide-anchor') || 'top';
+            let sx, sy;
+            if (anchor === 'top')         { sx = toVX(cr.left + cr.width / 2); sy = toVY(cr.top); }
+            else if (anchor === 'bottom') { sx = toVX(cr.left + cr.width / 2); sy = toVY(cr.bottom); }
+            else if (anchor === 'left')   { sx = toVX(cr.left);                sy = toVY(cr.top + cr.height / 2); }
+            else                          { sx = toVX(cr.right);               sy = toVY(cr.top + cr.height / 2); }
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M${sx.toFixed(1)},${sy.toFixed(1)} L${tx.toFixed(1)},${ty.toFixed(1)}`);
+            $lines.appendChild(path);
+        });
     }
 
     // ---------- 이벤트 위임 ----------
@@ -859,11 +1015,11 @@
 
         // 메뉴 그리드 위임
         $menuGrid.addEventListener("click", (e) => {
-            // 1) "+ 담기" 버튼
+            // 1) "+ 담기" 버튼 → 옵션 모달 (옵션 없으면 바로 담김) — QA #9
             const addBtn = e.target.closest("[data-add]");
             if (addBtn) {
                 e.stopPropagation();
-                addToCart(parseInt(addBtn.getAttribute("data-add"), 10));
+                openOptionModal(parseInt(addBtn.getAttribute("data-add"), 10));
                 return;
             }
             // 2) 썸네일 → 상세 오버레이
@@ -904,29 +1060,41 @@
             if (btn) gotoCheckout();
         });
 
+        // 매장/포장 토글
+        document.addEventListener("click", (e) => {
+            if (e.target.closest('[data-action="toggle-dine"]')) toggleDine();
+        });
+
         // 상세 닫기
         document.addEventListener("click", (e) => {
             const btn = e.target.closest('[data-action="close-detail"]');
             if (btn) closeDetail();
         });
 
-        // 상세 옵션 선택 (그룹당 라디오)
-        if ($detailOptions) {
-            $detailOptions.addEventListener("click", (e) => {
+        // 옵션 모달 — 옵션 선택(그룹당 라디오) + 더담기/바로주문 + 닫기 (QA #9)
+        if ($optGroupsEl) {
+            $optGroupsEl.addEventListener("click", (e) => {
                 const opt = e.target.closest(".n02__detail-opt");
                 if (!opt) return;
-                const groupId  = Number(opt.getAttribute("data-group-id"));
-                const optionId = Number(opt.getAttribute("data-option-id"));
-                selectDetailOption(groupId, optionId);
+                selectOpt(Number(opt.getAttribute("data-group-id")), Number(opt.getAttribute("data-option-id")));
+            });
+        }
+        if ($optModal) {
+            $optModal.addEventListener("click", (e) => {
+                if (e.target.closest('[data-opt-close]')) { closeOptModal(); return; }
+                const act = e.target.closest('[data-opt-action]');
+                if (!act) return;
+                optModalAdd(act.getAttribute("data-opt-action") === "order");
             });
         }
 
-        // 상세에서 카트 담기
+        // 상세에서 "담기" → 옵션 모달로 연결 (옵션 없으면 바로 담김)
         document.addEventListener("click", (e) => {
             const btn = e.target.closest('[data-action="add-from-detail"]');
             if (btn && openDetailMenuId != null) {
-                addToCart(openDetailMenuId, { optionIds: getDetailSelectedOptionIds() });
+                const id = openDetailMenuId;
                 closeDetail();
+                openOptionModal(id);
             }
         });
 
@@ -961,7 +1129,9 @@
         // 채팅/이벤트는 데이터 로드와 무관하게 먼저 세팅
         renderChatInitial();
         renderCartBar();
+        renderDineLabel();
         bindEvents();
+        initGuideOverlay();
 
         // 백엔드에서 메뉴 트리 로드 + 서버 세션/카트 동기화 (병렬)
         try {
@@ -996,6 +1166,10 @@
         renderStoreList();
         renderMenuGrid();
         renderCartBar();
+
+        // 가이드가 아직 떠 있으면, 이제 렌더된 메뉴 카드(AI추천·상세) 위치까지 점선 다시 그림
+        const $g = document.querySelector('[data-guide]');
+        if ($g && !$g.hidden) drawGuideLines($g);
 
         // QuickAction / AiAction 모듈이 호출할 수 있는 핸들러 노출
         window.__N02_gotoCheckout = gotoCheckout;

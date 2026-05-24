@@ -339,3 +339,96 @@
     .p05__confetti { opacity: 0; }
     .p05__receipt-progress-bar { width: 100%; }
 }
+
+/* ========================================================
+   출력 선택 모달 (영수증 / 번호표) — QA #2
+   ======================================================== */
+.p05-output {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(30, 25, 21, 0.45);
+    animation: p05OutputFade 180ms ease-out;
+}
+.p05-output[hidden] { display: none; }
+
+@keyframes p05OutputFade { from { opacity: 0; } to { opacity: 1; } }
+
+.p05-output__box {
+    width: min(620px, 100%);
+    background: var(--neutral-0, #fff);
+    border-radius: 24px;
+    padding: 40px 36px 36px;
+    box-shadow: 0 12px 40px rgba(30, 25, 21, 0.22);
+    text-align: center;
+}
+
+.p05-output__title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--neutral-900, #1e1915);
+    letter-spacing: -0.4px;
+}
+
+.p05-output__desc {
+    margin-top: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text-secondary, var(--neutral-500));
+}
+
+.p05-output__choices {
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.p05-output__choice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 28px 16px;
+    background: var(--neutral-50, #f7f6f4);
+    border: 2px solid var(--neutral-200, #e5e2dd);
+    border-radius: 18px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .08s;
+    -webkit-tap-highlight-color: transparent;
+}
+.p05-output__choice:active { transform: scale(0.97); }
+.p05-output__choice:hover,
+.p05-output__choice:focus-visible {
+    border-color: var(--primary-500);
+    background: var(--primary-50);
+}
+
+.p05-output__choice-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary-500);
+    color: #fff;
+    font-size: 26px;
+}
+
+.p05-output__choice-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--neutral-900, #1e1915);
+    letter-spacing: -0.3px;
+}
+
+.p05-output__choice-desc {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-secondary, var(--neutral-500));
+}

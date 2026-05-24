@@ -382,7 +382,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 16px 20px 22px;
+    padding: 16px var(--pad-side) 22px;   /* 결제 화면들과 동일한 좌우 여백(27px) — 우측 붙음 보정 QA R2-4 */
     background: var(--neutral-50);
     border-top: 1px solid var(--neutral-100);
     box-shadow: 0 -8px 24px rgba(30, 25, 21, 0.06);
@@ -580,21 +580,29 @@
     overflow: hidden;
 }
 
+/* 사진 우상단 배치 (QA #8) — 카드(li)가 position:relative 라 absolute 로 띄움 */
 .n02__cart-item-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 2;
     flex-shrink: 0;
-    width: 18px;
-    height: 18px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: var(--neutral-100);
-    color: var(--neutral-500);
-    font-size: 11px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid var(--neutral-200, #e5e2dd);
+    color: var(--neutral-800);
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 
 .n02__cart-item-remove:active {
-    background: var(--neutral-200);
+    background: var(--neutral-100);
+    transform: scale(0.92);
 }
 
 .n02__cart-item-bottom {
@@ -612,26 +620,42 @@
     font-feature-settings: "tnum";
 }
 
-/* 결제 버튼 */
-.n02__cart-pay-btn {
+/* 결제 버튼 — btn-cta 상속 없이 자체 스타일로 새로 작성 (QA, 좌우 잘림/붙음 방지) */
+.n02__pay {
+    box-sizing: border-box;      /* width:100% + padding 가 컨테이너를 넘지 않도록 */
+    width: 100%;
     height: 56px;
-    border-radius: 14px;
-    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;     /* 아이콘 + 결제하기 + 금액 묶음 가운데 */
     gap: 8px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 14px;
+    background: var(--primary-500);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
 }
 
-.n02__cart-pay-btn[disabled] {
+.n02__pay:active { transform: scale(0.98); background: var(--primary-600); }
+
+.n02__pay:disabled {
     background: var(--neutral-200);
     color: var(--neutral-400);
-    box-shadow: none;
+    cursor: default;
 }
 
-.n02__cart-pay-btn i {
-    font-size: 18px;
-}
+.n02__pay i { font-size: 18px; }
 
 .n02__cart-pay-amount {
     font-feature-settings: "tnum";
+    white-space: nowrap;
 }
 
 /* ========================================================
@@ -699,19 +723,19 @@
 
 .n02__detail-close {
     position: absolute;
-    top: 18px;
-    right: 18px;
-    width: 40px;
-    height: 40px;
+    top: 16px;
+    right: 16px;
+    width: 46px;
+    height: 46px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: #fff;
+    border: 1px solid var(--neutral-200, #e5e2dd);
     border-radius: 50%;
-    color: var(--color-text-inverse);
-    font-size: 20px;
+    color: var(--neutral-900, #1e1915);
+    font-size: 24px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
     z-index: 4;
     transition: background-color var(--duration-fast) var(--ease-out),
                 transform var(--duration-fast) var(--ease-out);
@@ -719,7 +743,7 @@
 
 .n02__detail-close:active {
     transform: scale(0.94);
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--neutral-100, #f0eeea);
 }
 
 .n02__detail-hero-meta {
@@ -1013,10 +1037,13 @@
 }
 
 .n02__detail-cta {
+    width: 100%;
     height: 60px;
     border-radius: 14px;
     font-size: 18px;
     gap: 8px;
+    padding: 0 18px;        /* btn-cta--lg(48px) 제거 후 적정 여백 — 내용 우측 잘림 방지 */
+    white-space: nowrap;
 }
 
 .n02__detail-cta i {
@@ -1036,3 +1063,235 @@
         animation: none;
     }
 }
+
+/* ========================================================
+   토스트 (매장/포장 변경 등) — QA #3
+   ======================================================== */
+.n02__toast {
+    position: fixed;
+    left: 50%;
+    bottom: 120px;
+    transform: translateX(-50%) translateY(12px);
+    background: rgba(30, 25, 21, 0.92);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    padding: 13px 22px;
+    border-radius: 9999px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s, transform .2s;
+    z-index: 1200;
+    pointer-events: none;
+}
+.n02__toast.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* 매장/포장 토글 pill — refresh 아이콘 강조 */
+/* 매장/포장 토글 — 컴팩트 pill (아이콘 없이 텍스트만, 톤 맞춤) QA R2-2 */
+.n02__dine-toggle {
+    flex-shrink: 0;
+    height: 30px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid var(--primary-200);
+    background: var(--primary-50);
+    color: var(--primary-700);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    cursor: pointer;
+}
+.n02__dine-toggle:active { transform: scale(0.95); background: var(--primary-100); }
+
+/* ========================================================
+   옵션 선택 모달 (담기 시) — QA #9
+   ======================================================== */
+.n02-opt {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.n02-opt[hidden] { display: none; }
+
+.n02-opt__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(30, 25, 21, 0.45);
+    animation: n02OptFade 180ms ease-out;
+}
+@keyframes n02OptFade { from { opacity: 0; } to { opacity: 1; } }
+
+.n02-opt__box {
+    position: relative;
+    width: 100%;
+    max-height: 82%;
+    background: #fff;
+    border-radius: 24px 24px 0 0;
+    padding: 28px 24px 24px;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    animation: n02OptUp 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes n02OptUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.n02-opt__close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--neutral-100, #f0eeea);
+    color: var(--neutral-800);
+    font-size: 20px;
+}
+.n02-opt__close:active { transform: scale(0.94); }
+
+.n02-opt__head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding-right: 48px;
+}
+.n02-opt__name {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--neutral-900, #1e1915);
+    letter-spacing: -0.4px;
+}
+.n02-opt__price {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--primary-700);
+    margin-left: auto;
+}
+.n02-opt__hint {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-secondary, var(--neutral-500));
+}
+.n02-opt__groups {
+    margin-top: 18px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+.n02-opt__actions {
+    margin-top: 20px;
+    display: flex;             /* grid 대신 flex — 두 버튼이 겹치지 않게 */
+    gap: 14px;                 /* 두 블록 사이 간격 */
+}
+/* flex 1 1 0 + min-width 0 → 두 버튼이 정확히 반반(약간 가중), 겹침/넘침 없음 */
+.n02-opt__btn {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    height: 54px;
+    padding: 0 12px;
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.n02-opt__btn[data-opt-action="order"] { flex-grow: 1.3; }  /* 바로 주문만 약간 넓게 */
+
+/* ========================================================
+   첫 진입 가이드 오버레이 — QA #13
+   회색 쉐이드 위 가이드, 터치하면 해제(원래 화면 작동)
+   ======================================================== */
+/* 프레임(page-bg, position:relative) 기준으로 깔아 버튼 좌표와 정렬 */
+.n02-guide {
+    position: absolute;
+    inset: 0;
+    z-index: 1300;
+    background: rgba(20, 17, 14, 0.7);
+    cursor: pointer;
+    animation: n02GuideFade 200ms ease-out;
+}
+.n02-guide[hidden] { display: none; }
+@keyframes n02GuideFade { from { opacity: 0; } to { opacity: 1; } }
+
+/* 점선 + 화살표 — 각 버튼을 가리킴 */
+.n02-guide__svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+.n02-guide__svg path {
+    fill: none;
+    stroke: #ffd54a;             /* 화살표와 같은 앰버색 — 점선이 한 줄로 이어져 보이게 */
+    stroke-width: 3;
+    stroke-dasharray: 2 10;      /* 둥근 점선 */
+    stroke-linecap: round;
+    marker-end: url(#n02GuideArrow);
+}
+
+/* 콜아웃 카드 (가로형, 위치는 인라인 style) */
+.n02-guide__callout {
+    position: absolute;
+    width: 280px;
+    max-width: calc(100% - 28px);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 15px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+}
+.n02-guide__callout i {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--primary-500);
+    color: #fff;
+    font-size: 19px;
+}
+.n02-guide__callout-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.n02-guide__callout-body strong {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--neutral-900, #1e1915);
+}
+.n02-guide__callout-body span {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--neutral-600, #6b6259);
+    letter-spacing: -0.2px;
+    word-break: keep-all;
+}
+
+.n02-guide__hint {
+    position: absolute;
+    left: 0; right: 0; bottom: 36px;
+    text-align: center;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    animation: n02GuidePulse 1.6s ease-in-out infinite;
+}
+@keyframes n02GuidePulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
