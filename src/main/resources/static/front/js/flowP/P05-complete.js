@@ -3,7 +3,7 @@
    - 주문번호(대기번호) 랜덤 생성 후 sessionStorage 유지
    - cart / paymentMethod 로 요약 렌더
    - 영수증 프로그레스 3초 후 \"· 완료\" 표시
-   - 60초 자동 홈 복귀 (/)  — 카운트다운 UI 표시
+   - 15초 자동 홈 복귀 (/)  — 카운트다운 UI 표시
    - CTA/X 클릭 → 즉시 홈 복귀 + flow 세션 초기화
    ======================================================== */
 
@@ -21,6 +21,8 @@
     const totalEl        = $('[data-bind="total"]');
     const autoSecEl      = $('[data-bind="autoSec"]');
     const receiptEl      = $('[data-bind="receipt"]');
+    const receiptTitleEl = $('[data-bind="receiptTitle"]');
+    const outputModalEl  = $('[data-output-modal]');
 
     const homeEls = Array.from(document.querySelectorAll('[data-action="home"]'));
 
@@ -108,8 +110,38 @@
         if (receiptEl) receiptEl.classList.add('p05__receipt--done');
     }
 
+    /* ---------- 출력 선택 모달 (영수증 / 번호표) ---------- */
+    // 완료 화면 진입 시 출력 항목을 고르게 한다. 고른 뒤에야 출력 안내 + 카운트다운 시작.
+    let outputChosen = false;
+    function openOutputModal() {
+        if (!outputModalEl) { afterOutputChosen('receipt'); return; }
+        outputModalEl.hidden = false;
+        const choose = (kind) => {
+            if (outputChosen) return;
+            outputChosen = true;
+            outputModalEl.hidden = true;
+            afterOutputChosen(kind);
+        };
+        outputModalEl.querySelectorAll('[data-output]').forEach((btn) => {
+            btn.addEventListener('click', () => choose(btn.getAttribute('data-output')));
+        });
+        // 안전장치 — 아무도 안 고르면 20초 뒤 영수증으로 진행 (키오스크 멈춤 방지)
+        setTimeout(() => choose('receipt'), 20000);
+    }
+
+    function afterOutputChosen(kind) {
+        if (receiptTitleEl) {
+            receiptTitleEl.textContent = kind === 'ticket'
+                ? '번호표가 출력되고 있어요'
+                : '영수증이 출력되고 있어요';
+        }
+        if (receiptEl) receiptEl.hidden = false;
+        setTimeout(markReceiptDone, 3000);
+        startCountdown();
+    }
+
     /* ---------- Auto-reset countdown ---------- */
-    const AUTO_SEC = 60;
+    const AUTO_SEC = 15;
     let remaining = AUTO_SEC;
     let tickTimer = null;
 
@@ -180,8 +212,8 @@
         window.AvatarGuide.speak('결제가 완료됐어요. 맛있게 드세요.');
     }
 
-    setTimeout(markReceiptDone, 3000);
-    startCountdown();
+    // 출력 항목(영수증/번호표) 선택 후 출력 안내 + 카운트다운 시작
+    openOutputModal();
 
     // ---------- 음성 컨트롤 ----------
     if (window.VoiceController) {
