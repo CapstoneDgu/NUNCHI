@@ -61,10 +61,10 @@ management:
       show-details: always
 
 fastapi:
-  base-url: ${LOCAL_FASTAPI_URL:http://localhost:8000}
+  base-url: ${LOCAL_FASTAPI_URL}
 
 admin:
-  password: ${ADMIN_PASSWORD:1234}
+  password: ${ADMIN_PASSWORD}
 
 jwt:
   secret: ${JWT_SECRET:your-very-long-secret-key-your-very-long-secret-key}
