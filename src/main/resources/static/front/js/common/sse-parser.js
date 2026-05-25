@@ -54,6 +54,8 @@
      */
     function dispatchEvent(ev, handlers) {
         if (!ev || !ev.type || !handlers) return;
+        // 개발 기간 — 모든 SSE 이벤트를 콘솔에 출력 (운영 전 제거 또는 토글화)
+        console.debug('[SSE]', ev.type, ev);
         if (ev.type === 'token' && handlers.onToken) {
             handlers.onToken(ev.text || '');
         } else if (ev.type === 'done' && handlers.onDone) {
