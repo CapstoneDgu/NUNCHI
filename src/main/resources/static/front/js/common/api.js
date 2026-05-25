@@ -317,6 +317,67 @@
                 .finally(() => { _chatInFlight = false; });
         },
         /**
+         * 사용자 발화 처리 — SSE 스트리밍.
+         * /ai/order/chat 과 요청 body 동일, 응답은 SSE 이벤트 스트림.
+         *
+         * 이벤트 종류:
+         *   - token : { type:"token", text:"오늘" }  — LLM 토큰 도착 즉시 (말풍선에 append)
+         *   - done  : { type:"done", reply, recommendations, menu_options, suggestions,
+         *              action, current_step }       — 전체 응답 완료 (후처리 분기 시점)
+         *   - error : { type:"error", message }     — 백엔드 오류
+         *
+         * 동시 호출 정책은 chat() 과 동일 — done 까지는 신규 호출 즉시 reject.
+         * OOD(clarify_responder) 응답은 token 없이 done 만 올 수 있다 — 호출부에서 fallback 필요.
+         *
+         * @param {{session_id:number, text:string, nunchi_signal?:string, mode?:string}} body
+         * @param {{onToken?:(t:string)=>void, onDone?:(d:object)=>void, onError?:(m:string)=>void}} [handlers]
+         * @returns {Promise<void>} 스트림 종료 시 resolve
+         */
+        chatStream(body, handlers) {
+            if (!body || body.session_id == null || !body.text) {
+                throw new Error('Ai.chatStream: session_id, text 필수');
+            }
+            if (_chatInFlight) {
+                const busy = new ApiError(429, '이전 음성 요청을 처리하고 있어요.', 0, '/ai/order/chat/stream');
+                busy._busy = true;
+                return Promise.reject(busy);
+            }
+            const payload = {
+                session_id: body.session_id,
+                text: body.text,
+                mode: body.mode || 'AVATAR',
+            };
+            if (body.nunchi_signal) payload.nunchi_signal = body.nunchi_signal;
+
+            const onToken = handlers && handlers.onToken;
+            const onDone  = handlers && handlers.onDone;
+            const onError = handlers && handlers.onError;
+
+            const url = resolveUrl('/ai/order/chat/stream');
+            _chatInFlight = true;
+
+            return fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload),
+            }).then((res) => {
+                if (!res.ok) {
+                    throw new ApiError(res.status, 'SSE 연결 실패: ' + res.status, res.status, '/ai/order/chat/stream');
+                }
+                if (!res.body) {
+                    throw new ApiError(0, 'SSE 응답 본문이 없습니다.', res.status, '/ai/order/chat/stream');
+                }
+                if (!window.SseParser) {
+                    throw new ApiError(0, 'SseParser 가 로드되지 않았습니다 (sse-parser.js 누락).', 0, '/ai/order/chat/stream');
+                }
+                return window.SseParser.consume(res.body, { onToken, onDone, onError });
+            }).finally(() => { _chatInFlight = false; });
+        },
+        /**
          * 추천/옵션 선택 후 메뉴를 장바구니에 직접 담음 (옵션 선택 UI 거친 뒤 사용).
          * @param {{session_id:number, menu_id:number, quantity:number, option_ids:number[]}} body
          * @returns {Promise<{sessionId, items, totalAmount}>}
