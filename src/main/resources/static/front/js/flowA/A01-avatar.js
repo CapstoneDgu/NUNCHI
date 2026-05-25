@@ -439,18 +439,22 @@
     }
 
     // ========================================================
-    // 11. 사용자 발화 → FastAPI chat → reply 발화 + 후처리
+    // 11. 사용자 발화 → FastAPI chatStream (SSE) → 토큰 스트림 + done 후처리
+    //
+    // SSE 흐름:
+    //   onToken : 말풍선에 즉시 append, 문장 경계(. ! ? …) 마다 TTS 큐에 push
+    //   onDone  : 단계 갱신 + action / suggestions / menu_options / recommendations 처리
+    //   onError : 토스트 + 청취 재개
+    // OOD(clarify_responder) 응답은 token 없이 done 만 옴 → onDone 에서 reply 로 fallback TTS.
     // ========================================================
     async function handleUserUtterance(text) {
         if (state.aiSessionId == null) {
-            // FastAPI 세션이 없으면 reply 받을 수 없음 — 토스트만
             showToast('AI 세션이 없어요. 새로고침 해주세요.');
             if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
             return;
         }
 
-        // 추천 시트 열려있을 때 음성을 자연어로 변환 ("1번" → "데리야끼... 담아줘") 후 시트 닫음.
-        // chat 은 항상 호출 — AI 가 컨텍스트로 처리 (옵션 유무, 다음 단계 안내 등)
+        // 추천 시트 열려있을 때 음성을 자연어로 변환 후 시트 닫음.
         let chatText = text;
         const mapped = matchRecommendVoice(text);
         if (mapped) chatText = mapped;
@@ -459,75 +463,164 @@
             state.recommendCtx = null;
         }
 
-        const res = await callApi('AI 응답', () =>
-            window.Api.Ai.chat({
-                session_id: state.aiSessionId,
-                text: chatText
-            })
-        );
+        // 이전 발화 abort (barge-in) + 새 signal
+        if (state.speechAbort) {
+            try { state.speechAbort.abort(); } catch (_) {}
+        }
+        state.speechAbort = new AbortController();
+        const signal = state.speechAbort.signal;
 
-        // 디버그 — FastAPI chat 응답 전체 + step 필드 즉시 로깅
-        console.log('[A01] FastAPI chat 응답:', res);
-        if (res) {
-            console.log('[A01] current_step:', res.current_step, '| currentStep:', res.currentStep, '| step:', res.step);
+        // 말풍선 초기화 + 아바타 talking
+        $bubble.classList.add('is-visible');
+        $bubble.classList.remove('is-typing');
+        $bubbleText.textContent = '';
+        setAvatar('talking');
+
+        // SSE 스트리밍 누적 상태
+        let sentenceBuf = '';
+        let fullText = '';
+        let receivedAnyToken = false;
+        let ttsQueue = Promise.resolve();
+
+        function flushTts(sentence) {
+            const s = (sentence || '').trim();
+            if (!s) return;
+            // TTS 순서 보장 큐 — 직전 재생 끝난 뒤 다음 문장 합성/재생
+            ttsQueue = ttsQueue.then(() => {
+                if (signal.aborted) return null;
+                return startTtsPlayback(s, signal);
+            }).catch((e) => {
+                console.warn('[A01] TTS 큐 실패', e);
+                return null;
+            });
         }
 
-        if (!res || !res.reply) {
-            // 폴백 멘트 추가 금지 — 청취만 재개
+        let doneRes = null;
+        let errorMsg = null;
+
+        try {
+            await window.Api.Ai.chatStream(
+                { session_id: state.aiSessionId, text: chatText },
+                {
+                    onToken(chunk) {
+                        if (signal.aborted || !chunk) return;
+                        receivedAnyToken = true;
+                        fullText += chunk;
+                        sentenceBuf += chunk;
+                        $bubbleText.textContent += chunk;
+                        // 한국어/영문 문장 경계 — 마침표 류 + 공백 또는 끝
+                        if (/[.!?…](\s|$)/.test(sentenceBuf)) {
+                            flushTts(sentenceBuf);
+                            sentenceBuf = '';
+                        }
+                    },
+                    onDone(res) {
+                        doneRes = res;
+                        if (sentenceBuf.trim()) {
+                            flushTts(sentenceBuf);
+                            sentenceBuf = '';
+                        }
+                        // OOD(clarify_responder): 토큰 없이 done 만 — reply 로 fallback
+                        if (!receivedAnyToken && res && res.reply) {
+                            $bubbleText.textContent = res.reply;
+                            fullText = res.reply;
+                            flushTts(res.reply);
+                        }
+                    },
+                    onError(msg) {
+                        errorMsg = msg;
+                    },
+                }
+            );
+        } catch (e) {
+            // 네트워크 실패 / 429 (_busy) 등
+            console.warn('[A01] chatStream 실패', e);
+            if (!e || !e._busy) {
+                const msg = (e && e.message) || 'AI 응답을 받지 못했어요.';
+                showToast(msg);
+            }
+            setAvatar('idle');
             if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
             return;
         }
 
-        // 단계 인디케이터 갱신 — 서버 currentStep 우선, fallback 으로 reply 키워드 추정.
-        // CHECKOUT 진입(승/전 → 결) 감지를 위해 prev fsm 저장.
+        // 백엔드 error 이벤트
+        if (errorMsg) {
+            showToast(errorMsg);
+            appendLog('ai', errorMsg);
+            ttsQueue.then(() => setAvatar('idle'));
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            return;
+        }
+
+        // done 없음 또는 빈 응답 — 폴백 멘트 추가 금지, 청취만 재개
+        if (!doneRes || (!fullText && !(doneRes && doneRes.reply))) {
+            setAvatar('idle');
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            return;
+        }
+
+        console.log('[A01] chatStream done:', doneRes);
+        console.log('[A01] current_step:', doneRes.current_step, '| currentStep:', doneRes.currentStep, '| step:', doneRes.step);
+
+        const reply = doneRes.reply || fullText;
+        appendLog('ai', reply);
+
+        // 단계 인디케이터 갱신 — CHECKOUT 진입 감지를 위해 prev fsm 저장
         const prevFsm = state.fsm;
-        applyStep(res);
+        applyStep(doneRes);
         const enteredCheckout = state.fsm === 'confirm' && prevFsm !== 'confirm';
         console.log('[A01] step 분석:', {
             prevFsm,
             currFsm: state.fsm,
             enteredCheckout,
-            replyComplete: !!(window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(res.reply))
+            replyComplete: !!(window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply))
         });
 
-        await aiSpeakChained(res.reply);
-
-        // AI 화면 원격조작 — navigate 등 (음성=터치). LLM 이 준 화면 명령을 그대로 반영.
-        // navigate 면 페이지를 떠나므로 이후 후처리는 생략.
-        if (window.AiAction && res.action) {
-            window.AiAction.handle(res.action);
-            if (res.action.type === 'navigate' && res.action.page) return;
+        // AI 화면 원격조작 — navigate 면 페이지 떠나므로 이후 후처리 생략
+        if (window.AiAction && doneRes.action) {
+            window.AiAction.handle(doneRes.action);
+            if (doneRes.action.type === 'navigate' && doneRes.action.page) return;
         }
 
-        // reply 후처리
-        const reply = res.reply;
+        // 카트 변경 키워드 → 카트 재조회
         if (window.ReplyKeywords && window.ReplyKeywords.replyHasCartChange(reply)) {
             await refreshCart();
         }
-        // 결제 라우팅 — FastAPI 가 동기화한 current_step==CHECKOUT 진입 시 P01 이동(명세 정합).
-        // 폴백: step 누락 응답 대비 replyHasComplete 키워드 매칭 유지.
+
+        // 결제 라우팅 — CHECKOUT 진입 또는 완료 키워드
         const replyComplete = window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply);
         if (enteredCheckout || replyComplete) {
             await goToPayment();
             return;
         }
 
-        // suggestions → 퀵바 chip 렌더 (분기 전 우선 갱신, 없으면 비움)
-        renderChips(res.suggestions);
+        // suggestions 칩 갱신
+        renderChips(doneRes.suggestions);
 
-        // 옵션 선택이 필요한 메뉴 → 옵션 시트
-        if (res.menu_options) {
-            openOptionSheet(res.menu_options);
+        // TTS 큐 끝나면 아바타 idle + 청취 재개
+        const finalize = () => {
+            ttsQueue.then(() => {
+                setAvatar('idle');
+                if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            });
+        };
+
+        // 옵션 시트는 즉시 열고 TTS 끝나면 청취 재개
+        if (doneRes.menu_options) {
+            openOptionSheet(doneRes.menu_options);
+            finalize();
             return;
         }
 
-        // 추천 메뉴 → 추천 시트 (시트 열린 동안에도 마이크 ON 유지)
-        if (Array.isArray(res.recommendations) && res.recommendations.length > 0) {
-            openRecommendSheet(res.recommendations);
+        // 추천 시트도 즉시 열고 TTS 끝나면 마이크 ON 유지
+        if (Array.isArray(doneRes.recommendations) && doneRes.recommendations.length > 0) {
+            openRecommendSheet(doneRes.recommendations);
+            finalize();
             return;
         }
 
-        if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+        finalize();
     }
 
     /**
