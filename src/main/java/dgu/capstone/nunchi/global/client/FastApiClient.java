@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 @Slf4j
 @Component
 public class FastApiClient {
@@ -81,6 +84,46 @@ public class FastApiClient {
             long elapsedMs = System.currentTimeMillis() - startTime;
 
             log.warn("[AI_CALL] method=GET endpoint={} elapsedMs={} status=FAILED error={}",
+                    endpoint, elapsedMs, e.getClass().getSimpleName());
+
+            throw e;
+        }
+    }
+
+    public void streamPost(String endpoint, Object request, OutputStream outputStream) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            fastApiRestClient.post()
+                    .uri(endpoint)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.TEXT_EVENT_STREAM)
+                    .body(request)
+                    .exchange((clientRequest, clientResponse) -> {
+                        try (InputStream inputStream = clientResponse.getBody()) {
+                            inputStream.transferTo(outputStream);
+                            outputStream.flush();
+                        }
+                        return null;
+                    });
+
+            long elapsedMs = System.currentTimeMillis() - startTime;
+
+            log.info("[AI_STREAM_CALL] method=POST endpoint={} elapsedMs={} status=SUCCESS",
+                    endpoint, elapsedMs);
+
+        } catch (RestClientResponseException e) {
+            long elapsedMs = System.currentTimeMillis() - startTime;
+
+            log.warn("[AI_STREAM_CALL] method=POST endpoint={} elapsedMs={} status=FAILED httpStatus={} error={}",
+                    endpoint, elapsedMs, e.getStatusCode(), e.getClass().getSimpleName());
+
+            throw e;
+
+        } catch (Exception e) {
+            long elapsedMs = System.currentTimeMillis() - startTime;
+
+            log.warn("[AI_STREAM_CALL] method=POST endpoint={} elapsedMs={} status=FAILED error={}",
                     endpoint, elapsedMs, e.getClass().getSimpleName());
 
             throw e;

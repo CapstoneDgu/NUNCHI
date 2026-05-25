@@ -3,6 +3,7 @@ package dgu.capstone.nunchi.domain.ai.service;
 import dgu.capstone.nunchi.global.client.FastApiClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.Map;
 
@@ -25,6 +26,13 @@ public class AiOrderProxyService {
                 "/ai/order/chat",
                 request,
                 Map.class
+        );
+    }
+    public StreamingResponseBody chatOrderStream(Map<String, Object> request) {
+        return outputStream -> fastApiClient.streamPost(
+                "/ai/order/chat/stream",
+                request,
+                outputStream
         );
     }
 }
