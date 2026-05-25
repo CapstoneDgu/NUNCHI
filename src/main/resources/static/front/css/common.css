@@ -300,6 +300,9 @@ body {
 
 .page-bg {
     flex-shrink: 0;
+    /* 하단 고정 CTA(.pXX__cta-wrap 등 position:absolute) 가 프레임 기준으로 붙도록
+       positioning context 를 만든다. (없으면 뷰포트 기준이 되어 좌우 마진이 어긋남 — QA) */
+    position: relative;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
     /* 화면이 720×1280 보다 작으면 비율 유지 축소, 크면 그대로(1)
        zoom 사용 이유: transform: scale 은 시각만 축소하고 box 크기는 그대로 → 데스크탑 dev 환경에서

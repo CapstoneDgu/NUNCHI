@@ -26,6 +26,10 @@
                 <span class="app-topbar__store-sub" data-bind="brand">상록원</span>
                 <span class="app-topbar__store-name" data-bind="storeName">솥앤누들</span>
             </div>
+            <button class="n02__dine-toggle" type="button"
+                    data-action="toggle-dine" aria-label="매장 또는 포장 변경">
+                <span data-bind="dineLabel">매장</span>
+            </button>
         </div>
         <div class="app-topbar__right">
             <button class="app-topbar__action-pill" type="button"
@@ -87,8 +91,7 @@
                 <span>카트</span>
             </div>
             <p class="n02__cart-empty-msg">메뉴를 담으면 여기에 표시됩니다</p>
-            <button class="btn-cta btn-cta--primary btn-cta--block n02__cart-pay-btn"
-                    type="button" disabled>
+            <button class="n02__pay" type="button" disabled>
                 결제하기
             </button>
         </div>
@@ -127,9 +130,7 @@
                 </button>
             </div>
 
-            <button class="btn-cta btn-cta--primary btn-cta--block n02__cart-pay-btn"
-                    type="button"
-                    data-action="checkout">
+            <button class="n02__pay" type="button" data-action="checkout">
                 <i class="xi xi-cart" aria-hidden="true"></i>
                 <span>결제하기</span>
                 <span class="n02__cart-pay-amount" data-cart-pay-amount>· ₩ 0</span>
@@ -161,14 +162,14 @@
             <div class="n02__detail-body" data-detail-body>
                 <p class="n02__detail-desc" data-detail-desc></p>
 
-                <!-- 옵션 선택 (옵션 있는 메뉴에서만 노출 — JS 가 채움) -->
-                <section class="n02__detail-section n02__detail-section--options"
-                         data-detail-options-section hidden>
+                <!-- AI 추천 이유 (백엔드가 menu detail 에 aiReason 제공 시 노출) — QA #5 -->
+                <section class="n02__detail-section n02__detail-section--ai"
+                         data-detail-ai-section hidden>
                     <h3 class="n02__detail-section-title">
-                        <i class="xi xi-check-circle-o" aria-hidden="true"></i>
-                        옵션 선택
+                        <i class="xi xi-lightning" aria-hidden="true"></i>
+                        AI 추천 이유
                     </h3>
-                    <div class="n02__detail-options" data-detail-options></div>
+                    <p class="n02__detail-ai-reason" data-detail-ai-reason></p>
                 </section>
 
                 <section class="n02__detail-section">
@@ -219,7 +220,7 @@
 
             <!-- 하단 CTA -->
             <div class="n02__detail-cta-wrap">
-                <button class="btn-cta btn-cta--primary btn-cta--block btn-cta--lg n02__detail-cta"
+                <button class="btn-cta btn-cta--primary btn-cta--block n02__detail-cta"
                         type="button"
                         data-action="add-from-detail">
                     <i class="xi xi-cart" aria-hidden="true"></i>
@@ -228,6 +229,30 @@
                 </button>
             </div>
         </article>
+    </div>
+
+    <!-- ========================================================
+         옵션 선택 모달 (담기 시 — QA #9). 옵션 있는 메뉴는 여기서 선택 후 담기.
+         ======================================================== -->
+    <div class="n02-opt" data-opt-modal hidden>
+        <div class="n02-opt__backdrop" data-opt-close></div>
+        <div class="n02-opt__box" role="dialog" aria-modal="true" aria-label="옵션 선택">
+            <button class="n02-opt__close" type="button" data-opt-close aria-label="닫기">
+                <i class="xi xi-close-thin" aria-hidden="true"></i>
+            </button>
+            <div class="n02-opt__head">
+                <span class="n02-opt__name" data-opt-name>메뉴</span>
+                <span class="n02-opt__price" data-opt-price>₩ 0</span>
+            </div>
+            <p class="n02-opt__hint">옵션을 선택하거나 그대로 담을 수 있어요</p>
+            <div class="n02-opt__groups n02__detail-options" data-opt-groups></div>
+            <div class="n02-opt__actions">
+                <button class="btn-cta btn-cta--secondary n02-opt__btn"
+                        type="button" data-opt-action="more">더 담기</button>
+                <button class="btn-cta btn-cta--primary n02-opt__btn"
+                        type="button" data-opt-action="order">바로 주문 →</button>
+            </div>
+        </div>
     </div>
 
     <!-- ========================================================
@@ -277,6 +302,70 @@
             </button>
         </div>
     </aside>
+
+    <!-- ========================================================
+         첫 진입 가이드 오버레이 (회색 쉐이드 · 터치하면 해제) — QA #13
+         ======================================================== -->
+    <div class="n02-guide" data-guide hidden>
+        <!-- 점선 + 화살표 레이어 : 좌표는 JS 가 실제 버튼 위치를 재서 그림 (프레임 720x1280) -->
+        <svg class="n02-guide__svg" viewBox="0 0 720 1280" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+                <marker id="n02GuideArrow" markerWidth="10" markerHeight="10" refX="6" refY="4" orient="auto">
+                    <path d="M0,0 L8,4 L0,8 Z" fill="#ffd54a"></path>
+                </marker>
+            </defs>
+            <g data-guide-lines></g>
+        </svg>
+
+        <!-- 각 콜아웃은 data-guide-target(가리킬 요소) · data-guide-anchor(콜아웃에서 선이 나가는 변) 로 연결 -->
+        <!-- 매장/포장 (상단 좌측) -->
+        <div class="n02-guide__callout" style="top:150px; left:14px;"
+             data-guide-target=".n02__dine-toggle" data-guide-anchor="top">
+            <i class="xi xi-refresh" aria-hidden="true"></i>
+            <div class="n02-guide__callout-body">
+                <strong>매장 / 포장</strong>
+                <span>터치하면 식사 방식이 바뀌어요</span>
+            </div>
+        </div>
+        <!-- 마이크 (상단 우측) -->
+        <div class="n02-guide__callout" style="top:150px; right:14px;"
+             data-guide-target="[data-action='toggle-mic']" data-guide-anchor="top">
+            <i class="xi xi-microphone" aria-hidden="true"></i>
+            <div class="n02-guide__callout-body">
+                <strong>마이크</strong>
+                <span>켜고 "○○ 담아줘"처럼 음성으로 주문</span>
+            </div>
+        </div>
+        <!-- 대화 기록 (상단 우측) -->
+        <div class="n02-guide__callout" style="top:252px; right:14px;"
+             data-guide-target="[data-action='open-chat']" data-guide-anchor="top">
+            <i class="xi xi-message" aria-hidden="true"></i>
+            <div class="n02-guide__callout-body">
+                <strong>대화 기록</strong>
+                <span>AI와 나눈 대화를 다시 볼 수 있어요</span>
+            </div>
+        </div>
+        <!-- AI 추천 라벨 (메뉴 카드) — 추천 메뉴 없으면 JS 가 숨김 -->
+        <div class="n02-guide__callout" style="bottom:300px; left:14px;"
+             data-guide-target=".n02__menu-card-ai-badge" data-guide-anchor="bottom">
+            <i class="xi xi-lightning" aria-hidden="true"></i>
+            <div class="n02-guide__callout-body">
+                <strong>AI 추천 라벨</strong>
+                <span>AI가 추천하는 메뉴예요</span>
+            </div>
+        </div>
+        <!-- 상세 칩 (메뉴 카드) -->
+        <div class="n02-guide__callout" style="bottom:300px; right:14px;"
+             data-guide-target=".n02__menu-card-detail-chip" data-guide-anchor="bottom">
+            <i class="xi xi-document" aria-hidden="true"></i>
+            <div class="n02-guide__callout-body">
+                <strong>상세</strong>
+                <span>메뉴 정보와 추천 이유를 봐요</span>
+            </div>
+        </div>
+
+        <p class="n02-guide__hint">화면을 터치하면 주문을 시작합니다</p>
+    </div>
 
 </main>
 
