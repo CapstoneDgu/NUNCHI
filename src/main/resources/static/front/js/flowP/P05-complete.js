@@ -37,7 +37,7 @@
     const FLOW_KEYS_TO_CLEAR = [
         STORE_KEY, METHOD_KEY, STATUS_KEY, ORDERNO_KEY, ORDER_SUMMARY_KEY,
         SESSION_ID_KEY, 'mode', 'dineOption', 'currentFloor', 'currentStore',
-        'currentStep', 'orderId', 'paymentId'
+        'currentStep', 'orderId', 'paymentId', 'printOrder'
     ];
 
     function loadOrderSummary() {
@@ -129,16 +129,47 @@
         setTimeout(() => choose('receipt'), 20000);
     }
 
+    async function printOrderTicket(kind) {
+        const raw = sessionStorage.getItem('printOrder');
+        if (!raw) {
+            console.warn('[P05] printOrder 없음');
+            return;
+        }
+
+        const printOrder = JSON.parse(raw);
+
+        const items = (printOrder.items || []).map((item) => {
+            return `${item.menuName} x${item.quantity}`;
+        });
+
+        await fetch('http://localhost:9100/print', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: kind,
+                orderNumber: printOrder.orderNumber,
+                items: items
+            }),
+        });
+    }
     function afterOutputChosen(kind) {
         if (receiptTitleEl) {
             receiptTitleEl.textContent = kind === 'ticket'
                 ? '번호표가 출력되고 있어요'
                 : '영수증이 출력되고 있어요';
         }
+
+        printOrderTicket(kind).catch((e) => {
+            console.warn('[P05] 프린터 출력 실패', e);
+        });
+
         if (receiptEl) receiptEl.hidden = false;
         setTimeout(markReceiptDone, 3000);
         startCountdown();
     }
+
 
     /* ---------- Auto-reset countdown ---------- */
     const AUTO_SEC = 15;
