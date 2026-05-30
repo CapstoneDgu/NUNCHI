@@ -22,15 +22,16 @@
 
     const LOG = '[Api]';
     // 로컬 개발: 페이지가 localhost 면 Spring 은 same-origin(`''`),
-    //           FastAPI(/ai/**) 는 로컬 FastAPI(localhost:8000).
-    //           ※ 로컬 Spring 과 로컬 FastAPI 가 같은 로컬 DB/세션을 공유해야
-    //             세션 검증이 일치한다. (운영 FastAPI 를 가리키면 세션 불일치로 502)
+    //           FastAPI(/ai/**) 는 원격 FastAPI(sslip.io HTTPS) 로 직결.
+    //           ※ 원격 FastAPI 는 원격 Spring 세션을 검증함 — 로컬 Spring 으로 만든
+    //             session_id 와 다를 수 있으므로 AI 화면은 /ai/order/start 로 새 세션 발급해 사용.
     // 운영: 둘 다 same-origin (`''`) — nginx 가 /ai/** 를 FastAPI 로 매핑.
-    const LOCAL_FASTAPI = 'http://localhost:8000';   // 로컬 NUNCHI-AI
+    // 참고: raw IP(43.201.20.11:8000)는 포트 닫혀 있음. sslip.io 도메인만 노출.
+    const LOCAL_FASTAPI = 'https://43-201-20-11.sslip.io';   // 원격 NUNCHI-AI (sslip.io DNS → 443 → FastAPI)
     const isLocalHost = (typeof location !== 'undefined') &&
         (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 
-    /** path 별 base URL 결정. /ai/** 는 FastAPI(로컬=8000, 운영=same-origin), 그 외는 Spring. */
+    /** path 별 base URL 결정. /ai/** 는 FastAPI(로컬=sslip.io HTTPS 직결, 운영=same-origin), 그 외는 Spring. */
     function resolveUrl(path) {
         if (path.startsWith('/ai/')) {
             return (isLocalHost ? LOCAL_FASTAPI : '') + path;
