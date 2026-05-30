@@ -500,7 +500,12 @@
         // 빈 장바구니 + 종료/포기 의사 → /summary 로 라우팅 (FastAPI 우회).
         // (장바구니에 담긴 게 있으면 정상 흐름 유지 — FastAPI 가 결제/요약 단계로 안내)
         if (window.ReplyKeywords && window.ReplyKeywords.userWantsToQuit(text) && getCartCount() === 0) {
-            console.log('[A01] 빈 장바구니 + 종료 의사 → /summary 라우팅');
+            console.warn('[A01] quit-gate 발동 → /summary 라우팅', {
+                text,
+                cartCount: getCartCount(),
+                matchedQuit: window.ReplyKeywords.QUIT_PATTERN.test(text),
+                hasInquiry: window.ReplyKeywords.INQUIRY_PATTERN.test(text),
+            });
             appendLog('user', text);
             if (window.ConvEngine) window.ConvEngine.stop();
             AppState.set('CURRENT_STEP', 'P01');
