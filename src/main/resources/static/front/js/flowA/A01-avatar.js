@@ -245,54 +245,84 @@
 
     /**
      * Google TTS 호출 → Audio 재생.
-     * @returns {Promise<number|null>} 음성 길이(초). 실패/뮤트 시 null.
-     *   typewriter 속도 동기화에 사용.
+     * 반환 Promise 는 "재생 종료(audio.ended) / abort / 합성 실패" 시점에 resolve.
+     * → 호출자(특히 ttsQueue 체인) 가 진짜로 재생 끝난 뒤 다음 단계로 진행하도록 보장.
+     * → 마이크 ON(endTurn) 을 재생 도중에 켜서 STT 가 TTS echo 를 듣는 문제 방지.
+     *
+     * duration(초) 은 typewriter 속도 동기화에 필요 — 메타데이터 시점 즉시 opts.onMeta(d) 콜백으로 전달.
+     *
+     * @param {string} text
+     * @param {AbortSignal} [signal]
+     * @param {{onMeta?: (duration:number|null)=>void}} [opts]
+     * @returns {Promise<void>} 재생 종료 시점에 resolve
      */
-    function startTtsPlayback(text, signal) {
-        if (state.muted) return Promise.resolve(null);
-        if (!window.Api || !window.Api.Voice) return Promise.resolve(null);
+    function startTtsPlayback(text, signal, opts) {
+        if (state.muted) {
+            if (opts && opts.onMeta) opts.onMeta(null);
+            return Promise.resolve();
+        }
+        if (!window.Api || !window.Api.Voice) {
+            if (opts && opts.onMeta) opts.onMeta(null);
+            return Promise.resolve();
+        }
         stopCurrentAudio();
         return window.Api.Voice.synthesize(text)
             .then((blob) => {
-                if (!blob || (signal && signal.aborted)) return null;
+                if (!blob || (signal && signal.aborted)) {
+                    if (opts && opts.onMeta) opts.onMeta(null);
+                    return;
+                }
                 const url = URL.createObjectURL(blob);
                 const audio = new Audio(url);
                 audio.muted = state.muted;
                 state.currentAudio = audio;
                 state.currentAudioUrl = url;
-                audio.addEventListener('ended', () => {
-                    if (state.currentAudio === audio) stopCurrentAudio();
-                });
-                if (signal) {
-                    signal.addEventListener('abort', () => {
+
+                return new Promise((resolveEnded) => {
+                    let settled = false;
+                    const finish = () => {
+                        if (settled) return;
+                        settled = true;
                         if (state.currentAudio === audio) stopCurrentAudio();
-                    }, { once: true });
-                }
-                // metadata 로드 후 duration 확보 + 재생 시작
-                return new Promise((resolve) => {
+                        resolveEnded();
+                    };
+
+                    audio.addEventListener('ended', finish);
+                    audio.addEventListener('error', (e) => {
+                        console.warn('[A01] TTS audio error', e);
+                        finish();
+                    });
+                    if (signal) {
+                        signal.addEventListener('abort', finish, { once: true });
+                    }
+
                     const onMeta = () => {
                         audio.removeEventListener('loadedmetadata', onMeta);
-                        // 로딩 중 사용자가 끼어들었다면 재생 시작 X
-                        if (signal && signal.aborted) {
-                            if (state.currentAudio === audio) stopCurrentAudio();
-                            resolve(null);
-                            return;
-                        }
+                        if (signal && signal.aborted) { finish(); return; }
                         const d = isFinite(audio.duration) ? audio.duration : null;
-                        audio.play().catch((e) => console.warn('[A01] TTS 재생 실패', e));
-                        resolve(d);
+                        if (opts && opts.onMeta) {
+                            try { opts.onMeta(d); } catch (_) {}
+                        }
+                        audio.play().catch((e) => {
+                            console.warn('[A01] TTS 재생 실패', e);
+                            finish();
+                        });
                     };
                     audio.addEventListener('loadedmetadata', onMeta);
-                    // 1.5s 안전 타임아웃 — metadata 못 받아도 typewriter 시작
+
+                    // 메타 못 받아도 호출자가 무한 대기 안 하게 안전 타임아웃 (8s)
+                    // — 재생 종료 의미라 1.5s 보다 길게 잡음. 실제 재생은 ended 가 우선 트리거.
                     setTimeout(() => {
-                        audio.removeEventListener('loadedmetadata', onMeta);
-                        resolve(isFinite(audio.duration) ? audio.duration : null);
-                    }, 1500);
+                        if (!settled) {
+                            console.warn('[A01] TTS 재생 타임아웃 (8s) — 강제 종료');
+                            finish();
+                        }
+                    }, 8000);
                 });
             })
             .catch((e) => {
                 console.warn('[A01] TTS 합성 실패', e);
-                return null;
+                if (opts && opts.onMeta) opts.onMeta(null);
             });
     }
 
@@ -301,18 +331,25 @@
 
         appendLog('ai', text);
 
-        // TTS 시작 + duration 받아서 typewriter 속도 동기화
-        const ttsPromise = startTtsPlayback(text, signal);
+        // TTS 재생 시작(메타 도착) 시점에 duration 받음 → typewriter 속도 동기화
+        // ttsPromise 자체는 재생 종료 시점에 resolve — typewriter 와 병렬 진행
+        let duration = null;
+        const ttsPromise = startTtsPlayback(text, signal, {
+            onMeta: (d) => { duration = d; },
+        });
         setAvatar('talking');
 
         try {
-            const duration = await ttsPromise;  // 초 단위 또는 null
             // typewriter 글자당 ms — TTS duration 으로 보정 (bias 0.95 살짝 빠르게)
+            // duration 은 메타 도착 시점에 채워지므로, 첫 글자 출력 전 마이크로타스크 한 번 양보
+            await Promise.resolve();
             let speed = 110; // 기본값 (TTS 실패 시 한국어 평균 발화 속도)
             if (duration && duration > 0 && text.length > 0) {
                 speed = Math.max(40, (duration * 1000 * 0.95) / text.length);
             }
             await typewriter(text, { speed, signal });
+            // 재생이 typewriter 보다 길면 끝날 때까지 대기 (마이크 ON 시점 일치)
+            await ttsPromise;
             await sleep(300, signal);
         } catch (e) {
             if (!e || e.name !== 'AbortError') throw e;
@@ -598,12 +635,19 @@
         // suggestions 칩 갱신
         renderChips(doneRes.suggestions);
 
-        // TTS 큐 끝나면 아바타 idle + 청취 재개
+        // TTS 큐 끝나면 아바타 idle + 청취 재개.
+        // 200ms 잔향 가드: 스피커 음향이 마이크로 되돌아오는 echo 안정화 시간.
+        // (abort 시엔 sleep 이 reject → catch 로 흡수, endTurn 호출 안 함)
         const finalize = () => {
-            ttsQueue.then(() => {
-                setAvatar('idle');
-                if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
-            });
+            ttsQueue
+                .then(() => sleep(200, signal))
+                .then(() => {
+                    setAvatar('idle');
+                    if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+                })
+                .catch(() => {
+                    setAvatar('idle');
+                });
         };
 
         // 옵션 시트는 즉시 열고 TTS 끝나면 청취 재개
