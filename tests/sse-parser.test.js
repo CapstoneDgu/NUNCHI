@@ -156,6 +156,16 @@ describe('feedChunk', () => {
         assert.equal(got[0].action.type, 'highlight_menu');
         assert.equal(got[0].current_step, 'SELECT');
     });
+
+    it('CRLF(\\r\\n\\r\\n) 구분자도 LF 와 동일하게 처리 (SSE 스펙)', () => {
+        const got = [];
+        const block = 'data: {"type":"token","text":"안녕"}\r\n\r\ndata: {"type":"done","reply":"끝"}\r\n\r\n';
+        const remainder = feedChunk(block, '', (ev) => got.push(ev));
+        assert.equal(got.length, 2);
+        assert.deepEqual(got[0], { type: 'token', text: '안녕' });
+        assert.equal(got[1].type, 'done');
+        assert.equal(remainder, '');
+    });
 });
 
 // ---------- consume (ReadableStream 통합) ----------

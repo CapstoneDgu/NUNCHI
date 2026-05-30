@@ -87,7 +87,11 @@
                     }
                     return;
                 }
-                buf += decoder.decode(value, { stream: true });
+                const chunk = decoder.decode(value, { stream: true });
+                // 개발 기간 — 원시 청크 도착 타이밍 가시화 (fetch buffering 여부 판별용)
+                console.debug('[SSE] chunk', value.byteLength, 'bytes');
+                // SSE 스펙: 이벤트 구분자는 \n\n 또는 \r\n\r\n — CRLF 를 LF 로 정규화 후 분할
+                buf += chunk.replace(/\r\n/g, '\n');
                 const parts = buf.split('\n\n');
                 buf = parts.pop(); // 마지막은 미완성일 수 있으므로 보관
                 for (const part of parts) {
@@ -109,7 +113,8 @@
      * @returns {string} — 다음 청크로 이월할 새 buf
      */
     function feedChunk(chunk, prevBuf, onEvent) {
-        const merged = (prevBuf || '') + chunk;
+        // SSE 스펙 \r\n\r\n 도 이벤트 구분자 — LF 로 정규화
+        const merged = ((prevBuf || '') + chunk).replace(/\r\n/g, '\n');
         const parts = merged.split('\n\n');
         const remainder = parts.pop();
         for (const part of parts) {
