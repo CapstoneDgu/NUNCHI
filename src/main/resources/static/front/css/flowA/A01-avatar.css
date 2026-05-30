@@ -21,8 +21,9 @@
 
 .a01 {
     display: grid;
-    /* 상단바 64 + 아바타 720 + 인디 44 + 로그 196 + 퀵바 140 + 입력바 116 = 1280 */
-    grid-template-rows: 64px 720px 44px 196px 140px 116px;
+    /* 상단바 64 + 아바타 640 + 인디 44 + 로그 196 + 퀵바 220 + 입력바 116 = 1280
+       (퀵바 +80: 카드형 카트로 확장 — 음식사진 + 가격오버레이 + 수량조절) */
+    grid-template-rows: 64px 640px 44px 196px 220px 116px;
     height: 100%;
 }
 
@@ -479,95 +480,80 @@
     gap: 8px;
     padding: 8px var(--pad-side) 0;
     border-top: 1px solid var(--color-border-default);
+    min-height: 0;
 }
 
+/* 미니 카트 컨테이너 — 카드형 (N02 카트 바와 시각 통일) */
 .a01__minicart {
     display: flex;
-    align-items: center;
-    height: 60px;
-    padding: 0 14px;
+    flex-direction: column;
+    padding: 10px 14px;
     border-radius: 14px;
     background: var(--glass-bg-heavy);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-sm);
+    min-height: 0;
+    overflow: hidden;
 }
 
+/* 빈 상태 — 중앙 정렬 */
 .a01__minicart-empty {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    height: 100%;
     color: var(--color-text-secondary);
     font-size: 13px;
     font-weight: 500;
 }
 .a01__minicart-empty i { font-size: 18px; }
 
+/* 채워진 상태 — 헤더 + 카드 트랙 */
 .a01__minicart-filled {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 8px;
     width: 100%;
-    gap: 12px;
+    height: 100%;
+    min-height: 0;
 }
-.a01__minicart-list {
-    flex: 1;
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-}
-.a01__minicart-list::-webkit-scrollbar { display: none; }
 
-.a01__minicart-item {
+.a01__minicart-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     flex-shrink: 0;
-    display: inline-flex;
+}
+.a01__minicart-head-left {
+    display: flex;
     align-items: center;
     gap: 6px;
-    height: 36px;
-    padding: 4px 10px 4px 4px;
-    border-radius: 18px;
-    background: var(--primary-50);
-    border: 1px solid var(--primary-100);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--primary-700);
-    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-primary);
 }
-.a01__minicart-item-thumb {
-    flex-shrink: 0;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: var(--neutral-100);
+.a01__minicart-head-left i { font-size: 14px; }
+.a01__minicart-count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-}
-.a01__minicart-item-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.a01__minicart-item-thumb--icon {
-    color: var(--primary-300);
-    font-size: 14px;
-}
-.a01__minicart-item-qty {
-    color: var(--primary-500);
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: var(--primary-500);
+    color: #fff;
+    font-size: 11px;
     font-weight: 800;
 }
-
-.a01__minicart-total {
-    flex-shrink: 0;
+.a01__minicart-head-right {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0;
-    line-height: 1.1;
+    align-items: baseline;
+    gap: 6px;
 }
 .a01__minicart-total-label {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--color-text-secondary);
     letter-spacing: 0.04em;
 }
@@ -575,6 +561,164 @@
     font-size: 16px;
     font-weight: 800;
     color: var(--color-text-price);
+    font-feature-settings: "tnum";
+}
+
+/* 카드 트랙 — 가로 스크롤 */
+.a01__minicart-track {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 2px 0 2px;
+    list-style: none;
+}
+.a01__minicart-track::-webkit-scrollbar { display: none; }
+
+/* 개별 카드 */
+.a01__minicart-item {
+    flex: 0 0 auto;
+    width: 152px;
+    display: flex;
+    flex-direction: column;
+    background: var(--neutral-0);
+    border: 1px solid var(--neutral-100);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    scroll-snap-align: start;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 사진 영역 — 카드 상단 */
+.a01__minicart-item-thumb {
+    position: relative;
+    width: 100%;
+    height: 78px;
+    background: var(--neutral-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.a01__minicart-item-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.a01__minicart-item-thumb--icon i {
+    color: var(--neutral-300);
+    font-size: 24px;
+}
+
+/* 가격 오버레이 — 사진 우하단 */
+.a01__minicart-item-price-overlay {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.66);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    font-feature-settings: "tnum";
+    backdrop-filter: blur(2px);
+}
+
+/* X 삭제 버튼 — 사진 우상단 */
+.a01__minicart-item-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 2;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--neutral-800);
+    font-size: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+    cursor: pointer;
+}
+.a01__minicart-item-remove:active {
+    background: var(--neutral-100);
+    transform: scale(0.92);
+}
+
+/* 본문 영역 — 이름 + 수량 */
+.a01__minicart-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 8px 8px;
+}
+.a01__minicart-item-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--neutral-800);
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: keep-all;
+}
+
+/* 수량 스테퍼 — 카드 하단 */
+.a01__minicart-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 28px;
+    padding: 0 2px;
+    border-radius: 8px;
+    background: var(--neutral-100, #f3efe9);
+}
+.a01__minicart-stepper-btn {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--primary-700);
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.a01__minicart-stepper-btn:active {
+    background: var(--primary-50);
+    transform: scale(0.94);
+}
+.a01__minicart-stepper-btn:disabled {
+    color: var(--neutral-300);
+    cursor: default;
+    background: transparent;
+    transform: none;
+}
+.a01__minicart-stepper-value {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--neutral-800);
+    font-feature-settings: "tnum";
 }
 
 /* 빠른응답 칩 행 */

@@ -40,8 +40,13 @@
         onInterim: null,         // (text) => void          — partial result (실시간)
         onSilencePrompt: null,   // () => string | null
         onBargeIn: null,
-        onModeChange: null
+        onModeChange: null,
+        onListenTimeout: null    // () => void  — listenTimeoutMs 안에 한 마디도 안 들리면 호출
     };
+
+    // LISTENING 진입 후 한 마디도 안 들렸을 때 자동 종료까지의 시간(ms).
+    // init({ listenTimeoutMs: N }) 으로 호스트가 설정. null/0 = 무제한.
+    let listenTimeoutMs = null;
 
     const state = {
         mode: MODE.INACTIVE,
@@ -52,6 +57,7 @@
         finalAccum: '',
         interimAccum: '',
         lastInterimAt: 0,
+        listenStartedAt: 0,      // LISTENING 진입 시각 — interim 도착 시 갱신, timeout 비교 기준
         silenceTimer: null,
         wantsRunning: false,
         startScheduled: false
@@ -95,6 +101,10 @@
             }
             state.interimAccum = interim;
             state.lastInterimAt = Date.now();
+            // 발화 시작 감지 → listenStartedAt 도 갱신해서 listenTimeout 안 터지게 함
+            if (interim || state.finalAccum) {
+                state.listenStartedAt = Date.now();
+            }
 
             // 실시간 interim 콘솔 + 콜백
             if (interim) {
@@ -195,6 +205,21 @@
         state.lastInterimAt = Date.now();
         state.silenceTimer = setInterval(() => {
             if (state.mode !== MODE.LISTENING) return;
+
+            // listenTimeoutMs 도달 — LISTENING 진입 후 한 마디도 안 들렸을 때 종료
+            // (발화 시작했으면 onresult 에서 listenStartedAt 갱신되어 여기 통과 안 함)
+            if (listenTimeoutMs && state.listenStartedAt &&
+                Date.now() - state.listenStartedAt >= listenTimeoutMs) {
+                console.log(LOG, '⏱️ 발화 시작 대기 시간 초과 → 자동 종료', listenTimeoutMs, 'ms');
+                _clearSilenceTimer();
+                stop();
+                if (handlers.onListenTimeout) {
+                    try { handlers.onListenTimeout(); }
+                    catch (e) { console.warn(LOG, 'onListenTimeout 처리 실패', e); }
+                }
+                return;
+            }
+
             if (Date.now() - state.lastInterimAt < SILENCE_MS) return;
             _clearSilenceTimer();
 
@@ -249,8 +274,14 @@
     // ----------------------------------------------------
 
     function init(opts) {
-        handlers = Object.assign({}, handlers, opts || {});
-        console.log(LOG, '초기화 — 음성인식 지원:', state.supported);
+        const o = opts || {};
+        // listenTimeoutMs 옵션 분리 — 핸들러가 아니라 모듈 설정값
+        if (Object.prototype.hasOwnProperty.call(o, 'listenTimeoutMs')) {
+            listenTimeoutMs = o.listenTimeoutMs || null;
+        }
+        handlers = Object.assign({}, handlers, o);
+        console.log(LOG, '초기화 — 음성인식 지원:', state.supported,
+            '| listenTimeoutMs:', listenTimeoutMs || 'unlimited');
     }
 
     function start() {
@@ -303,6 +334,7 @@
         setMode(MODE.LISTENING);
         state.finalAccum = '';
         state.interimAccum = '';
+        state.listenStartedAt = Date.now();   // 발화 대기 타이머 기준점
         if (state.supported) {
             _ensureRecognition();
             _scheduleStart();
@@ -338,6 +370,7 @@
             setMode(MODE.LISTENING);
             state.finalAccum = '';
             state.interimAccum = '';
+            state.listenStartedAt = Date.now();   // 발화 대기 타이머 기준점
             if (state.supported) {
                 _ensureRecognition();
                 _scheduleStart();
