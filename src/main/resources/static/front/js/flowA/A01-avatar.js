@@ -496,6 +496,17 @@
             return;
         }
 
+        // 빈 장바구니 + 종료/포기 의사 → /summary 로 라우팅 (FastAPI 우회).
+        // (장바구니에 담긴 게 있으면 정상 흐름 유지 — FastAPI 가 결제/요약 단계로 안내)
+        if (window.ReplyKeywords && window.ReplyKeywords.userWantsToQuit(text) && getCartCount() === 0) {
+            console.log('[A01] 빈 장바구니 + 종료 의사 → /summary 라우팅');
+            appendLog('user', text);
+            if (window.ConvEngine) window.ConvEngine.stop();
+            AppState.set('CURRENT_STEP', 'P01');
+            location.href = '/summary';
+            return;
+        }
+
         // 추천 시트 열려있을 때 음성을 자연어로 변환 후 시트 닫음.
         let chatText = text;
         const mapped = matchRecommendVoice(text);
@@ -1085,6 +1096,14 @@
         return null;
     }
 
+    /** LISTENING 진입 후 listenTimeoutMs 안에 한 마디도 안 들리면 호출됨.
+     *  ConvEngine 이 stop() 으로 INACTIVE 전환 + recognition 종료까지 처리 완료된 상태. */
+    function onConvListenTimeout() {
+        console.log('[A01] 발화 없음 → 자동 청취 종료');
+        setAvatar('idle');
+        showToast('한참 기다렸어요. 마이크 버튼을 다시 눌러주세요.');
+    }
+
     /** 사용자 발화 interim(실시간 부분) — 입력바에 표시. */
     function onConvInterim(text) {
         if (!$input) return;
@@ -1205,7 +1224,9 @@
             onInterim: onConvInterim,
             onSilencePrompt: onConvSilencePrompt,
             onModeChange: onConvModeChange,
-            onBargeIn: onConvBargeIn
+            onBargeIn: onConvBargeIn,
+            onListenTimeout: onConvListenTimeout,
+            listenTimeoutMs: 80000   // 80초 안에 한 마디도 안 들리면 자동 종료
         });
 
         onConvModeChange('INACTIVE');

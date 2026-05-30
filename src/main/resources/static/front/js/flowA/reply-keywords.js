@@ -22,6 +22,8 @@
 
     const CART_PATTERN = /(담았어요|비웠어요|장바구니|담아드렸어요)/;
     const COMPLETE_PATTERN = /(결제가 완료|세션이 종료)/;
+    // 사용자 발화 — 대화 종료/주문 포기 의사. 빈 장바구니 상태에서 정상 종료 처리.
+    const QUIT_PATTERN = /(그만|끝낼래|끝낼게|끝낼래요|끝내자|끝내 ?줘|취소|종료|안 ?할래|안 ?할게|관둘래|관둬|그만 ?할래|그만 ?하고|나갈래|나갈게|그냥 ?나갈)/;
 
     // step 추정 키워드
     const STEP_CHECKOUT_PATTERN = /(결제|마무리|주문할게|주문 확정|총 ?[\d,]+원|결제 ?화면)/;
@@ -38,6 +40,12 @@
         return COMPLETE_PATTERN.test(text);
     }
 
+    /** 사용자 발화에 대화 종료/주문 포기 의사가 있는지 매칭. */
+    function userWantsToQuit(text) {
+        if (typeof text !== 'string' || text.length === 0) return false;
+        return QUIT_PATTERN.test(text);
+    }
+
     /**
      * reply 텍스트 → 단계 추정. 서버 currentStep 미제공 시 fallback.
      * BROWSE 는 부트 기본값으로 두고 적극 추정 X — 반환 X.
@@ -52,7 +60,7 @@
     }
 
     return {
-        replyHasCartChange, replyHasComplete, guessStep,
-        CART_PATTERN, COMPLETE_PATTERN
+        replyHasCartChange, replyHasComplete, userWantsToQuit, guessStep,
+        CART_PATTERN, COMPLETE_PATTERN, QUIT_PATTERN
     };
 });
