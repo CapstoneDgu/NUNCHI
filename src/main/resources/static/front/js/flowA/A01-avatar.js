@@ -254,7 +254,10 @@
      *
      * @param {string} text
      * @param {AbortSignal} [signal]
-     * @param {{onMeta?: (duration:number|null)=>void}} [opts]
+     * @param {{onMeta?: (duration:number|null)=>void, onPlayStart?: ()=>void}} [opts]
+     *   onMeta      — 메타데이터 로드 직후 (typewriter 속도 동기화용)
+     *   onPlayStart — audio.play() 가 resolve 된 직후 = 실제 소리 재생 시작 시점
+     *                 (talking 영상 전환 등 TTS 와 sync 되어야 할 동작)
      * @returns {Promise<void>} 재생 종료 시점에 resolve
      */
     function startTtsPlayback(text, signal, opts) {
@@ -308,7 +311,14 @@
                         if (opts && opts.onMeta) {
                             try { opts.onMeta(d); } catch (_) {}
                         }
-                        audio.play().catch((e) => {
+                        // play() 가 실제 재생 시작에 resolve — 그때 onPlayStart 발화
+                        // (talking 영상 전환 등 TTS 와 동기화될 동작을 여기서 트리거)
+                        audio.play().then(() => {
+                            if (signal && signal.aborted) return;
+                            if (opts && opts.onPlayStart) {
+                                try { opts.onPlayStart(); } catch (_) {}
+                            }
+                        }).catch((e) => {
                             console.warn('[A01] TTS 재생 실패', e);
                             finish();
                         });
@@ -339,11 +349,12 @@
 
         // TTS 재생 시작(메타 도착) 시점에 duration 받음 → typewriter 속도 동기화
         // ttsPromise 자체는 재생 종료 시점에 resolve — typewriter 와 병렬 진행
+        // onPlayStart: 실제 소리 재생 시점에 talking 영상 ON (그 전엔 idle 유지)
         let duration = null;
         const ttsPromise = startTtsPlayback(text, signal, {
             onMeta: (d) => { duration = d; },
+            onPlayStart: () => setAvatar('talking'),
         });
-        setAvatar('talking');
 
         try {
             // typewriter 글자당 ms — TTS duration 으로 보정 (bias 0.95 살짝 빠르게)
@@ -529,25 +540,32 @@
         state.speechAbort = new AbortController();
         const signal = state.speechAbort.signal;
 
-        // 말풍선 초기화 + 아바타 talking
+        // 말풍선 초기화 — 아바타는 idle 유지. TTS 실제 재생 시작될 때 talking 으로 전환.
         $bubble.classList.add('is-visible');
         $bubble.classList.remove('is-typing');
         $bubbleText.textContent = '';
-        setAvatar('talking');
 
         // SSE 스트리밍 누적 상태
         let sentenceBuf = '';
         let fullText = '';
         let receivedAnyToken = false;
         let ttsQueue = Promise.resolve();
+        let talkingShown = false;
+
+        const switchToTalking = () => {
+            if (talkingShown || signal.aborted) return;
+            talkingShown = true;
+            setAvatar('talking');
+        };
 
         function flushTts(sentence) {
             const s = (sentence || '').trim();
             if (!s) return;
             // TTS 순서 보장 큐 — 직전 재생 끝난 뒤 다음 문장 합성/재생
+            // onPlayStart: 첫 문장 재생 시작 시점에 talking 영상 ON (이후는 no-op)
             ttsQueue = ttsQueue.then(() => {
                 if (signal.aborted) return null;
-                return startTtsPlayback(s, signal);
+                return startTtsPlayback(s, signal, { onPlayStart: switchToTalking });
             }).catch((e) => {
                 console.warn('[A01] TTS 큐 실패', e);
                 return null;
