@@ -124,23 +124,33 @@
     </section>
 
     <!-- ========================================================
-         ⑤ 미니 카트 + 빠른응답 칩 (140px)
+         ⑤ 미니 카트 + 빠른응답 칩 (220px) — 카드형 카트 + 수량 조절
          ======================================================== -->
     <section class="a01__quickbar fade-up" style="--delay: 320ms;">
         <!-- 미니 카트 -->
         <div class="a01__minicart" data-minicart>
+            <!-- 빈 상태 -->
             <div class="a01__minicart-empty" data-minicart-empty>
                 <i class="xi xi-cart" aria-hidden="true"></i>
                 <span>아직 담은 메뉴가 없어요</span>
             </div>
+
+            <!-- 채워진 상태 -->
             <div class="a01__minicart-filled" data-minicart-filled hidden>
-                <ul class="a01__minicart-list" data-minicart-list>
-                    <!-- JS 동적 -->
-                </ul>
-                <div class="a01__minicart-total">
-                    <span class="a01__minicart-total-label">합계</span>
-                    <span class="a01__minicart-total-value" data-minicart-total>₩ 0</span>
+                <div class="a01__minicart-head">
+                    <div class="a01__minicart-head-left">
+                        <i class="xi xi-cart" aria-hidden="true"></i>
+                        <span>장바구니</span>
+                        <span class="a01__minicart-count" data-minicart-count>0</span>
+                    </div>
+                    <div class="a01__minicart-head-right">
+                        <span class="a01__minicart-total-label">합계</span>
+                        <span class="a01__minicart-total-value" data-minicart-total>₩ 0</span>
+                    </div>
                 </div>
+                <ul class="a01__minicart-track" data-minicart-list>
+                    <!-- JS 동적 — 카드형 항목 -->
+                </ul>
             </div>
         </div>
 

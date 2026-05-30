@@ -87,6 +87,7 @@
     const $minicartFilled = document.querySelector('[data-minicart-filled]');
     const $minicartList   = document.querySelector('[data-minicart-list]');
     const $minicartTotal  = document.querySelector('[data-minicart-total]');
+    const $minicartCount  = document.querySelector('[data-minicart-count]');
 
     const $chipRow     = document.querySelector('[data-chip-row]');
     const $input       = document.querySelector('[data-input]');
@@ -827,6 +828,7 @@
         renderMinicart();
     }
 
+    /** 카드형 카트 렌더 (N02 스타일 참조) — 사진 상단, 가격 오버레이, 수량 스테퍼. */
     function renderMinicart() {
         if (!state.cart.items.length) {
             $minicartEmpty.hidden = false;
@@ -835,47 +837,146 @@
         }
         $minicartEmpty.hidden = true;
         $minicartFilled.hidden = false;
-        $minicartList.innerHTML = '';
-        state.cart.items.forEach((it) => {
-            const $li = document.createElement('li');
-            $li.className = 'a01__minicart-item';
-            const display = it.menuName || '';
-            const shortName = display.length > 6 ? display.slice(0, 6) + '…' : display;
-            const imgUrl = state.menuImageCache.get(it.menuId);
+        $minicartList.replaceChildren();
 
-            // 썸네일 — 이미지 또는 아이콘 (DOM API, XSS 방지)
-            const $thumb = document.createElement('span');
-            $thumb.className = 'a01__minicart-item-thumb';
-            const setIconFallback = () => {
-                $thumb.classList.add('a01__minicart-item-thumb--icon');
-                $thumb.replaceChildren();
-                const $icon = document.createElement('i');
-                $icon.className = 'xi xi-restaurant';
-                $icon.setAttribute('aria-hidden', 'true');
-                $thumb.appendChild($icon);
-            };
-            if (imgUrl) {
-                const $img = document.createElement('img');
-                $img.alt = '';
-                $img.src = imgUrl;  // setter, HTML 파싱 X
-                $img.addEventListener('error', setIconFallback);
-                $thumb.appendChild($img);
-            } else {
-                setIconFallback();
+        state.cart.items.forEach((it) => {
+            $minicartList.appendChild(buildMinicartCard(it));
+        });
+
+        $minicartCount.textContent = String(getCartCount());
+        $minicartTotal.textContent = fmtPrice(getCartTotal());
+    }
+
+    /** 단일 카드 DOM 생성 (XSS 방지 — innerHTML 대신 DOM API). */
+    function buildMinicartCard(it) {
+        const itemId = it.itemId;
+        const $li = document.createElement('li');
+        $li.className = 'a01__minicart-item';
+        $li.dataset.cartItem = itemId;
+
+        // 썸네일 + 가격 오버레이 + X 버튼
+        const $thumb = document.createElement('div');
+        $thumb.className = 'a01__minicart-item-thumb';
+        const imgUrl = it.imageUrl || state.menuImageCache.get(it.menuId);
+        const setIconFallback = () => {
+            $thumb.classList.add('a01__minicart-item-thumb--icon');
+            // 가격/X 노드는 유지하고 img/i 만 갈아끼움
+            const old = $thumb.querySelector('img, i');
+            if (old) old.remove();
+            const $icon = document.createElement('i');
+            $icon.className = 'xi xi-restaurant';
+            $icon.setAttribute('aria-hidden', 'true');
+            $thumb.prepend($icon);
+        };
+        if (imgUrl) {
+            const $img = document.createElement('img');
+            $img.alt = '';
+            $img.src = imgUrl;
+            $img.addEventListener('error', setIconFallback);
+            $thumb.appendChild($img);
+        } else {
+            setIconFallback();
+        }
+
+        // 가격 오버레이 — 우하단
+        const $price = document.createElement('span');
+        $price.className = 'a01__minicart-item-price-overlay';
+        $price.textContent = fmtPrice(it.itemTotal != null ? it.itemTotal : (it.unitPrice || 0) * (it.quantity || 1));
+        $thumb.appendChild($price);
+
+        // 삭제 버튼 — 우상단
+        const $remove = document.createElement('button');
+        $remove.type = 'button';
+        $remove.className = 'a01__minicart-item-remove';
+        $remove.dataset.cartRemove = itemId;
+        $remove.setAttribute('aria-label', '삭제');
+        const $closeIcon = document.createElement('i');
+        $closeIcon.className = 'xi xi-close-thin';
+        $closeIcon.setAttribute('aria-hidden', 'true');
+        $remove.appendChild($closeIcon);
+        $thumb.appendChild($remove);
+
+        // 본문 — 이름 + 수량 스테퍼
+        const $body = document.createElement('div');
+        $body.className = 'a01__minicart-item-body';
+
+        const $name = document.createElement('span');
+        $name.className = 'a01__minicart-item-name';
+        $name.textContent = it.menuName || '';
+        $body.appendChild($name);
+
+        const $stepper = document.createElement('div');
+        $stepper.className = 'a01__minicart-stepper';
+        const qty = it.quantity || 1;
+        const $minus = document.createElement('button');
+        $minus.type = 'button';
+        $minus.className = 'a01__minicart-stepper-btn';
+        $minus.dataset.cartQty = itemId;
+        $minus.dataset.delta = '-1';
+        $minus.setAttribute('aria-label', '수량 감소');
+        $minus.textContent = '−';
+        if (qty <= 1) $minus.disabled = true;   // 1 에서 −는 삭제로 유도 (X 버튼)
+
+        const $val = document.createElement('span');
+        $val.className = 'a01__minicart-stepper-value';
+        $val.textContent = String(qty);
+
+        const $plus = document.createElement('button');
+        $plus.type = 'button';
+        $plus.className = 'a01__minicart-stepper-btn';
+        $plus.dataset.cartQty = itemId;
+        $plus.dataset.delta = '1';
+        $plus.setAttribute('aria-label', '수량 증가');
+        $plus.textContent = '+';
+
+        $stepper.append($minus, $val, $plus);
+        $body.appendChild($stepper);
+
+        $li.append($thumb, $body);
+        return $li;
+    }
+
+    /** 미니카트 클릭 위임 — 수량 +/− 및 삭제. 한 번 등록. */
+    function bindMinicartHandlers() {
+        if (!$minicartList || $minicartList.dataset.bound === '1') return;
+        $minicartList.dataset.bound = '1';
+        $minicartList.addEventListener('click', async (e) => {
+            const target = e.target.closest('[data-cart-remove], [data-cart-qty]');
+            if (!target) return;
+            if (!state.sessionId) return;
+
+            if (target.dataset.cartRemove) {
+                const itemId = target.dataset.cartRemove;
+                target.disabled = true;
+                const cartResp = await callApi('항목 삭제', () =>
+                    window.Api.cart.removeItem(state.sessionId, itemId)
+                );
+                if (cartResp) applyCartResponse(cartResp);
+                return;
             }
 
-            const $name = document.createElement('span');
-            $name.className = 'a01__minicart-item-name';
-            $name.textContent = shortName;
-
-            const $qty = document.createElement('span');
-            $qty.className = 'a01__minicart-item-qty';
-            $qty.textContent = '×' + (it.quantity || 1);
-
-            $li.append($thumb, $name, $qty);
-            $minicartList.appendChild($li);
+            if (target.dataset.cartQty) {
+                const itemId = target.dataset.cartQty;
+                const delta = Number(target.dataset.delta || 0);
+                const item = state.cart.items.find((it) => it.itemId === itemId);
+                if (!item) return;
+                const next = (item.quantity || 1) + delta;
+                if (next <= 0) {
+                    // 0 이하는 삭제로 처리 (현재는 −가 1에서 disabled 라 거의 도달 X)
+                    target.disabled = true;
+                    const cartResp = await callApi('항목 삭제', () =>
+                        window.Api.cart.removeItem(state.sessionId, itemId)
+                    );
+                    if (cartResp) applyCartResponse(cartResp);
+                    return;
+                }
+                target.disabled = true;
+                const cartResp = await callApi('수량 변경', () =>
+                    window.Api.cart.updateItem(state.sessionId, itemId, next)
+                );
+                if (cartResp) applyCartResponse(cartResp);
+            }
         });
-        $minicartTotal.textContent = fmtPrice(getCartTotal());
     }
 
     // ========================================================
@@ -1209,6 +1310,7 @@
         renderMinicart();
         renderSteps();
         renderChips();
+        bindMinicartHandlers();
         bind();
         bootVideos();
 
