@@ -232,6 +232,16 @@
         }
     }
 
+    /** Append-mode typewriter — 말풍선 초기화 안 하고 한 글자씩 끝에 추가.
+     *  SSE 큐 안에서 문장 단위로 호출 (이전 문장 누적된 상태 유지). */
+    async function typeChunk(text, speed, signal) {
+        for (let i = 0; i < text.length; i++) {
+            if (signal && signal.aborted) return;
+            $bubbleText.textContent += text[i];
+            await sleep(speed, signal);
+        }
+    }
+
     /** 재생 중인 TTS 오디오 정리. */
     function stopCurrentAudio() {
         if (state.currentAudio) {
@@ -261,19 +271,33 @@
      * @returns {Promise<void>} 재생 종료 시점에 resolve
      */
     function startTtsPlayback(text, signal, opts) {
+        // 모든 경로 공통 — meta/play-start 콜백 (abort 시엔 firePlayStart 무효).
+        const fireMeta = (d) => {
+            if (opts && opts.onMeta) try { opts.onMeta(d); } catch (_) {}
+        };
+        const firePlayStart = () => {
+            if (signal && signal.aborted) return;
+            if (opts && opts.onPlayStart) try { opts.onPlayStart(); } catch (_) {}
+        };
+
         if (state.muted) {
-            if (opts && opts.onMeta) opts.onMeta(null);
+            // 무음이라도 텍스트는 보여줘야 함 → onPlayStart 즉시 발화 (typewriter 진행).
+            fireMeta(null);
+            firePlayStart();
             return Promise.resolve();
         }
         if (!window.Api || !window.Api.Voice) {
-            if (opts && opts.onMeta) opts.onMeta(null);
+            fireMeta(null);
+            firePlayStart();
             return Promise.resolve();
         }
         stopCurrentAudio();
         return window.Api.Voice.synthesize(text)
             .then((blob) => {
                 if (!blob || (signal && signal.aborted)) {
-                    if (opts && opts.onMeta) opts.onMeta(null);
+                    fireMeta(null);
+                    // blob 없음(서버 무응답) — 텍스트는 보여줘야 함. abort 시엔 자동으로 skip.
+                    if (!blob) firePlayStart();
                     return;
                 }
                 const url = URL.createObjectURL(blob);
@@ -308,18 +332,14 @@
                         if (metaTimer) { clearTimeout(metaTimer); metaTimer = null; }
                         if (signal && signal.aborted) { finish(); return; }
                         const d = isFinite(audio.duration) ? audio.duration : null;
-                        if (opts && opts.onMeta) {
-                            try { opts.onMeta(d); } catch (_) {}
-                        }
-                        // play() 가 실제 재생 시작에 resolve — 그때 onPlayStart 발화
-                        // (talking 영상 전환 등 TTS 와 동기화될 동작을 여기서 트리거)
+                        fireMeta(d);
+                        // play() resolve = 실제 재생 시작 — onPlayStart 발화
                         audio.play().then(() => {
-                            if (signal && signal.aborted) return;
-                            if (opts && opts.onPlayStart) {
-                                try { opts.onPlayStart(); } catch (_) {}
-                            }
+                            firePlayStart();
                         }).catch((e) => {
                             console.warn('[A01] TTS 재생 실패', e);
+                            // 재생 실패해도 텍스트는 보여줘야 함
+                            firePlayStart();
                             finish();
                         });
                     };
@@ -338,7 +358,8 @@
             })
             .catch((e) => {
                 console.warn('[A01] TTS 합성 실패', e);
-                if (opts && opts.onMeta) opts.onMeta(null);
+                fireMeta(null);
+                firePlayStart();   // 합성 실패해도 텍스트는 보여줘야 함
             });
     }
 
@@ -561,14 +582,30 @@
         function flushTts(sentence) {
             const s = (sentence || '').trim();
             if (!s) return;
-            // TTS 순서 보장 큐 — 직전 재생 끝난 뒤 다음 문장 합성/재생
-            // onPlayStart: 첫 문장 재생 시작 시점에 talking 영상 ON (이후는 no-op)
-            ttsQueue = ttsQueue.then(() => {
-                if (signal.aborted) return null;
-                return startTtsPlayback(s, signal, { onPlayStart: switchToTalking });
+            // TTS + typewriter 동기 큐 — 직전 재생/타이핑 끝난 뒤 다음 문장 진행.
+            // onPlayStart 시점에:
+            //   1) talking 영상 ON (첫 호출만)
+            //   2) TTS duration 기반 속도로 typewriter 시작 → 글자가 소리와 함께 노출됨
+            //   3) 0.88 배율로 TTS 보다 약간 빠르게 (글자 다 보인 후 소리 살짝 더)
+            ttsQueue = ttsQueue.then(async () => {
+                if (signal.aborted) return;
+                let duration = null;
+                let typePromise = Promise.resolve();
+                const playPromise = startTtsPlayback(s, signal, {
+                    onMeta: (d) => { duration = d; },
+                    onPlayStart: () => {
+                        switchToTalking();
+                        const base = (duration && duration > 0 && s.length > 0)
+                            ? (duration * 1000 * 0.88) / s.length
+                            : 70;   // duration 없을 때(무음/실패) 기본 속도
+                        const speed = Math.max(28, Math.min(180, base));
+                        typePromise = typeChunk(s, speed, signal);
+                    },
+                });
+                await playPromise;
+                await typePromise;   // 글자가 미완이면 끝까지 기다림
             }).catch((e) => {
-                console.warn('[A01] TTS 큐 실패', e);
-                return null;
+                console.warn('[A01] TTS/typewriter 큐 실패', e);
             });
         }
 
@@ -584,8 +621,8 @@
                         receivedAnyToken = true;
                         fullText += chunk;
                         sentenceBuf += chunk;
-                        $bubbleText.textContent += chunk;
-                        // 한국어/영문 문장 경계 — 마침표 류 + 공백 또는 끝
+                        // 글자는 화면에 즉시 X — flushTts 큐 안에서 TTS 와 sync 된 typewriter 가 노출.
+                        // 문장 경계에 도달하면 해당 문장을 TTS + typewriter 큐에 넣음.
                         if (/[.!?…](\s|$)/.test(sentenceBuf)) {
                             flushTts(sentenceBuf);
                             sentenceBuf = '';
@@ -597,9 +634,9 @@
                             flushTts(sentenceBuf);
                             sentenceBuf = '';
                         }
-                        // OOD(clarify_responder): 토큰 없이 done 만 — reply 로 fallback
+                        // OOD(clarify_responder): 토큰 없이 done 만 — reply 로 fallback.
+                        // 즉시 표시 X — flushTts 큐 안 typewriter 가 TTS 와 sync 해서 노출.
                         if (!receivedAnyToken && res && res.reply) {
-                            $bubbleText.textContent = res.reply;
                             fullText = res.reply;
                             flushTts(res.reply);
                         }
