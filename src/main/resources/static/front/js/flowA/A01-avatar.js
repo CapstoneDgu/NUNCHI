@@ -280,9 +280,11 @@
 
                 return new Promise((resolveEnded) => {
                     let settled = false;
+                    let metaTimer = null;
                     const finish = () => {
                         if (settled) return;
                         settled = true;
+                        if (metaTimer) { clearTimeout(metaTimer); metaTimer = null; }
                         if (state.currentAudio === audio) stopCurrentAudio();
                         resolveEnded();
                     };
@@ -298,6 +300,8 @@
 
                     const onMeta = () => {
                         audio.removeEventListener('loadedmetadata', onMeta);
+                        // 메타 도착 → 재생 시작. 이 후로는 audio.ended 가 종료 시그널.
+                        if (metaTimer) { clearTimeout(metaTimer); metaTimer = null; }
                         if (signal && signal.aborted) { finish(); return; }
                         const d = isFinite(audio.duration) ? audio.duration : null;
                         if (opts && opts.onMeta) {
@@ -310,14 +314,15 @@
                     };
                     audio.addEventListener('loadedmetadata', onMeta);
 
-                    // 메타 못 받아도 호출자가 무한 대기 안 하게 안전 타임아웃 (8s)
-                    // — 재생 종료 의미라 1.5s 보다 길게 잡음. 실제 재생은 ended 가 우선 트리거.
-                    setTimeout(() => {
+                    // 메타데이터 로드 실패(네트워크/디코딩 에러) 시에만 발동하는 안전망.
+                    // 메타 도착 후엔 timer clear 됨 → 실제 재생 길이는 제한 없음
+                    // (긴 응답도 audio.ended 까지 끝까지 재생).
+                    metaTimer = setTimeout(() => {
                         if (!settled) {
-                            console.warn('[A01] TTS 재생 타임아웃 (8s) — 강제 종료');
+                            console.warn('[A01] TTS 메타데이터 로드 타임아웃 (5s) — 강제 종료');
                             finish();
                         }
-                    }, 8000);
+                    }, 5000);
                 });
             })
             .catch((e) => {
