@@ -80,8 +80,11 @@
     const $bubble      = document.querySelector('[data-bubble]');
     const $bubbleText  = document.querySelector('[data-bubble-text]');
 
-    const $stepsList   = document.querySelector('[data-steps]');
     const $log         = document.querySelector('[data-log]');
+
+    // 대화 기록 서랍 (왼쪽 슬라이드) + 열기 FAB
+    const $drawer      = document.querySelector('[data-drawer]');
+    const $fab         = document.querySelector('[data-action="open-drawer"]');
 
     const $minicartEmpty  = document.querySelector('[data-minicart-empty]');
     const $minicartFilled = document.querySelector('[data-minicart-filled]');
@@ -212,6 +215,7 @@
     async function typewriter(text, opts) {
         const speed  = (opts && opts.speed) || 50;
         const signal = opts && opts.signal;
+        $bubble.classList.remove('is-thinking');   // 발화 시작 → 점점점 종료
         $bubble.classList.add('is-typing', 'is-visible');
         $bubbleText.textContent = '';
         try {
@@ -1083,17 +1087,26 @@
     // ========================================================
     // 14. 단계 인디케이터
     // ========================================================
-    function renderSteps() {
-        const idx = STEP_ORDER.indexOf(state.fsm);
-        const $steps = $stepsList.querySelectorAll('.a01__step');
-        const $lines = $stepsList.querySelectorAll('.a01__step-line');
-        $steps.forEach(($s, i) => {
-            $s.classList.toggle('is-current', i === idx);
-            $s.classList.toggle('is-done',    i <  idx);
-        });
-        $lines.forEach(($l, i) => {
-            $l.classList.toggle('is-done', i < idx);
-        });
+    // 기승전결 인디케이터 제거됨 — FSM 단계는 내부 라우팅에만 사용.
+    // 호출부 호환을 위해 no-op 으로 유지.
+    function renderSteps() {}
+
+    // ========================================================
+    // 대화 기록 서랍 (왼쪽 슬라이드 off-canvas)
+    // ========================================================
+    function openDrawer() {
+        if (!$drawer) return;
+        $drawer.hidden = false;
+        // reflow 후 transition 트리거 (display:none → 슬라이드 인)
+        requestAnimationFrame(() => $drawer.classList.add('is-open'));
+        scrollLogToBottom();
+    }
+
+    function closeDrawer() {
+        if (!$drawer) return;
+        $drawer.classList.remove('is-open');
+        // 슬라이드 아웃 애니메이션 후 DOM 비표시
+        setTimeout(() => { if (!$drawer.classList.contains('is-open')) $drawer.hidden = true; }, 280);
     }
 
     // ========================================================
@@ -1221,7 +1234,7 @@
             micClass = 'a01__btn-mic--ai-turn';
             statusText = '생각 중';
             placeholder = '잠시만요...';
-            bubbleHint = '💭 생각하고 있어요';
+            bubbleHint = null; // 텍스트 대신 점점점(…) 애니메이션으로 표시
             ariaPressed = 'false';
             ariaLabel = 'AI 응답 중';
         } else { // INACTIVE
@@ -1244,8 +1257,18 @@
             $status.innerHTML = '<span class="a01__topbar-status-dot"></span>' + statusText;
         }
 
-        // 말풍선 상태 힌트 (LISTENING / THINKING 만 — AI_SPEAKING 은 typewriter 가 채움)
-        if (bubbleHint) {
+        // 생각중 점점점(…) — THINKING 일 때만 .is-thinking 토글
+        $bubble.classList.toggle('is-thinking', next === 'THINKING');
+
+        // 말풍선 상태 표시
+        // - THINKING: 점점점 애니메이션 (텍스트 비움)
+        // - LISTENING: bubbleHint 텍스트
+        // - AI_SPEAKING: typewriter 가 직접 채움
+        if (next === 'THINKING') {
+            $bubble.classList.add('is-visible');
+            $bubble.classList.remove('is-typing');
+            $bubbleText.textContent = '';
+        } else if (bubbleHint) {
             $bubble.classList.add('is-visible');
             $bubble.classList.remove('is-typing');
             $bubbleText.textContent = bubbleHint;
@@ -1283,7 +1306,7 @@
         stopCurrentAudio();           // TTS 음성 즉시 정지
         setAvatar('idle');
         // 즉시 시각 신호 — 모드 전환 콜백이 늦게 와도 사용자에게 바로 보임
-        if ($bubble) $bubble.classList.remove('is-typing');
+        if ($bubble) $bubble.classList.remove('is-typing', 'is-thinking');
         if ($bubbleText) $bubbleText.textContent = '🎤 말씀해 주세요';
         if ($input) $input.placeholder = '듣고 있어요...';
     }
@@ -1315,6 +1338,14 @@
         $switchBtn.addEventListener('click', onSwitchToNormal);
         $muteBtn.addEventListener('click', onToggleMute);
         $micBtn.addEventListener('click', onMicClick);
+
+        // 대화 기록 서랍 — FAB 로 열고, 백드롭/닫기 버튼으로 닫기
+        if ($fab) $fab.addEventListener('click', openDrawer);
+        if ($drawer) {
+            $drawer.querySelectorAll('[data-drawer-close]').forEach(($el) =>
+                $el.addEventListener('click', closeDrawer)
+            );
+        }
     }
 
     function bootVideos() {
