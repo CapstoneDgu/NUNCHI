@@ -547,9 +547,8 @@
                 hasInquiry: window.ReplyKeywords.INQUIRY_PATTERN.test(text),
             });
             appendLog('user', text);
-            if (window.ConvEngine) window.ConvEngine.stop();
             AppState.set('CURRENT_STEP', 'P01');
-            location.href = '/summary';
+            navigateWithFade('/summary');   // ConvEngine.stop 포함
             return;
         }
 
@@ -711,7 +710,7 @@
                 } catch (_) {
                     return;                            // 도중 barge-in/abort → 이동 취소
                 }
-                window.AiAction.handle(act);
+                navigateWithFade(act.page);            // 페이드 전환으로 이동
                 return;
             }
             window.AiAction.handle(act);
@@ -1161,6 +1160,19 @@
         location.href = '/menu';
     }
 
+    /** 페이지 전환 — 베일을 페이드인한 뒤 이동. 화면이 툭 끊기지 않고 부드럽게 넘어감. */
+    function navigateWithFade(url) {
+        if (window.ConvEngine) window.ConvEngine.stop();
+        stopCurrentAudio();
+        const veil = document.createElement('div');
+        veil.className = 'a01__page-leave';
+        document.body.appendChild(veil);
+        // reflow 후 활성화 → opacity transition 트리거
+        requestAnimationFrame(() => veil.classList.add('is-active'));
+        // 베일 페이드(360ms) 거의 끝나는 시점에 실제 이동
+        setTimeout(() => { location.href = url; }, 340);
+    }
+
     async function goToPayment() {
         if (!state.sessionId) {
             showToast('세션이 없어요. 새로고침 해주세요.');
@@ -1173,8 +1185,7 @@
         // 주문 확정(order.confirm)은 P01-summary 가 사용자 액션 시 호출.
         // A01 에서 호출하면 P03/P04 의 retry 흐름과 합쳐 중복 주문 위험.
         AppState.set('CURRENT_STEP', 'P01');
-        if (window.ConvEngine) window.ConvEngine.stop();
-        location.href = '/summary';
+        navigateWithFade('/summary');
     }
 
     function onToggleMute() {

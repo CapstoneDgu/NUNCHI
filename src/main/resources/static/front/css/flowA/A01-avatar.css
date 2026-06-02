@@ -1006,3 +1006,21 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
+
+/* ========================================================
+   페이지 전환 베일 — 결제 화면 이동 시 부드러운 페이드아웃
+   (다음 페이지는 .fade-up 입장 애니메이션으로 이어받음)
+   ======================================================== */
+.a01__page-leave {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: var(--color-bg-page);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 360ms var(--ease-out);
+}
+.a01__page-leave.is-active {
+    opacity: 1;
+    pointer-events: auto;   /* 전환 중 추가 입력 차단 */
+}
