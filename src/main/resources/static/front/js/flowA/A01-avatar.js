@@ -1,5 +1,5 @@
 // ========================================================
-// A01-avatar.js — 아바타 모드(동대맘) 통합 로직 (FastAPI 연결 + 턴테이킹)
+// A01-avatar.js — 아바타 모드(눈치) 통합 로직 (FastAPI 연결 + 턴테이킹)
 //
 // 흐름:
 //   1) 진입: FastAPI 세션 시작(POST /ai/order/start) — FastAPI 가 Spring 에
@@ -1182,7 +1182,7 @@
         }
 
         if (mode === 'AI_SPEAKING' || mode === 'THINKING') {
-            // 동대맘이 말하거나 응답 대기 중 — 사용자가 바로 말하고 싶을 때.
+            // 눈치가 말하거나 응답 대기 중 — 사용자가 바로 말하고 싶을 때.
             // AI 즉시 멈추고 LISTENING 으로 전환.
             window.ConvEngine.bargeIn();
             return;
@@ -1213,7 +1213,7 @@
         } else if (next === 'AI_SPEAKING') {
             micClass = 'a01__btn-mic--ai-turn';
             statusText = '대화 중';
-            placeholder = '동대맘이 말하고 있어요';
+            placeholder = '눈치가 말하고 있어요';
             bubbleHint = null; // typewriter 가 직접 채움
             ariaPressed = 'true';
             ariaLabel = '대화 종료 (말씀하시면 끼어들 수 있어요)';
@@ -1227,7 +1227,7 @@
         } else { // INACTIVE
             micClass = 'a01__btn-mic--inactive';
             statusText = '대기';
-            placeholder = '동대맘에게 말하거나 입력해보세요';
+            placeholder = '눈치에게 말하거나 입력해보세요';
             bubbleHint = null;
             ariaPressed = 'false';
             ariaLabel = '대화 시작';
