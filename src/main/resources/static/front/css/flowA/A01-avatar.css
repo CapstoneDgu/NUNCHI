@@ -303,7 +303,7 @@
 }
 
 /* ========================================================
-   ③ 대화 기록 — 왼쪽 슬라이드 서랍 + FAB
+   ③ 대화 기록 — 가운데 카드 모달 + FAB
    (로그 메시지(.a01__msg) 스타일은 그대로 재사용)
    ======================================================== */
 
@@ -347,19 +347,27 @@
 
 .a01__drawer-panel {
     position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 78%;
-    max-width: 540px;
+    top: 50%;
+    left: 50%;
+    width: 84%;
+    max-width: 560px;
+    max-height: 72%;
     display: flex;
     flex-direction: column;
     background: var(--color-bg-card, #fff);
-    box-shadow: 8px 0 32px rgba(0,0,0,0.18);
-    transform: translateX(-100%);
-    transition: transform var(--duration-base) var(--ease-out);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+    /* 가운데서 살짝 작게 → 팝업 스케일 인 */
+    transform: translate(-50%, -50%) scale(0.92);
+    opacity: 0;
+    transition: transform var(--duration-base) var(--ease-out),
+                opacity   var(--duration-base) var(--ease-out);
 }
-.a01__drawer.is-open .a01__drawer-panel { transform: translateX(0); }
+.a01__drawer.is-open .a01__drawer-panel {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
 
 .a01__drawer-head {
     flex-shrink: 0;

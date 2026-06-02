@@ -239,6 +239,10 @@
     /** Append-mode typewriter — 말풍선 초기화 안 하고 한 글자씩 끝에 추가.
      *  SSE 큐 안에서 문장 단위로 호출 (이전 문장 누적된 상태 유지). */
     async function typeChunk(text, speed, signal) {
+        // 발화 시작 → 점점점 종료. 스트리밍 경로는 모드가 THINKING 으로 유지되므로
+        // 여기서 직접 is-thinking 을 해제하지 않으면 .a01__bubble-text 가 display:none 으로
+        // 가려져 글자가 화면에 안 보임. (typewriter() 와 동일하게 해제)
+        $bubble.classList.remove('is-thinking');
         for (let i = 0; i < text.length; i++) {
             if (signal && signal.aborted) return;
             $bubbleText.textContent += text[i];
@@ -707,8 +711,16 @@
         }
 
         // 결제 라우팅 — CHECKOUT 진입 또는 완료 키워드
+        // 아바타가 마지막 말을 끝까지 들려준 뒤(TTS 큐 완료), 0.8초 텀을 두고 결제 화면으로.
+        // (말 도중에 화면이 휙 넘어가지 않도록 — 자연스러운 마무리)
         const replyComplete = window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply);
         if (enteredCheckout || replyComplete) {
+            await ttsQueue.catch(() => {});       // 발화 끝까지 대기
+            try {
+                await sleep(800, signal);          // 마무리 텀
+            } catch (_) {
+                return;                            // 도중 barge-in/abort → 이동 취소
+            }
             await goToPayment();
             return;
         }
