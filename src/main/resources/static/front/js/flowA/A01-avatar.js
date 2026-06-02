@@ -1,5 +1,5 @@
 // ========================================================
-// A01-avatar.js — 아바타 모드(동대맘) 통합 로직 (FastAPI 연결 + 턴테이킹)
+// A01-avatar.js — 아바타 모드(눈치) 통합 로직 (FastAPI 연결 + 턴테이킹)
 //
 // 흐름:
 //   1) 진입: FastAPI 세션 시작(POST /ai/order/start) — FastAPI 가 Spring 에
@@ -80,8 +80,11 @@
     const $bubble      = document.querySelector('[data-bubble]');
     const $bubbleText  = document.querySelector('[data-bubble-text]');
 
-    const $stepsList   = document.querySelector('[data-steps]');
     const $log         = document.querySelector('[data-log]');
+
+    // 대화 기록 서랍 (왼쪽 슬라이드) + 열기 FAB
+    const $drawer      = document.querySelector('[data-drawer]');
+    const $fab         = document.querySelector('[data-action="open-drawer"]');
 
     const $minicartEmpty  = document.querySelector('[data-minicart-empty]');
     const $minicartFilled = document.querySelector('[data-minicart-filled]');
@@ -212,6 +215,7 @@
     async function typewriter(text, opts) {
         const speed  = (opts && opts.speed) || 50;
         const signal = opts && opts.signal;
+        $bubble.classList.remove('is-thinking');   // 발화 시작 → 점점점 종료
         $bubble.classList.add('is-typing', 'is-visible');
         $bubbleText.textContent = '';
         try {
@@ -235,6 +239,10 @@
     /** Append-mode typewriter — 말풍선 초기화 안 하고 한 글자씩 끝에 추가.
      *  SSE 큐 안에서 문장 단위로 호출 (이전 문장 누적된 상태 유지). */
     async function typeChunk(text, speed, signal) {
+        // 발화 시작 → 점점점 종료. 스트리밍 경로는 모드가 THINKING 으로 유지되므로
+        // 여기서 직접 is-thinking 을 해제하지 않으면 .a01__bubble-text 가 display:none 으로
+        // 가려져 글자가 화면에 안 보임. (typewriter() 와 동일하게 해제)
+        $bubble.classList.remove('is-thinking');
         for (let i = 0; i < text.length; i++) {
             if (signal && signal.aborted) return;
             $bubbleText.textContent += text[i];
@@ -539,9 +547,8 @@
                 hasInquiry: window.ReplyKeywords.INQUIRY_PATTERN.test(text),
             });
             appendLog('user', text);
-            if (window.ConvEngine) window.ConvEngine.stop();
             AppState.set('CURRENT_STEP', 'P01');
-            location.href = '/summary';
+            navigateWithFade('/summary');   // ConvEngine.stop 포함
             return;
         }
 
@@ -691,10 +698,22 @@
             replyComplete: !!(window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply))
         });
 
-        // AI 화면 원격조작 — navigate 면 페이지 떠나므로 이후 후처리 생략
+        // AI 화면 원격조작
+        // navigate(예: 결제 화면 이동)는 아바타 발화를 끝까지 들려준 뒤 0.7초 텀을 두고 이동
+        // — 빈 카트에서 "결제할래" 시 휙 넘어가던 문제 방지. 그 외 액션은 즉시 처리.
         if (window.AiAction && doneRes.action) {
-            window.AiAction.handle(doneRes.action);
-            if (doneRes.action.type === 'navigate' && doneRes.action.page) return;
+            const act = doneRes.action;
+            if (act.type === 'navigate' && act.page) {
+                await ttsQueue.catch(() => {});       // 발화 끝까지 대기
+                try {
+                    await sleep(700, signal);          // 마무리 텀
+                } catch (_) {
+                    return;                            // 도중 barge-in/abort → 이동 취소
+                }
+                navigateWithFade(act.page);            // 페이드 전환으로 이동
+                return;
+            }
+            window.AiAction.handle(act);
         }
 
         // 카트 변경 키워드 → 카트 재조회
@@ -703,8 +722,16 @@
         }
 
         // 결제 라우팅 — CHECKOUT 진입 또는 완료 키워드
+        // 아바타가 마지막 말을 끝까지 들려준 뒤(TTS 큐 완료), 0.7초 텀을 두고 결제 화면으로.
+        // (말 도중에 화면이 휙 넘어가지 않도록 — 자연스러운 마무리)
         const replyComplete = window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply);
         if (enteredCheckout || replyComplete) {
+            await ttsQueue.catch(() => {});       // 발화 끝까지 대기
+            try {
+                await sleep(700, signal);          // 마무리 텀
+            } catch (_) {
+                return;                            // 도중 barge-in/abort → 이동 취소
+            }
             await goToPayment();
             return;
         }
@@ -1083,17 +1110,26 @@
     // ========================================================
     // 14. 단계 인디케이터
     // ========================================================
-    function renderSteps() {
-        const idx = STEP_ORDER.indexOf(state.fsm);
-        const $steps = $stepsList.querySelectorAll('.a01__step');
-        const $lines = $stepsList.querySelectorAll('.a01__step-line');
-        $steps.forEach(($s, i) => {
-            $s.classList.toggle('is-current', i === idx);
-            $s.classList.toggle('is-done',    i <  idx);
-        });
-        $lines.forEach(($l, i) => {
-            $l.classList.toggle('is-done', i < idx);
-        });
+    // 기승전결 인디케이터 제거됨 — FSM 단계는 내부 라우팅에만 사용.
+    // 호출부 호환을 위해 no-op 으로 유지.
+    function renderSteps() {}
+
+    // ========================================================
+    // 대화 기록 서랍 (왼쪽 슬라이드 off-canvas)
+    // ========================================================
+    function openDrawer() {
+        if (!$drawer) return;
+        $drawer.hidden = false;
+        // reflow 후 transition 트리거 (display:none → 슬라이드 인)
+        requestAnimationFrame(() => $drawer.classList.add('is-open'));
+        scrollLogToBottom();
+    }
+
+    function closeDrawer() {
+        if (!$drawer) return;
+        $drawer.classList.remove('is-open');
+        // 슬라이드 아웃 애니메이션 후 DOM 비표시
+        setTimeout(() => { if (!$drawer.classList.contains('is-open')) $drawer.hidden = true; }, 280);
     }
 
     // ========================================================
@@ -1124,20 +1160,32 @@
         location.href = '/menu';
     }
 
+    /** 페이지 전환 — 베일을 페이드인한 뒤 이동. 화면이 툭 끊기지 않고 부드럽게 넘어감. */
+    function navigateWithFade(url) {
+        if (window.ConvEngine) window.ConvEngine.stop();
+        stopCurrentAudio();
+        const veil = document.createElement('div');
+        veil.className = 'a01__page-leave';
+        document.body.appendChild(veil);
+        // reflow 후 활성화 → opacity transition 트리거
+        requestAnimationFrame(() => veil.classList.add('is-active'));
+        // 베일 페이드(360ms) 거의 끝나는 시점에 실제 이동
+        setTimeout(() => { location.href = url; }, 340);
+    }
+
     async function goToPayment() {
         if (!state.sessionId) {
             showToast('세션이 없어요. 새로고침 해주세요.');
             return;
         }
+        // 장바구니가 비어도 결제 화면을 확인해야 하므로 통과 (검증용). 경고만 남김.
         if (!state.cart.items.length) {
-            showToast('장바구니가 비어있어요.');
-            return;
+            console.warn('[A01] 장바구니가 비었지만 결제 화면으로 진행 (검증용)');
         }
         // 주문 확정(order.confirm)은 P01-summary 가 사용자 액션 시 호출.
         // A01 에서 호출하면 P03/P04 의 retry 흐름과 합쳐 중복 주문 위험.
         AppState.set('CURRENT_STEP', 'P01');
-        if (window.ConvEngine) window.ConvEngine.stop();
-        location.href = '/summary';
+        navigateWithFade('/summary');
     }
 
     function onToggleMute() {
@@ -1182,7 +1230,7 @@
         }
 
         if (mode === 'AI_SPEAKING' || mode === 'THINKING') {
-            // 동대맘이 말하거나 응답 대기 중 — 사용자가 바로 말하고 싶을 때.
+            // 눈치가 말하거나 응답 대기 중 — 사용자가 바로 말하고 싶을 때.
             // AI 즉시 멈추고 LISTENING 으로 전환.
             window.ConvEngine.bargeIn();
             return;
@@ -1213,7 +1261,7 @@
         } else if (next === 'AI_SPEAKING') {
             micClass = 'a01__btn-mic--ai-turn';
             statusText = '대화 중';
-            placeholder = '동대맘이 말하고 있어요';
+            placeholder = '눈치가 말하고 있어요';
             bubbleHint = null; // typewriter 가 직접 채움
             ariaPressed = 'true';
             ariaLabel = '대화 종료 (말씀하시면 끼어들 수 있어요)';
@@ -1221,13 +1269,13 @@
             micClass = 'a01__btn-mic--ai-turn';
             statusText = '생각 중';
             placeholder = '잠시만요...';
-            bubbleHint = '💭 생각하고 있어요';
+            bubbleHint = null; // 텍스트 대신 점점점(…) 애니메이션으로 표시
             ariaPressed = 'false';
             ariaLabel = 'AI 응답 중';
         } else { // INACTIVE
             micClass = 'a01__btn-mic--inactive';
             statusText = '대기';
-            placeholder = '동대맘에게 말하거나 입력해보세요';
+            placeholder = '눈치에게 말하거나 입력해보세요';
             bubbleHint = null;
             ariaPressed = 'false';
             ariaLabel = '대화 시작';
@@ -1244,8 +1292,18 @@
             $status.innerHTML = '<span class="a01__topbar-status-dot"></span>' + statusText;
         }
 
-        // 말풍선 상태 힌트 (LISTENING / THINKING 만 — AI_SPEAKING 은 typewriter 가 채움)
-        if (bubbleHint) {
+        // 생각중 점점점(…) — THINKING 일 때만 .is-thinking 토글
+        $bubble.classList.toggle('is-thinking', next === 'THINKING');
+
+        // 말풍선 상태 표시
+        // - THINKING: 점점점 애니메이션 (텍스트 비움)
+        // - LISTENING: bubbleHint 텍스트
+        // - AI_SPEAKING: typewriter 가 직접 채움
+        if (next === 'THINKING') {
+            $bubble.classList.add('is-visible');
+            $bubble.classList.remove('is-typing');
+            $bubbleText.textContent = '';
+        } else if (bubbleHint) {
             $bubble.classList.add('is-visible');
             $bubble.classList.remove('is-typing');
             $bubbleText.textContent = bubbleHint;
@@ -1283,7 +1341,7 @@
         stopCurrentAudio();           // TTS 음성 즉시 정지
         setAvatar('idle');
         // 즉시 시각 신호 — 모드 전환 콜백이 늦게 와도 사용자에게 바로 보임
-        if ($bubble) $bubble.classList.remove('is-typing');
+        if ($bubble) $bubble.classList.remove('is-typing', 'is-thinking');
         if ($bubbleText) $bubbleText.textContent = '🎤 말씀해 주세요';
         if ($input) $input.placeholder = '듣고 있어요...';
     }
@@ -1315,6 +1373,14 @@
         $switchBtn.addEventListener('click', onSwitchToNormal);
         $muteBtn.addEventListener('click', onToggleMute);
         $micBtn.addEventListener('click', onMicClick);
+
+        // 대화 기록 서랍 — FAB 로 열고, 백드롭/닫기 버튼으로 닫기
+        if ($fab) $fab.addEventListener('click', openDrawer);
+        if ($drawer) {
+            $drawer.querySelectorAll('[data-drawer-close]').forEach(($el) =>
+                $el.addEventListener('click', closeDrawer)
+            );
+        }
     }
 
     function bootVideos() {

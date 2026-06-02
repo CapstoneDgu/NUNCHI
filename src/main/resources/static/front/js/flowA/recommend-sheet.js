@@ -217,7 +217,7 @@
             <div class="rec-sheet" role="dialog" aria-modal="true" aria-label="추천 메뉴">
                 <div class="rec-sheet__handle" aria-hidden="true"></div>
                 <div class="rec-sheet__header">
-                    <h2 class="rec-sheet__title">동대맘의 추천</h2>
+                    <h2 class="rec-sheet__title">눈치의 추천</h2>
                     <button type="button" class="rec-sheet__close" aria-label="닫기">×</button>
                 </div>
                 <div class="rec-sheet__cards" data-cards></div>
