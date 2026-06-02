@@ -699,10 +699,22 @@
             replyComplete: !!(window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply))
         });
 
-        // AI 화면 원격조작 — navigate 면 페이지 떠나므로 이후 후처리 생략
+        // AI 화면 원격조작
+        // navigate(예: 결제 화면 이동)는 아바타 발화를 끝까지 들려준 뒤 0.7초 텀을 두고 이동
+        // — 빈 카트에서 "결제할래" 시 휙 넘어가던 문제 방지. 그 외 액션은 즉시 처리.
         if (window.AiAction && doneRes.action) {
-            window.AiAction.handle(doneRes.action);
-            if (doneRes.action.type === 'navigate' && doneRes.action.page) return;
+            const act = doneRes.action;
+            if (act.type === 'navigate' && act.page) {
+                await ttsQueue.catch(() => {});       // 발화 끝까지 대기
+                try {
+                    await sleep(700, signal);          // 마무리 텀
+                } catch (_) {
+                    return;                            // 도중 barge-in/abort → 이동 취소
+                }
+                window.AiAction.handle(act);
+                return;
+            }
+            window.AiAction.handle(act);
         }
 
         // 카트 변경 키워드 → 카트 재조회
@@ -711,7 +723,7 @@
         }
 
         // 결제 라우팅 — CHECKOUT 진입 또는 완료 키워드
-        // 아바타가 마지막 말을 끝까지 들려준 뒤(TTS 큐 완료), 0.8초 텀을 두고 결제 화면으로.
+        // 아바타가 마지막 말을 끝까지 들려준 뒤(TTS 큐 완료), 0.7초 텀을 두고 결제 화면으로.
         // (말 도중에 화면이 휙 넘어가지 않도록 — 자연스러운 마무리)
         const replyComplete = window.ReplyKeywords && window.ReplyKeywords.replyHasComplete(reply);
         if (enteredCheckout || replyComplete) {
