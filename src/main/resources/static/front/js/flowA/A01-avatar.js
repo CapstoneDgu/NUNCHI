@@ -717,7 +717,7 @@
         if (enteredCheckout || replyComplete) {
             await ttsQueue.catch(() => {});       // 발화 끝까지 대기
             try {
-                await sleep(800, signal);          // 마무리 텀
+                await sleep(700, signal);          // 마무리 텀
             } catch (_) {
                 return;                            // 도중 barge-in/abort → 이동 취소
             }
@@ -1154,9 +1154,9 @@
             showToast('세션이 없어요. 새로고침 해주세요.');
             return;
         }
+        // 장바구니가 비어도 결제 화면을 확인해야 하므로 통과 (검증용). 경고만 남김.
         if (!state.cart.items.length) {
-            showToast('장바구니가 비어있어요.');
-            return;
+            console.warn('[A01] 장바구니가 비었지만 결제 화면으로 진행 (검증용)');
         }
         // 주문 확정(order.confirm)은 P01-summary 가 사용자 액션 시 호출.
         // A01 에서 호출하면 P03/P04 의 retry 흐름과 합쳐 중복 주문 위험.
