@@ -142,9 +142,40 @@
     // 백엔드 결제 메서드 enum 매핑
     const PAY_ENUM = { ic: 'IC_CARD', vein: 'VEIN_AUTH' };
 
+    // 데모 모드(?demo=1): 결제 백엔드 없이 승인 성공 처리 → 완료 화면/영수증 출력까지 플로우 확인용. (QA)
+    const DEMO_PAY = /[?&]demo=1\b/.test(location.search);
+
+    // 카트(또는 샘플)로 영수증/완료 화면용 orderSummary 를 만들어 둔다. (데모 출력 검증용)
+    function seedDemoSummary() {
+        const items = (cartItems && cartItems.length) ? cartItems : [
+            { menuName: '아메리카노(ICE)', quantity: 2, unitPrice: 3000, itemTotal: 6000, options: [] },
+            { menuName: '카페라떼',        quantity: 1, unitPrice: 2500, itemTotal: 2500, options: [] },
+        ];
+        const total = items.reduce((s, it) =>
+            s + (it.itemTotal != null ? it.itemTotal : (it.unitPrice || 0) * (it.quantity || 1)), 0);
+        try {
+            sessionStorage.setItem('orderId', '9999');
+            sessionStorage.setItem('orderSummary', JSON.stringify({
+                orderId: 9999,
+                orderType: sessionStorage.getItem('dineOption') === 'takeout' ? 'TAKEOUT' : 'DINE_IN',
+                totalAmount: total,
+                itemCount: items.length,
+                firstName: (items[0] && items[0].menuName) || '',
+                totalQty: items.reduce((s, it) => s + (it.quantity || 0), 0),
+                items: items,
+            }));
+            sessionStorage.setItem('paymentStatus', 'approved');
+        } catch (_) {}
+    }
+
     // 모달 "승인 요청" 시 호출 — 결제 3단계(주문확정→결제생성→성공)를 한 번에 처리. (QA R2-16)
     //   반환: { ok:true } | { ok:false, reason }
     async function approvePayment() {
+        if (DEMO_PAY) {
+            console.info('[P02] 데모 결제(?demo=1) — 백엔드 호출 없이 승인 성공 처리');
+            seedDemoSummary();
+            return { ok: true };
+        }
         const sid = getSessionId();
         if (!sid) return { ok: false, reason: 'payment_failed' };
         try {
