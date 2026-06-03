@@ -580,6 +580,9 @@
 
         $detail.hidden = false;
         $detail.setAttribute("aria-hidden", "false");
+
+        // 눈치 감지 — 담지 않고 상세만 반복해서 열면 repeat_browse 신호
+        if (window.NunchiSensor) window.NunchiSensor.noteDetailOpen(menuId);
     }
 
     function closeDetail() {
@@ -603,6 +606,9 @@
                 optionIds: Array.isArray(opts.optionIds) ? opts.optionIds : [],
             });
             applyCartResponse(res);
+
+            // 눈치 감지 — "담음" = 결정함 → 반복탐색 카운터 리셋
+            if (window.NunchiSensor) window.NunchiSensor.noteCartAdd();
 
             // 담기 피드백은 토스트로 — 대화기록(채팅)에는 실제 대화만 남긴다 (QA #6)
             if (!opts.silent) {
@@ -837,6 +843,43 @@
         }
     }
 
+    // ---------- 눈치 신호 전송 (QA R2-5) ----------
+    // 사용자가 망설이는 행동(체류=silence / 반복탐색=repeat_browse)을 감지하면
+    // 발화 없이도 AI 에게 nunchi_signal 을 보낸다. 백엔드는 이 신호를 받으면
+    // 무조건 hesitation → 추천(recommend) 흐름으로 처리해 추천 메뉴를 돌려준다.
+    async function sendNunchiSignal(signal) {
+        // 세션 보장 (없으면 발급)
+        if (!state.sessionId) {
+            try { await ensureServerSession(); } catch (e) {
+                console.warn("[N02] 눈치 신호 — 세션 발급 실패", e);
+                return;
+            }
+        }
+        try {
+            // text 는 @NotNull(min_length=1) 이라 짧은 망설임 표현을 함께 보낸다.
+            // (라우팅은 nunchi_signal 이 결정하므로 text 내용은 영향 없음)
+            const res = await window.Api.Ai.chat({
+                session_id: state.sessionId,
+                text: "음...",
+                nunchi_signal: signal,
+                mode: "NORMAL",
+            });
+            if (res && res.reply) {
+                pushChatBubble("ai", res.reply);
+                // 대화 패널이 닫혀 있어도 보이도록 짧게 토스트로 알림
+                showN02Toast(res.reply.length > 36 ? res.reply.slice(0, 35) + "…" : res.reply);
+            }
+            // 추천 메뉴 카드 강조 + 스크롤
+            if (window.AiAction && res && res.recommendations) {
+                window.AiAction.handleRecommendations(res.recommendations);
+            }
+        } catch (e) {
+            // 음성 요청 처리 중이면 조용히 무시 (_busy) — 다음 기회에 다시 감지됨
+            if (e && e._busy) return;
+            console.warn("[N02] 눈치 신호 처리 실패", e);
+        }
+    }
+
     // 미사용 (AiAction 모듈로 이관). 페이지 전용 액션 필요 시만 활용.
     function handleAiAction(action) {
         if (!action || !action.type) return;
@@ -927,11 +970,28 @@
 
         // 실제 버튼 위치를 재서 점선 + 화살표를 그림 (메뉴 카드는 동적이라 좌표를 고정할 수 없음)
         drawGuideLines($guide);
+        // 레이아웃/폰트가 안정된 다음 프레임에 한 번 더 — 첫 측정 어긋남 방지 (QA R2-13)
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            if (!$guide.hidden) drawGuideLines($guide);
+        }));
+        // 메뉴 카드 이미지가 늦게 로드되면 카드/배지 위치가 내려앉는다 →
+        // 이미지 load 와 짧은 지연 후 다시 그려 상세칩·AI배지 어긋남 방지. (QA R2-27)
+        const _reflow = () => { if (!$guide.hidden) drawGuideLines($guide); };
+        if ($menuGrid) {
+            $menuGrid.querySelectorAll('img').forEach((img) => {
+                if (!img.complete) img.addEventListener('load', _reflow, { once: true });
+            });
+        }
+        setTimeout(_reflow, 250);
+        setTimeout(_reflow, 700);
 
         $guide.addEventListener('click', () => {
             $guide.hidden = true;
+            clearGuideLit();   // 대상 밝게/상단바 들어올림 원복
             try { sessionStorage.setItem('n02GuideSeen', '1'); } catch (_) {}
             window.removeEventListener('resize', $guide._redraw);
+            // 가이드를 닫고 실제 주문을 시작하는 시점부터 눈치 감지 재개
+            if (window.NunchiSensor) window.NunchiSensor.resume();
         }, { once: true });
 
         // 창 크기 변동 시 다시 그림
@@ -939,48 +999,124 @@
         window.addEventListener('resize', $guide._redraw);
     }
 
-    // 콜아웃(data-guide-target)에서 실제 대상 버튼까지 점선 화살표를 그림.
-    // .page-bg 의 zoom 스케일은 svg/콜아웃/대상이 모두 동일하게 받으므로
-    // svg 표시 영역 기준 비율로 환산하면 viewBox(720x1280) 좌표가 정확히 맞는다.
+    // 콜아웃은 HTML 에서 화면 전체에 고르게 "고정 배치"(겹침 없음) 되어 있고,
+    // 여기서는 각 콜아웃 → 대상 버튼까지 점선 화살표만 그린다. (QA R2-11)
+    // .page-bg 의 zoom 은 svg/콜아웃/대상이 모두 동일하게 받으므로
+    // svg 표시영역 기준으로 환산하면 viewBox(720x1280) 좌표가 그대로 맞는다.
+    // 가이드 중 어둠 위로 "복제해 띄운" 대상들 — 닫을 때 제거하기 위해 기억
+    let _liftClones = [];
+    function clearGuideLit() {
+        _liftClones.forEach((el) => { try { el.remove(); } catch (_) {} });
+        _liftClones = [];
+    }
+
+    // 대상(배지/버튼)을 복제해 가이드 위에 똑같은 위치/크기로 띄워 밝게 강조. (QA R2-22)
+    // 카드 overflow:hidden 에 갇힌 배지도 복제본은 어둠 위에 또렷이 보인다. 점선 화살표는 그 근방을 가리킴.
+    // 가이드 복제본(밝은 블록) 위치 미세조정 (논리 px). 음수=위/왼쪽, 양수=아래/오른쪽.
+    //   대상별로 개별 보정. 키 = data-guide-target 셀렉터. 없으면 0,0 (보정 안 함).
+    //   상세칩/AI추천 배지는 카드 안 좌표라 살짝 어긋나 보일 수 있어 여기서만 미세조정한다.
+    const GUIDE_NUDGE = {
+        ".n02__menu-card-ai-badge":    { x: 0, y: 0 },   // AI 추천 배지
+        ".n02__menu-card-detail-chip": { x: 0, y: 0 },   // 상세 칩
+    };
+
     function drawGuideLines($guide) {
         const $svg   = $guide.querySelector('.n02-guide__svg');
         const $lines = $guide.querySelector('[data-guide-lines]');
         if (!$svg || !$lines) return;
 
-        const svgRect = $svg.getBoundingClientRect();
-        if (!svgRect.width || !svgRect.height) return;
-        const toVX = (px) => (px - svgRect.left) / svgRect.width  * 720;
-        const toVY = (py) => (py - svgRect.top)  / svgRect.height * 1280;
+        // 모든 좌표를 720×1280 "논리 좌표" 하나로 통일 (QA R2-23).
+        //   - .page-bg 는 720×1280 고정이고 zoom 으로 균일 축소만 된다.
+        //   - getBoundingClientRect 는 zoom 적용된 화면 픽셀 → scale 로 나눠 논리 좌표로 환원.
+        //   - SVG viewBox 는 0 0 720 1280 고정, 콜아웃/복제본도 같은 논리 좌표 → 어떤 창에서도 안 비틀림.
+        const guideRect = $guide.getBoundingClientRect();
+        if (!guideRect.width) return;
+        $svg.setAttribute('viewBox', '0 0 720 1280');
+        const scale = guideRect.width / 720;     // 화면픽셀 / 논리픽셀
+        const toLX = (px) => (px - guideRect.left) / scale;   // 화면 → 가이드 논리 X
+        const toLY = (py) => (py - guideRect.top)  / scale;   // 화면 → 가이드 논리 Y
 
+        const SVGNS = 'http://www.w3.org/2000/svg';
         $lines.innerHTML = "";
+        clearGuideLit();
 
         $guide.querySelectorAll('.n02-guide__callout').forEach((callout) => {
             const sel = callout.getAttribute('data-guide-target');
             const target = sel ? document.querySelector(sel) : null;
-            // 대상이 화면에 없으면(예: 추천 메뉴 없음) 콜아웃도 숨김
-            if (!target || target.offsetParent === null) {
+            if (!target || target.offsetParent === null) {  // 대상 없으면(예: 추천 메뉴 없음) 콜아웃 숨김
                 callout.style.display = "none";
                 return;
             }
             callout.style.display = "";
 
             const tr = target.getBoundingClientRect();
+            // 대상 박스 (논리 좌표)
+            const tbox = { left: toLX(tr.left), right: toLX(tr.right), top: toLY(tr.top), bottom: toLY(tr.bottom) };
+            const tcx = (tbox.left + tbox.right) / 2;
+            const tcy = (tbox.top + tbox.bottom) / 2;
+
+            // ① 대상 복제본을 가이드 위 동일 위치로 띄움 — 밝게 + 글로우.
+            //    크기는 강제하지 않는다(원본 class 의 padding/flex 로 자기 크기 유지) → 디자인·글자 100% 동일.
+            //    위치만 논리 좌표 left/top 으로 지정해 원본과 정확히 포갬. (QA R2-24)
+            const clone = target.cloneNode(true);
+            clone.classList.add('n02-guide__lift');
+            clone.removeAttribute('data-guide-target');
+            clone.id = '';
+            // 위치 = 원본 좌표 + 대상별 미세조정(NUDGE). 대부분 0,0 — 상세칩/AI배지만 필요 시 보정.
+            const nudge = GUIDE_NUDGE[sel] || { x: 0, y: 0 };
+            let cloneLeft = tbox.left + nudge.x, cloneTop = tbox.top + nudge.y;
+            clone.style.left = cloneLeft.toFixed(1) + 'px';
+            clone.style.top  = cloneTop.toFixed(1) + 'px';
+            $guide.appendChild(clone);
+            _liftClones.push(clone);
+
+            // 자기보정 — 붙인 직후 복제본 실제 위치를 측정해 목표(tbox + nudge)와의 오차만큼 보정.
+            //   (상속 마진/반올림으로 살짝 밀리는 것을 측정 기반으로 정확히 잡음 — 줌 무관) (QA R2-26)
+            const cl = clone.getBoundingClientRect();
+            const dxErr = (tbox.left + nudge.x) - toLX(cl.left);
+            const dyErr = (tbox.top  + nudge.y) - toLY(cl.top);
+            if (Math.abs(dxErr) > 0.5 || Math.abs(dyErr) > 0.5) {
+                cloneLeft += dxErr; cloneTop += dyErr;
+                clone.style.left = cloneLeft.toFixed(1) + 'px';
+                clone.style.top  = cloneTop.toFixed(1) + 'px';
+            }
+
+            // ② 콜아웃 → 대상 근방 점선 화살표 (콜아웃도 논리 좌표)
             const cr = callout.getBoundingClientRect();
-            const tx = toVX(tr.left + tr.width / 2);
-            const ty = toVY(tr.top + tr.height / 2);
+            const cbox = { left: toLX(cr.left), right: toLX(cr.right), top: toLY(cr.top), bottom: toLY(cr.bottom) };
+            const ccx = (cbox.left + cbox.right) / 2;
+            const ccy = (cbox.top + cbox.bottom) / 2;
 
-            // 콜아웃에서 선이 나가는 지점 (anchor 변의 중앙)
-            const anchor = callout.getAttribute('data-guide-anchor') || 'top';
-            let sx, sy;
-            if (anchor === 'top')         { sx = toVX(cr.left + cr.width / 2); sy = toVY(cr.top); }
-            else if (anchor === 'bottom') { sx = toVX(cr.left + cr.width / 2); sy = toVY(cr.bottom); }
-            else if (anchor === 'left')   { sx = toVX(cr.left);                sy = toVY(cr.top + cr.height / 2); }
-            else                          { sx = toVX(cr.right);               sy = toVY(cr.top + cr.height / 2); }
+            const start = rayHitRect(ccx, ccy, tcx, tcy, cbox, 2);
+            const end   = rayHitRect(start.x, start.y, tcx, tcy, tbox, 12);  // 글로우 테두리 바깥쪽
 
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', `M${sx.toFixed(1)},${sy.toFixed(1)} L${tx.toFixed(1)},${ty.toFixed(1)}`);
+            const path = document.createElementNS(SVGNS, 'path');
+            path.setAttribute('d', `M${start.x.toFixed(1)},${start.y.toFixed(1)} L${end.x.toFixed(1)},${end.y.toFixed(1)}`);
             $lines.appendChild(path);
         });
+    }
+
+    // 시작점(박스 밖)에서 대상 중심을 향하는 ray 가 박스 경계와 처음 만나는 점.
+    // pad 만큼 박스를 키워 화살촉이 블록에 파묻히지 않고 살짝 떨어져 가리키게 한다.
+    function rayHitRect(sx, sy, cx, cy, box, pad) {
+        const left = box.left - pad, right = box.right + pad;
+        const top = box.top - pad,  bottom = box.bottom + pad;
+        const dx = cx - sx, dy = cy - sy;
+        const ts = [];
+        if (dx !== 0) {
+            const tL = (left - sx) / dx,  yL = sy + tL * dy;
+            if (tL > 0 && tL <= 1 && yL >= top && yL <= bottom) ts.push(tL);
+            const tR = (right - sx) / dx, yR = sy + tR * dy;
+            if (tR > 0 && tR <= 1 && yR >= top && yR <= bottom) ts.push(tR);
+        }
+        if (dy !== 0) {
+            const tT = (top - sy) / dy,    xT = sx + tT * dx;
+            if (tT > 0 && tT <= 1 && xT >= left && xT <= right) ts.push(tT);
+            const tB = (bottom - sy) / dy, xB = sx + tB * dx;
+            if (tB > 0 && tB <= 1 && xB >= left && xB <= right) ts.push(tB);
+        }
+        const t = ts.length ? Math.min(...ts) : 1;
+        return { x: sx + t * dx, y: sy + t * dy };
     }
 
     // ---------- 이벤트 위임 ----------
@@ -1132,6 +1268,17 @@
         renderDineLabel();
         bindEvents();
         initGuideOverlay();
+
+        // 눈치 감지기 — 망설임(체류/반복탐색) 감지 시 AI 추천 유도 (QA R2-5)
+        if (window.NunchiSensor) {
+            window.NunchiSensor.init({
+                getCartCount: () => state.cart.length,
+                onSignal: (signal) => sendNunchiSignal(signal),
+            });
+            // 첫 진입 가이드가 떠 있으면 닫힐 때까지 감지 일시정지
+            const $g0 = document.querySelector('[data-guide]');
+            if ($g0 && !$g0.hidden) window.NunchiSensor.pause();
+        }
 
         // 백엔드에서 메뉴 트리 로드 + 서버 세션/카트 동기화 (병렬)
         try {

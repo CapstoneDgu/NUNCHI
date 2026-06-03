@@ -1,0 +1,17 @@
+.p04__icon {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.p04__icon .xi {
+    font-size: 120px;
+    color: var(--semantic-error);
+}
+
+.p04 .p-flow__cta-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}

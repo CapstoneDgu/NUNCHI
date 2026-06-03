@@ -109,31 +109,119 @@
         }
     }
 
-    /* ---------- Scanning ---------- */
+    /* ---------- Scanning ----------
+       실제 바코드 스캐너(HID) 는 키보드처럼 동작한다: 손님 폰의 결제 바코드를 읽으면
+       숫자(또는 영숫자) 를 아주 빠르게 연타한 뒤 Enter(개행) 로 끝낸다.
+       → keydown 을 버퍼링해 "빠른 연타 + Enter" 패턴이면 스캔으로 간주하고 즉시 결제 확정.
+       사람이 키보드로 천천히 누르는 입력은 무시(간격이 길면 버퍼 리셋)해 오작동을 막는다.
+       데모/단말 미연결 환경을 위해 자동 진행 타이머도 함께 둔다(실 스캔이 들어오면 타이머는 취소). */
+    const SCAN = {
+        buf: '',
+        lastTs: 0,
+        CHAR_GAP_MS: 60,   // 이 간격보다 빠른 연속 입력만 스캐너로 인정
+        MIN_LEN: 6,        // 바코드 최소 자릿수
+        done: false,
+    };
+
+    function onScannerKey(e) {
+        if (SCAN.done) return;
+        const now = performance.now();
+
+        // Enter/Tab = 스캔 종료 신호
+        if (e.key === 'Enter' || e.key === 'Tab') {
+            if (SCAN.buf.length >= SCAN.MIN_LEN) {
+                e.preventDefault();
+                const code = SCAN.buf;
+                SCAN.buf = '';
+                acceptScan(code);
+            } else {
+                SCAN.buf = '';
+            }
+            return;
+        }
+
+        // 한 글자(바코드는 보통 숫자/영숫자) 만 버퍼링
+        if (e.key && e.key.length === 1) {
+            // 직전 입력과의 간격이 길면(사람 타이핑) 버퍼 리셋 후 새로 시작
+            if (now - SCAN.lastTs > SCAN.CHAR_GAP_MS) SCAN.buf = '';
+            SCAN.lastTs = now;
+            SCAN.buf += e.key;
+            // Enter 를 안 보내는 스캐너 대비: 충분히 길어지면 잠시 후 자동 확정
+            clearTimeout(SCAN._flush);
+            SCAN._flush = setTimeout(() => {
+                if (!SCAN.done && SCAN.buf.length >= SCAN.MIN_LEN) {
+                    const code = SCAN.buf;
+                    SCAN.buf = '';
+                    acceptScan(code);
+                }
+            }, 120);
+        }
+    }
+
+    // 유효 바코드 스캔 수신 → 실패 강제 쿼리 우선, 아니면 그 값으로 결제 확정
+    function acceptScan(code) {
+        if (SCAN.done) return;
+        SCAN.done = true;
+        clearAllTimers();
+        setProgress(100);
+        const forced = getQuery('result');
+        if (forced === 'fail') {
+            try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
+            location.href = '/fail?reason=barcode_error';
+            return;
+        }
+        finalizeBarcodePayment(code);
+    }
+
     function startScanning() {
         setProgress(0);
+        SCAN.done = false;
+        SCAN.buf = '';
 
-        const DURATION = 2500;
-        const startTs = performance.now();
+        // 데모 모드(?demo=1): 스캐너 없이 동작 확인용 — 2.5s 뒤 자동 성공.
+        // 실제 운영: 스캐너 스캔(onScannerKey→acceptScan)이 들어올 때까지 대기하고,
+        //            일정 시간 무스캔이면 타임아웃 실패 처리(가짜 성공 금지 — QA R2-2 실제 결제).
+        const demo = getQuery('demo') === '1';
 
-        const tick = (now) => {
-            const elapsed = now - startTs;
-            setProgress(Math.min(100, (elapsed / DURATION) * 100));
-            if (elapsed < DURATION) {
-                progressRaf = requestAnimationFrame(tick);
-            }
+        if (demo) {
+            const DURATION = 2500;
+            const startTs = performance.now();
+            const tick = (now) => {
+                setProgress(Math.min(100, ((now - startTs) / DURATION) * 100));
+                if (now - startTs < DURATION) progressRaf = requestAnimationFrame(tick);
+            };
+            progressRaf = requestAnimationFrame(tick);
+            scanTimer = setTimeout(() => {
+                if (getQuery('result') === 'fail') {
+                    try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
+                    location.href = '/fail?reason=barcode_error';
+                    return;
+                }
+                finalizeBarcodePayment();   // 데모 — 임의 바코드로 확정
+            }, DURATION);
+            return;
+        }
+
+        // 실제 스캔 대기 — 프로그레스는 "스캔 대기 중" 을 부드럽게 반복 표시
+        let dir = 1, pct = 0;
+        const sweep = () => {
+            pct += dir * 1.4;
+            if (pct >= 90) { pct = 90; dir = -1; }
+            else if (pct <= 10) { pct = 10; dir = 1; }
+            setProgress(pct);
+            progressRaf = requestAnimationFrame(sweep);
         };
-        progressRaf = requestAnimationFrame(tick);
+        progressRaf = requestAnimationFrame(sweep);
 
+        // 무스캔 타임아웃 — 45초 동안 스캔이 없으면 실패 화면으로 (멈춤 방지)
+        const SCAN_TIMEOUT_MS = 45000;
         scanTimer = setTimeout(() => {
-            const forced = getQuery('result');
-            if (forced === 'fail') {
-                try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
-                location.href = '/fail?reason=barcode_error';
-                return;
-            }
-            finalizeBarcodePayment();
-        }, DURATION);
+            if (SCAN.done) return;
+            SCAN.done = true;
+            clearAllTimers();
+            try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
+            location.href = '/fail?reason=timeout';
+        }, SCAN_TIMEOUT_MS);
     }
 
     /* ---------- 백엔드 결제 확정 ----------
@@ -143,9 +231,10 @@
        2) POST /api/payments/barcode → paymentId (이미 SUCCESS 상태)
        3) orderSummary 저장 → setState('success') → /complete */
     let finalizing = false;
-    async function finalizeBarcodePayment() {
+    async function finalizeBarcodePayment(scannedCode) {
         if (finalizing) return;
         finalizing = true;
+        document.removeEventListener('keydown', onScannerKey, true);
 
         const sid = getSessionId();
         if (!sid) {
@@ -160,15 +249,21 @@
 
             try {
                 sessionStorage.setItem('orderSummary', JSON.stringify({
+                    orderId:     order.orderId,
+                    orderType:   order.orderType,                 // DINE_IN / TAKEOUT (영수증 표기)
                     totalAmount: order.totalAmount,
                     itemCount:   (order.items || []).length,
                     firstName:   (order.items && order.items[0] && order.items[0].menuName) || '',
                     totalQty:    (order.items || []).reduce((s, it) => s + (it.quantity || 0), 0),
+                    items:       order.items || [],               // 영수증 품목 명세 (QA R2-3)
                 }));
             } catch (_) {}
 
-            // 바코드 값은 mock — 백엔드가 검증하지 않으므로 임의 13자리
-            const barcodeValue = String(Date.now()).slice(-13);
+            // 실제 스캔 값이 있으면 그 값으로, 없으면(데모/폴백) 임의 13자리.
+            // 백엔드 payByBarcode 는 값 검증 없이 SUCCESS 처리한다.
+            const barcodeValue = (scannedCode && String(scannedCode).trim())
+                ? String(scannedCode).trim()
+                : String(Date.now()).slice(-13);
             const payment = await window.NunchiApi.Payments.payByBarcode(order.orderId, barcodeValue);
             if (!payment || !payment.paymentId) throw new Error('payByBarcode 응답에 paymentId 없음');
             sessionStorage.setItem('paymentId', String(payment.paymentId));
@@ -197,7 +292,13 @@
     if (backEl)   backEl.addEventListener('click',   goPrev);
     if (cancelEl) cancelEl.addEventListener('click', goPrev);
 
-    window.addEventListener('beforeunload', clearAllTimers);
+    // HID 바코드 스캐너 입력 수신 (캡처 단계 — 다른 핸들러보다 먼저 가로챔)
+    document.addEventListener('keydown', onScannerKey, true);
+
+    window.addEventListener('beforeunload', () => {
+        clearAllTimers();
+        document.removeEventListener('keydown', onScannerKey, true);
+    });
 
     /* ---------- Boot ---------- */
     renderStoreName();

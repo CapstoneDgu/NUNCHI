@@ -122,6 +122,15 @@
 
         } else if (nextState === 'processing') {
             setProgress(0);
+
+            // 카드 단말이 연동(활성화)돼 있으면 데모 타이머 대신 실제 승인 요청을 탄다. (QA R2-2)
+            // card-terminal.js 가 ENABLED=true 로 window.CardTerminal 을 노출했을 때만 진입.
+            if (window.CardTerminal && typeof window.CardTerminal.requestApproval === 'function') {
+                setProgress(60);            // 단말 응답 대기 중(불확정 진행 표시)
+                requestRealCardApproval();  // 성공: approved 전이 / 실패: /fail 이동
+                return;
+            }
+
             const DURATION = 3000;
             const startTs = performance.now();
             const tick = (now) => {
@@ -156,6 +165,37 @@
                     location.href = '/complete';
                 }, 1200);
             }
+        }
+    }
+
+    /* ---------- 실제 카드 단말기 승인 (어댑터 연동) ----------
+     * window.CardTerminal.requestApproval({ amount }) → Promise
+     *   성공: { approved:true, approvalNo, ... } 로 resolve → approved 상태로 전이
+     *   실패: reject(reason) 또는 { approved:false, reason } → /fail 로 이동
+     * 단말기 제조사/VAN 별 실제 통신은 card-terminal.js 어댑터가 담당한다. */
+    let _cardAmount = 0;
+    async function requestRealCardApproval() {
+        try {
+            const result = await window.CardTerminal.requestApproval({
+                amount: _cardAmount,
+                orderName: sessionStorage.getItem(STORE_KEY) || '상록원',
+            });
+            if (result && result.approved) {
+                // 승인번호 등 단말 응답을 결제 확정에 활용할 수 있도록 보관
+                try {
+                    if (result.approvalNo) sessionStorage.setItem('cardApprovalNo', String(result.approvalNo));
+                } catch (_) {}
+                setState('approved', { transition: true });
+            } else {
+                const reason = (result && result.reason) || 'declined';
+                try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
+                location.href = '/fail?reason=' + encodeURIComponent(reason);
+            }
+        } catch (e) {
+            console.warn('[P04] 카드 단말 승인 실패', e);
+            const reason = (e && e.reason) || 'card_error';
+            try { sessionStorage.setItem(STATUS_KEY, 'failed'); } catch (_) {}
+            location.href = '/fail?reason=' + encodeURIComponent(reason);
         }
     }
 
@@ -201,10 +241,13 @@
 
             try {
                 sessionStorage.setItem('orderSummary', JSON.stringify({
+                    orderId:     order.orderId,
+                    orderType:   order.orderType,                 // DINE_IN / TAKEOUT (영수증 표기)
                     totalAmount: order.totalAmount,
                     itemCount:   (order.items || []).length,
                     firstName:   (order.items && order.items[0] && order.items[0].menuName) || '',
                     totalQty:    (order.items || []).reduce((s, it) => s + (it.quantity || 0), 0),
+                    items:       order.items || [],               // 영수증 품목 명세 (QA R2-3)
                 }));
             } catch (_) {}
 
@@ -241,6 +284,7 @@
         try {
             const res = await window.NunchiApi.Cart.get(sid);
             const total = (res && typeof res.totalAmount === 'number') ? res.totalAmount : 0;
+            _cardAmount = total;          // 카드 단말 승인 요청 금액
             if (totalEl) totalEl.textContent = fmtWon(total);
         } catch (e) {
             console.warn('[P04] 카트 조회 실패', e);
