@@ -236,34 +236,52 @@
 .paymod__failx   { background: #dc3545; }
 @keyframes paymodPop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-/* ── 영수증/번호표 선택 ── */
+/* ── 결제수단별 진행 애니메이션 (기존 P03/P04/P07 비주얼을 모달 안에서 사용) ── */
+.paymod__anim {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    transform: scale(0.92);
+    margin: -4px 0 2px;
+}
+.paymod__anim .p03,
+.paymod__anim .p04,
+.paymod__anim .p07 { padding: 0; }
+
+/* ── 영수증/번호표 선택 — 2열(나란히) · 세로로 긴 버튼 (QA R3) ── */
 .paymod__output {
     display: flex;
-    gap: 12px;
-    margin-top: 10px;
+    flex-direction: row;        /* 2열 나란히 */
+    gap: 14px;
+    margin-top: 14px;
 }
 .paymod__output-btn {
-    flex: 1 1 0;
+    flex: 1 1 0;                 /* 두 칸 균등 */
+    min-height: 240px;          /* 세로로 길게 */
     display: flex;
-    flex-direction: column;
+    flex-direction: column;     /* 아이콘 위 · 텍스트 아래 */
     align-items: center;
-    gap: 6px;
-    padding: 20px 12px;
+    justify-content: center;
+    gap: 16px;
+    padding: 28px 16px;
     background: #fff;
     border: 1.5px solid var(--neutral-200, #e2ded8);
-    border-radius: 16px;
+    border-radius: 18px;
     cursor: pointer;
     transition: border-color .12s ease, background .12s ease, transform .12s ease;
 }
-.paymod__output-btn:active { transform: scale(0.97); border-color: var(--primary-500, #e8600a); background: var(--primary-50, #fff3ec); }
+.paymod__output-btn:active { transform: scale(0.98); border-color: var(--primary-500, #e8600a); background: var(--primary-50, #fff3ec); }
 .paymod__output-ic {
-    width: 46px; height: 46px;
+    flex: 0 0 auto;
+    width: 72px; height: 72px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 12px; font-size: 24px;
+    border-radius: 18px; font-size: 38px;
     background: var(--primary-50, #fff3ec); color: var(--primary-600, #cf5208);
 }
-.paymod__output-t { font-size: 16px; font-weight: 800; color: var(--neutral-900, #1e1915); }
-.paymod__output-d { font-size: 12px; color: var(--color-text-secondary, #6b6259); }
+.paymod__output-txt { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.paymod__output-t { font-size: 20px; font-weight: 800; color: var(--neutral-900, #1e1915); }
+.paymod__output-d { font-size: 13px; color: var(--color-text-secondary, #6b6259); }
 
 @media (prefers-reduced-motion: reduce) {
     .paymod, .paymod__box { transition: none; }
