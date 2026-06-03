@@ -220,7 +220,7 @@
 
             <!-- 하단 CTA -->
             <div class="n02__detail-cta-wrap">
-                <button class="btn-cta btn-cta--primary btn-cta--block n02__detail-cta"
+                <button class="n02__detail-cta"
                         type="button"
                         data-action="add-from-detail">
                     <i class="xi xi-cart" aria-hidden="true"></i>
@@ -308,59 +308,70 @@
          ======================================================== -->
     <div class="n02-guide" data-guide hidden>
         <!-- 점선 + 화살표 레이어 : 좌표는 JS 가 실제 버튼 위치를 재서 그림 (프레임 720x1280) -->
+        <!-- preserveAspectRatio="none" : viewBox 를 SVG 박스에 x·y 독립으로 늘려 채움.
+             JS(drawGuideLines)의 kx/ky 선형 환산과 정확히 일치해야 화살표가 제 위치에 찍힌다. (QA R2-13) -->
+        <!-- 점선 화살표 레이어. viewBox 는 JS 가 SVG 실제 픽셀 크기로 동적 설정(zoom 무관). -->
         <svg class="n02-guide__svg" viewBox="0 0 720 1280" preserveAspectRatio="none" aria-hidden="true">
             <defs>
-                <marker id="n02GuideArrow" markerWidth="10" markerHeight="10" refX="6" refY="4" orient="auto">
-                    <path d="M0,0 L8,4 L0,8 Z" fill="#ffd54a"></path>
+                <!-- viewBox(0 0 12 12) 로 좌표 정규화 → 화살촉 크기·tip 위치 정확히 제어.
+                     markerUnits=userSpaceOnUse → 점선 굵기와 무관하게 일정 크기(markerWidth 가 픽셀 크기).
+                     refX=11(tip) refY=6(세로중앙) → 화살촉 끝이 선 끝점에 정확히 닿음.
+                     화살촉 채움은 CSS '.n02-guide__svg marker path { fill }' 가 담당. (QA R2-17) -->
+                <marker id="n02GuideArrow" viewBox="0 0 12 12"
+                        markerWidth="26" markerHeight="26"
+                        refX="11" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+                    <path d="M0,0 L12,6 L0,12 L4,6 Z"></path>
                 </marker>
             </defs>
             <g data-guide-lines></g>
         </svg>
 
-        <!-- 각 콜아웃은 data-guide-target(가리킬 요소) · data-guide-anchor(콜아웃에서 선이 나가는 변) 로 연결 -->
-        <!-- 매장/포장 (상단 좌측) -->
-        <div class="n02-guide__callout" style="top:150px; left:14px;"
-             data-guide-target=".n02__dine-toggle" data-guide-anchor="top">
+        <!-- 콜아웃은 화면 중간 영역에 고르게 분산 고정(겹침 없음) — 위치는 인라인 style.
+             JS(drawGuideLines)가 각 콜아웃 → 대상까지 "긴 점선 + 화살촉"을 그려 대상을 가리킨다. (QA R2-15)
+             대상은 대부분 상단(상단바·첫 메뉴카드)이라, 콜아웃을 중앙대(여백)에 두고 위로 길게 잇는다. -->
+        <!-- 매장/포장 (좌측 중앙 → 상단바 토글) -->
+        <div class="n02-guide__callout" style="left:24px; top:470px;"
+             data-guide-target=".n02__dine-toggle">
             <i class="xi xi-refresh" aria-hidden="true"></i>
             <div class="n02-guide__callout-body">
                 <strong>매장 / 포장</strong>
-                <span>터치하면 식사 방식이 바뀌어요</span>
+                <span>터치하면 매장·포장 변경</span>
             </div>
         </div>
-        <!-- 마이크 (상단 우측) -->
-        <div class="n02-guide__callout" style="top:150px; right:14px;"
-             data-guide-target="[data-action='toggle-mic']" data-guide-anchor="top">
-            <i class="xi xi-microphone" aria-hidden="true"></i>
-            <div class="n02-guide__callout-body">
-                <strong>마이크</strong>
-                <span>켜고 "○○ 담아줘"처럼 음성으로 주문</span>
-            </div>
-        </div>
-        <!-- 대화 기록 (상단 우측) -->
-        <div class="n02-guide__callout" style="top:252px; right:14px;"
-             data-guide-target="[data-action='open-chat']" data-guide-anchor="top">
+        <!-- 대화 기록 (우측 중앙 → 상단바 대화기록) -->
+        <div class="n02-guide__callout" style="left:476px; top:470px;"
+             data-guide-target="[data-action='open-chat']">
             <i class="xi xi-message" aria-hidden="true"></i>
             <div class="n02-guide__callout-body">
                 <strong>대화 기록</strong>
-                <span>AI와 나눈 대화를 다시 볼 수 있어요</span>
+                <span>AI와 나눈 대화 보기</span>
             </div>
         </div>
-        <!-- AI 추천 라벨 (메뉴 카드) — 추천 메뉴 없으면 JS 가 숨김 -->
-        <div class="n02-guide__callout" style="bottom:300px; left:14px;"
-             data-guide-target=".n02__menu-card-ai-badge" data-guide-anchor="bottom">
+        <!-- 마이크 (우측, 대화기록 아래 → 상단바 마이크) -->
+        <div class="n02-guide__callout" style="left:476px; top:640px;"
+             data-guide-target="[data-action='toggle-mic']">
+            <i class="xi xi-microphone" aria-hidden="true"></i>
+            <div class="n02-guide__callout-body">
+                <strong>마이크</strong>
+                <span>음성으로 주문할 수 있어요</span>
+            </div>
+        </div>
+        <!-- AI 추천 라벨 (좌측 하단 → 메뉴 카드 배지) — 추천 메뉴 없으면 JS 가 숨김 -->
+        <div class="n02-guide__callout" style="left:24px; top:820px;"
+             data-guide-target=".n02__menu-card-ai-badge">
             <i class="xi xi-lightning" aria-hidden="true"></i>
             <div class="n02-guide__callout-body">
                 <strong>AI 추천 라벨</strong>
-                <span>AI가 추천하는 메뉴예요</span>
+                <span>AI가 추천하는 메뉴</span>
             </div>
         </div>
-        <!-- 상세 칩 (메뉴 카드) -->
-        <div class="n02-guide__callout" style="bottom:300px; right:14px;"
-             data-guide-target=".n02__menu-card-detail-chip" data-guide-anchor="bottom">
+        <!-- 상세 칩 (중앙 하단 → 메뉴 카드 상세칩) -->
+        <div class="n02-guide__callout" style="left:430px; top:980px;"
+             data-guide-target=".n02__menu-card-detail-chip">
             <i class="xi xi-document" aria-hidden="true"></i>
             <div class="n02-guide__callout-body">
                 <strong>상세</strong>
-                <span>메뉴 정보와 추천 이유를 봐요</span>
+                <span>메뉴 정보·추천 이유 보기</span>
             </div>
         </div>
 
@@ -369,12 +380,14 @@
 
 </main>
 
+<script src="/js/common/kiosk-guard.js"></script>
 <script src="/lib/jquery-3.7.0.min.js"></script>
 <script src="/js/common/confirm-modal.js"></script>
 <script src="/js/common/app-state.js"></script>
 <script src="/js/common/api.js"></script>
 <script src="/js/common/quick-action.js"></script>
 <script src="/js/common/ai-action.js"></script>
+<script src="/js/common/nunchi-sensor.js"></script>
 <script src="/js/flowA/conversation-engine.js"></script>
 <script src="/js/flowN/menu-data.js"></script>
 <script src="/js/flowN/N02-menu.js"></script>
