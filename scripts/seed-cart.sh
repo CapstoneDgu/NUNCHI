@@ -35,10 +35,19 @@ MENU_IDS=$(curl -s "$BASE/api/menus/top?limit=3" \
 # 3. 각 메뉴를 수량 1로 카트에 추가
 echo "→ 카트에 담기"
 for MID in $MENU_IDS; do
-  RESP=$(curl -s -X POST "$BASE/api/orders/cart/items" \
+  # 본문과 HTTP 상태코드를 함께 받아 실패(4xx/5xx)를 가리지 않는다.
+  # curl -s 는 HTTP 오류에도 종료코드 0 이라 set -e 로는 못 잡으므로 코드로 직접 검사.
+  RESP=$(curl -s -w $'\n%{http_code}' -X POST "$BASE/api/orders/cart/items" \
     -H "Content-Type: application/json" \
     -d "{\"sessionId\":$SESSION_ID,\"menuId\":$MID,\"quantity\":1,\"optionIds\":[]}")
-  echo "  + menuId=$MID 추가됨"
+  HTTP="${RESP##*$'\n'}"   # 마지막 줄 = HTTP 상태코드
+  BODY="${RESP%$'\n'*}"    # 그 앞 = 응답 본문
+  if [[ "$HTTP" == 2* ]]; then
+    echo "  + menuId=$MID 추가됨"
+  else
+    echo "  ✗ menuId=$MID 추가 실패 (HTTP $HTTP): $BODY" >&2
+    exit 1
+  fi
 done
 
 # 4. 결과 요약

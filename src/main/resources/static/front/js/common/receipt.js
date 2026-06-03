@@ -72,7 +72,64 @@
         }).join('');
     }
 
+    // 번호표 전용 양식 — 영수증과 달리 품목/금액/세금 없이 대기번호만 크게 출력. (QA R2-3)
+    function buildTicketHtml(data) {
+        return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>번호표</title>
+<style>
+  @page { size: 80mm auto; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #fff; }
+  .ticket {
+    width: 76mm;
+    padding: 6mm 4mm 8mm;
+    margin: 0 auto;
+    font-family: 'Pretendard', -apple-system, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    color: #000;
+    text-align: center;
+    -webkit-font-smoothing: none;
+  }
+  .t-store { font-size: 18px; font-weight: 800; letter-spacing: 2px; }
+  .t-doc   { font-size: 14px; font-weight: 800; letter-spacing: 4px; margin: 6px 0 2px; }
+  .t-hr    { border: 0; border-top: 1px dashed #000; margin: 8px 0; }
+  .t-label { font-size: 12px; font-weight: 700; }
+  .t-no    { font-size: 64px; font-weight: 900; letter-spacing: 4px; line-height: 1.1; margin: 4px 0; }
+  .t-time  { font-size: 11px; }
+  .t-guide { font-size: 12px; margin-top: 6px; line-height: 1.6; }
+  .t-barcode {
+    margin: 12px auto 2px;
+    height: 42px; width: 86%;
+    background: repeating-linear-gradient(90deg,
+      #000 0 1px, #fff 1px 2px, #000 2px 4px, #fff 4px 7px,
+      #000 7px 8px, #fff 8px 11px, #000 11px 13px, #fff 13px 14px);
+  }
+  .t-barcode-num { font-size: 11px; letter-spacing: 3px; }
+</style>
+</head>
+<body>
+<div class="ticket">
+  <div class="t-store">${esc(data.storeName || STORE_INFO.bizName)}</div>
+  <div class="t-doc">대 기 번 호 표</div>
+  <hr class="t-hr">
+  <div class="t-label">대기번호</div>
+  <div class="t-no">${esc(data.orderNo || '-')}</div>
+  <div class="t-time">${esc(data.orderTime || fmtTime())}</div>
+  <hr class="t-hr">
+  <div class="t-guide">번호가 호출되면<br>카운터로 와주세요</div>
+  <div class="t-barcode"></div>
+  <div class="t-barcode-num">${esc(String(data.orderId || Date.now()).padStart(12, '0').slice(-12))}</div>
+</div>
+</body>
+</html>`;
+    }
+
     function buildHtml(data) {
+        // 번호표 선택 시에는 영수증 대신 번호표 양식으로 분기. (docKind: 'ticket' | 'receipt')
+        if ((data.docKind || '') === 'ticket') return buildTicketHtml(data);
+
         const total    = data.totalAmount || 0;
         const supply   = Math.round(total / (1 + VAT_RATE));  // 공급가액
         const vat      = total - supply;                       // 부가세

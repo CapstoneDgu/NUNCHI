@@ -122,6 +122,15 @@
 
         } else if (nextState === 'processing') {
             setProgress(0);
+
+            // 카드 단말이 연동(활성화)돼 있으면 데모 타이머 대신 실제 승인 요청을 탄다. (QA R2-2)
+            // card-terminal.js 가 ENABLED=true 로 window.CardTerminal 을 노출했을 때만 진입.
+            if (window.CardTerminal && typeof window.CardTerminal.requestApproval === 'function') {
+                setProgress(60);            // 단말 응답 대기 중(불확정 진행 표시)
+                requestRealCardApproval();  // 성공: approved 전이 / 실패: /fail 이동
+                return;
+            }
+
             const DURATION = 3000;
             const startTs = performance.now();
             const tick = (now) => {
