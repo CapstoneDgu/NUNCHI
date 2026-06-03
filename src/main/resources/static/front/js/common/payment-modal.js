@@ -251,13 +251,22 @@
     function _setTip(t)     { const e = _root.querySelector('[data-paymod-htip]'); if (e) e.textContent = t; }
 
     /* ---------- 승인 처리 ---------- */
+    // 백엔드 승인이 즉시 끝나도 진행 애니메이션이 최소 이만큼은 보이도록 보장.
+    const MIN_PROCESSING_MS = 2600;
+
     async function _runApprove() {
         _renderProcessing();
+        const startedAt = Date.now();
         let r;
         try {
             r = _opts.approve ? await _opts.approve() : { ok: true };
         } catch (e) {
             r = { ok: false, reason: (e && e.reason) || 'payment_failed' };
+        }
+        // 애니메이션이 너무 빨리 사라지지 않게 최소 표시 시간 확보
+        const elapsed = Date.now() - startedAt;
+        if (elapsed < MIN_PROCESSING_MS) {
+            await new Promise((res) => setTimeout(res, MIN_PROCESSING_MS - elapsed));
         }
         if (!_root) return;             // 그새 닫힘
         if (r && r.ok) _renderDone();

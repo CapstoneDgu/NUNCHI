@@ -249,21 +249,22 @@
 .paymod__anim .p04,
 .paymod__anim .p07 { padding: 0; }
 
-/* ── 영수증/번호표 선택 — 세로 큰 버튼 2개 (QA R3) ── */
+/* ── 영수증/번호표 선택 — 2열(나란히) · 세로로 긴 버튼 (QA R3) ── */
 .paymod__output {
     display: flex;
-    flex-direction: column;     /* 세로 2개 */
+    flex-direction: row;        /* 2열 나란히 */
     gap: 14px;
     margin-top: 14px;
 }
 .paymod__output-btn {
-    width: 100%;
+    flex: 1 1 0;                 /* 두 칸 균등 */
+    min-height: 240px;          /* 세로로 길게 */
     display: flex;
-    flex-direction: row;        /* 아이콘 + 텍스트 가로, 버튼은 크게 */
+    flex-direction: column;     /* 아이콘 위 · 텍스트 아래 */
     align-items: center;
     justify-content: center;
     gap: 16px;
-    padding: 26px 20px;
+    padding: 28px 16px;
     background: #fff;
     border: 1.5px solid var(--neutral-200, #e2ded8);
     border-radius: 18px;
@@ -273,12 +274,12 @@
 .paymod__output-btn:active { transform: scale(0.98); border-color: var(--primary-500, #e8600a); background: var(--primary-50, #fff3ec); }
 .paymod__output-ic {
     flex: 0 0 auto;
-    width: 56px; height: 56px;
+    width: 72px; height: 72px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 14px; font-size: 30px;
+    border-radius: 18px; font-size: 38px;
     background: var(--primary-50, #fff3ec); color: var(--primary-600, #cf5208);
 }
-.paymod__output-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.paymod__output-txt { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
 .paymod__output-t { font-size: 20px; font-weight: 800; color: var(--neutral-900, #1e1915); }
 .paymod__output-d { font-size: 13px; color: var(--color-text-secondary, #6b6259); }
 
