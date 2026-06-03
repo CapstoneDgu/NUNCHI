@@ -35,7 +35,7 @@
     const FLOW_KEYS_TO_CLEAR = [
         STORE_KEY, METHOD_KEY, STATUS_KEY, ORDERNO_KEY, ORDER_SUMMARY_KEY,
         SESSION_ID_KEY, 'mode', 'dineOption', 'currentFloor', 'currentStore',
-        'currentStep', 'orderId', 'paymentId', 'receiptKind'
+        'currentStep', 'orderId', 'paymentId', 'receiptKind', 'printOrder'
     ];
 
     function loadOrderSummary() {

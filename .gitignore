@@ -55,6 +55,10 @@ src/main/resources/static/_figma-raw/
 .env.*
 !.env.example
 
+### SSH/PEM 키 — 절대 커밋 금지 ###
+*.pem
+*.key
+
 .docker-compose.yml
 
 ### Docker (로컬 개발용 - 커밋하지 않음) ###

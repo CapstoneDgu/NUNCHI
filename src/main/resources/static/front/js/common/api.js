@@ -22,15 +22,16 @@
 
     const LOG = '[Api]';
     // 로컬 개발: 페이지가 localhost 면 Spring 은 same-origin(`''`),
-    //           FastAPI(/ai/**) 는 로컬 FastAPI(localhost:8000).
-    //           ※ 로컬 Spring 과 로컬 FastAPI 가 같은 로컬 DB/세션을 공유해야
-    //             세션 검증이 일치한다. (운영 FastAPI 를 가리키면 세션 불일치로 502)
+    //           FastAPI(/ai/**) 는 원격 FastAPI(sslip.io HTTPS) 로 직결.
+    //           ※ 원격 FastAPI 는 원격 Spring 세션을 검증함 — 로컬 Spring 으로 만든
+    //             session_id 와 다를 수 있으므로 AI 화면은 /ai/order/start 로 새 세션 발급해 사용.
     // 운영: 둘 다 same-origin (`''`) — nginx 가 /ai/** 를 FastAPI 로 매핑.
-    const LOCAL_FASTAPI = 'http://localhost:8000';   // 로컬 NUNCHI-AI
+    // 참고: raw IP(43.201.20.11:8000)는 포트 닫혀 있음. sslip.io 도메인만 노출.
+    const LOCAL_FASTAPI = 'https://43-201-20-11.sslip.io';   // 원격 NUNCHI-AI (sslip.io DNS → 443 → FastAPI)
     const isLocalHost = (typeof location !== 'undefined') &&
         (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 
-    /** path 별 base URL 결정. /ai/** 는 FastAPI(로컬=8000, 운영=same-origin), 그 외는 Spring. */
+    /** path 별 base URL 결정. /ai/** 는 FastAPI(로컬=sslip.io HTTPS 직결, 운영=same-origin), 그 외는 Spring. */
     function resolveUrl(path) {
         if (path.startsWith('/ai/')) {
             return (isLocalHost ? LOCAL_FASTAPI : '') + path;
@@ -315,6 +316,67 @@
             _chatInFlight = true;
             return requestRaw('POST', '/ai/order/chat', payload)
                 .finally(() => { _chatInFlight = false; });
+        },
+        /**
+         * 사용자 발화 처리 — SSE 스트리밍.
+         * /ai/order/chat 과 요청 body 동일, 응답은 SSE 이벤트 스트림.
+         *
+         * 이벤트 종류:
+         *   - token : { type:"token", text:"오늘" }  — LLM 토큰 도착 즉시 (말풍선에 append)
+         *   - done  : { type:"done", reply, recommendations, menu_options, suggestions,
+         *              action, current_step }       — 전체 응답 완료 (후처리 분기 시점)
+         *   - error : { type:"error", message }     — 백엔드 오류
+         *
+         * 동시 호출 정책은 chat() 과 동일 — done 까지는 신규 호출 즉시 reject.
+         * OOD(clarify_responder) 응답은 token 없이 done 만 올 수 있다 — 호출부에서 fallback 필요.
+         *
+         * @param {{session_id:number, text:string, nunchi_signal?:string, mode?:string}} body
+         * @param {{onToken?:(t:string)=>void, onDone?:(d:object)=>void, onError?:(m:string)=>void}} [handlers]
+         * @returns {Promise<void>} 스트림 종료 시 resolve
+         */
+        chatStream(body, handlers) {
+            if (!body || body.session_id == null || !body.text) {
+                throw new Error('Ai.chatStream: session_id, text 필수');
+            }
+            if (_chatInFlight) {
+                const busy = new ApiError(429, '이전 음성 요청을 처리하고 있어요.', 0, '/ai/order/chat/stream');
+                busy._busy = true;
+                return Promise.reject(busy);
+            }
+            const payload = {
+                session_id: body.session_id,
+                text: body.text,
+                mode: body.mode || 'AVATAR',
+            };
+            if (body.nunchi_signal) payload.nunchi_signal = body.nunchi_signal;
+
+            const onToken = handlers && handlers.onToken;
+            const onDone  = handlers && handlers.onDone;
+            const onError = handlers && handlers.onError;
+
+            const url = resolveUrl('/ai/order/chat/stream');
+            _chatInFlight = true;
+
+            return fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload),
+            }).then((res) => {
+                if (!res.ok) {
+                    throw new ApiError(res.status, 'SSE 연결 실패: ' + res.status, res.status, '/ai/order/chat/stream');
+                }
+                if (!res.body) {
+                    throw new ApiError(0, 'SSE 응답 본문이 없습니다.', res.status, '/ai/order/chat/stream');
+                }
+                if (!window.SseParser) {
+                    throw new ApiError(0, 'SseParser 가 로드되지 않았습니다 (sse-parser.js 누락).', 0, '/ai/order/chat/stream');
+                }
+                return window.SseParser.consume(res.body, { onToken, onDone, onError });
+            }).finally(() => { _chatInFlight = false; });
         },
         /**
          * 추천/옵션 선택 후 메뉴를 장바구니에 직접 담음 (옵션 선택 UI 거친 뒤 사용).

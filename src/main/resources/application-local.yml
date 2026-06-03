@@ -59,6 +59,15 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    tags:
+      application: nunchi
+
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+      percentiles:
+        "[http.server.requests]": 0.95, 0.99
 
 fastapi:
   base-url: ${LOCAL_FASTAPI_URL}

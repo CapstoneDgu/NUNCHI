@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=720, initial-scale=1" />
-    <title>동대맘과 대화 · 눈치 키오스크</title>
+    <title>눈치와 대화 · 눈치 키오스크</title>
     <link rel="stylesheet" href="/lib/fonts/XEIcon-2.2.0/xeicon.min.css">
     <link rel="stylesheet" href="/css/common.css">
     <link rel="stylesheet" href="/css/components.css">
@@ -27,7 +27,7 @@
                 <span class="a01__topbar-status-dot"></span>
                 대화중
             </span>
-            <span class="a01__topbar-name">동대맘</span>
+            <span class="a01__topbar-name">눈치</span>
         </div>
         <div class="a01__topbar-actions">
             <button class="a01__topbar-action a01__topbar-action--switch"
@@ -51,18 +51,18 @@
          ② 아바타 스테이지 (720px) — 비디오 cross-fade + 말풍선 + 파형
          ======================================================== -->
     <section class="a01__stage fade-up" style="--delay: 80ms;"
-             aria-label="동대맘 아바타">
+             aria-label="눈치 아바타">
         <div class="a01__stage-canvas">
             <!-- 대기 상태 비디오 (기본 노출) -->
             <video class="a01__avatar-video a01__avatar-video--idle is-active"
                    data-avatar="idle"
-                   src="/images/avatars/통장님_대기.mp4"
+                   src="/images/avatars/nunchi_listening.mp4"
                    autoplay loop muted playsinline preload="auto"
                    aria-hidden="true"></video>
             <!-- 대화 상태 비디오 (발화 시 cross-fade) -->
             <video class="a01__avatar-video a01__avatar-video--talking"
                    data-avatar="talking"
-                   src="/images/avatars/통장님_대화중.mp4"
+                   src="/images/avatars/nuchi_speaking.mp4"
                    loop muted playsinline preload="auto"
                    aria-hidden="true"></video>
 
@@ -82,65 +82,41 @@
         <div class="a01__bubble glass-card glass-card--heavy" data-bubble role="status" aria-live="polite">
             <span class="a01__bubble-text" data-bubble-text></span>
             <span class="a01__bubble-cursor" data-bubble-cursor aria-hidden="true">|</span>
+            <!-- 생각중 점점점(…) 인디케이터 — .is-thinking 시 노출 -->
+            <span class="a01__bubble-dots" data-bubble-dots aria-hidden="true">
+                <span></span><span></span><span></span>
+            </span>
         </div>
     </section>
 
     <!-- ========================================================
-         ③ 기승전결 인디케이터 (44px)
-         ======================================================== -->
-    <nav class="a01__steps fade-up" style="--delay: 160ms;"
-         aria-label="대화 진행 단계">
-        <ol class="a01__steps-list" data-steps>
-            <li class="a01__step is-current" data-step="opening">
-                <span class="a01__step-dot"></span>
-                <span class="a01__step-label">기</span>
-            </li>
-            <li class="a01__step-line"></li>
-            <li class="a01__step" data-step="recommend">
-                <span class="a01__step-dot"></span>
-                <span class="a01__step-label">승</span>
-            </li>
-            <li class="a01__step-line"></li>
-            <li class="a01__step" data-step="addmore">
-                <span class="a01__step-dot"></span>
-                <span class="a01__step-label">전</span>
-            </li>
-            <li class="a01__step-line"></li>
-            <li class="a01__step" data-step="confirm">
-                <span class="a01__step-dot"></span>
-                <span class="a01__step-label">결</span>
-            </li>
-        </ol>
-    </nav>
-
-    <!-- ========================================================
-         ④ 대화 로그 (200px, 자동 스크롤)
-         ======================================================== -->
-    <section class="a01__log fade-up" style="--delay: 240ms;"
-             data-log
-             aria-label="대화 기록"
-             aria-live="polite">
-        <!-- JS 동적 -->
-    </section>
-
-    <!-- ========================================================
-         ⑤ 미니 카트 + 빠른응답 칩 (140px)
+         ③ 미니 카트 + 빠른응답 칩 (220px) — 카드형 카트 + 수량 조절
          ======================================================== -->
     <section class="a01__quickbar fade-up" style="--delay: 320ms;">
         <!-- 미니 카트 -->
         <div class="a01__minicart" data-minicart>
+            <!-- 빈 상태 -->
             <div class="a01__minicart-empty" data-minicart-empty>
                 <i class="xi xi-cart" aria-hidden="true"></i>
                 <span>아직 담은 메뉴가 없어요</span>
             </div>
+
+            <!-- 채워진 상태 -->
             <div class="a01__minicart-filled" data-minicart-filled hidden>
-                <ul class="a01__minicart-list" data-minicart-list>
-                    <!-- JS 동적 -->
-                </ul>
-                <div class="a01__minicart-total">
-                    <span class="a01__minicart-total-label">합계</span>
-                    <span class="a01__minicart-total-value" data-minicart-total>₩ 0</span>
+                <div class="a01__minicart-head">
+                    <div class="a01__minicart-head-left">
+                        <i class="xi xi-cart" aria-hidden="true"></i>
+                        <span>장바구니</span>
+                        <span class="a01__minicart-count" data-minicart-count>0</span>
+                    </div>
+                    <div class="a01__minicart-head-right">
+                        <span class="a01__minicart-total-label">합계</span>
+                        <span class="a01__minicart-total-value" data-minicart-total>₩ 0</span>
+                    </div>
                 </div>
+                <ul class="a01__minicart-track" data-minicart-list>
+                    <!-- JS 동적 — 카드형 항목 -->
+                </ul>
             </div>
         </div>
 
@@ -151,16 +127,16 @@
     </section>
 
     <!-- ========================================================
-         ⑥ 입력 바 (120px) — 텍스트 입력 + 큰 마이크 버튼
+         ④ 입력 바 (120px) — 텍스트 입력 + 큰 마이크 버튼
          ======================================================== -->
     <section class="a01__inputbar fade-up" style="--delay: 400ms;">
         <div class="a01__input-wrap">
             <input class="a01__input"
                    type="text"
                    data-input
-                   placeholder="동대맘에게 말하거나 입력해보세요"
+                   placeholder="눈치에게 말하거나 입력해보세요"
                    autocomplete="off"
-                   aria-label="동대맘에게 메시지 입력" />
+                   aria-label="눈치에게 메시지 입력" />
             <button class="a01__input-send"
                     type="button"
                     data-action="send"
@@ -180,12 +156,49 @@
         </button>
     </section>
 
+    <!-- ========================================================
+         ⑤ 대화 보기 FAB (오른쪽 하단, 원형) — 탭 시 대화 기록 서랍 열기
+         ======================================================== -->
+    <button class="a01__fab"
+            type="button"
+            data-action="open-drawer"
+            aria-label="대화 기록 보기">
+        <i class="xi xi-comment a01__fab-icon" aria-hidden="true"></i>
+    </button>
+
+    <!-- ========================================================
+         ⑥ 대화 기록 — 가운데 카드 모달 (평소엔 닫힘, FAB 로 열기)
+         ======================================================== -->
+    <div class="a01__drawer" data-drawer hidden>
+        <div class="a01__drawer-backdrop" data-drawer-close aria-hidden="true"></div>
+        <aside class="a01__drawer-panel"
+               role="dialog"
+               aria-modal="true"
+               aria-label="대화 기록">
+            <div class="a01__drawer-head">
+                <span class="a01__drawer-title">
+                    <i class="xi xi-comment" aria-hidden="true"></i> 대화 기록
+                </span>
+                <button class="a01__drawer-close"
+                        type="button"
+                        data-drawer-close
+                        aria-label="닫기">
+                    <i class="xi xi-close" aria-hidden="true"></i>
+                </button>
+            </div>
+            <section class="a01__log" data-log aria-live="polite">
+                <!-- JS 동적 — appendLog() 가 메시지 append -->
+            </section>
+        </aside>
+    </div>
+
 </main>
 
 <script src="/js/common/kiosk-guard.js"></script>
 <script src="/lib/jquery-3.7.0.min.js"></script>
 <script src="/js/common/confirm-modal.js"></script>
 <script src="/js/common/app-state.js"></script>
+<script src="/js/common/sse-parser.js"></script>
 <script src="/js/common/api.js"></script>
 <script src="/js/common/ai-action.js"></script>
 <script src="/js/flowA/reply-keywords.js"></script>

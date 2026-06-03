@@ -221,6 +221,16 @@
             sessionStorage.setItem('orderId', String(orderId));
 
             try {
+                sessionStorage.setItem('printOrder', JSON.stringify({
+                    orderNumber: 'A-' + order.orderId,
+                    items: (order.items || []).map((item) => ({
+                        menuName: item.menuName || '',
+                        quantity: item.quantity || 0
+                    }))
+                }));
+            } catch (_) {}
+
+            try {
                 sessionStorage.setItem('orderSummary', JSON.stringify({
                     orderId:     order.orderId,
                     orderType:   order.orderType,                 // DINE_IN / TAKEOUT (영수증 표기)
