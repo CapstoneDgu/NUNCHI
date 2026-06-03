@@ -114,13 +114,79 @@
         `);
     }
 
+    /* ---------- 결제수단별 진행 애니메이션 (기존 P03/P04/P07 비주얼 그대로 재사용) ---------- */
+    function _animHtml(method) {
+        if (method === 'vein') {
+            return `
+            <div class="paymod__anim">
+              <div class="p03" data-state="scanning">
+                <div class="p03__scanner" aria-hidden="true">
+                  <span class="p03__pulse p03__pulse--1"></span>
+                  <span class="p03__pulse p03__pulse--2"></span>
+                  <span class="p03__pulse p03__pulse--3"></span>
+                  <div class="p03__frame">
+                    <svg class="p03__palm" viewBox="0 0 200 200" fill="none" stroke="currentColor"
+                         stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M72 92V44a11 11 0 0 1 22 0v48"/>
+                      <path d="M94 92V36a11 11 0 0 1 22 0v56"/>
+                      <path d="M116 92V42a11 11 0 0 1 22 0v50"/>
+                      <path d="M138 92V74a11 11 0 0 1 22 0v72c0 24-18 42-42 42h-18c-11 0-21-4-29-12l-28-30c-5-6-4-14 2-18 6-4 14-2 18 3l9 9"/>
+                      <path class="p03__vein p03__vein--1" d="M82 130c10 7 28 7 38 0"/>
+                      <path class="p03__vein p03__vein--2" d="M92 150c7 4 16 4 23 0"/>
+                      <path class="p03__vein p03__vein--3" d="M98 168c5 2.5 10 2.5 15 0"/>
+                    </svg>
+                    <span class="p03__scanline" aria-hidden="true"></span>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }
+        if (method === 'barcode') {
+            return `
+            <div class="paymod__anim">
+              <div class="p07" data-state="waiting">
+                <div class="p07__scanner" aria-hidden="true">
+                  <span class="p07__pulse p07__pulse--1"></span>
+                  <span class="p07__pulse p07__pulse--2"></span>
+                  <span class="p07__pulse p07__pulse--3"></span>
+                  <div class="p07__frame">
+                    <div class="p07__card">
+                      <div class="p07__card-head"><span class="p07__card-brand">kakaopay</span></div>
+                      <div class="p07__barcode" aria-hidden="true">${'<span></span>'.repeat(20)}</div>
+                    </div>
+                    <span class="p07__scanline" aria-hidden="true"></span>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }
+        // ic (기본) — 카드 삽입 + 슬롯 스피너
+        return `
+            <div class="paymod__anim">
+              <div class="p04" data-state="processing">
+                <div class="p04__visual" aria-hidden="true">
+                  <div class="p04__card">
+                    <div class="p04__card-chip" aria-hidden="true">${'<span></span>'.repeat(6)}</div>
+                    <div class="p04__card-stripe"></div>
+                    <span class="p04__card-brand">NUNCHI</span>
+                  </div>
+                  <div class="p04__slot">
+                    <span class="p04__slot-mouth"></span>
+                    <span class="p04__slot-label">IC CARD</span>
+                    <span class="p04__spinner" role="status" aria-label="결제 처리 중"><i></i></span>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+    }
+
     /* ---------- 단계 ② processing ---------- */
     function _renderProcessing() {
         const m = METHOD[_opts.method] || METHOD.ic;
         _setTip('잠시만 기다려 주세요');
         _body(`
             <div class="paymod__state">
-                <div class="paymod__spinner" aria-hidden="true"></div>
+                ${_animHtml(_opts.method)}
                 <strong class="paymod__state-title">승인 요청 중…</strong>
                 <span class="paymod__state-desc">${esc(m.tip)}</span>
                 <div class="paymod__state-amount">${won(_opts.totalAmount || 0)} · 일시불</div>
@@ -142,17 +208,21 @@
             <div class="paymod__output">
                 <button type="button" class="paymod__output-btn" data-output="receipt">
                     <span class="paymod__output-ic"><i class="xi-print"></i></span>
-                    <span class="paymod__output-t">영수증 출력</span>
-                    <span class="paymod__output-d">결제 영수증을 받아요</span>
+                    <span class="paymod__output-txt">
+                        <span class="paymod__output-t">영수증 출력</span>
+                        <span class="paymod__output-d">결제 영수증을 받아요</span>
+                    </span>
                 </button>
                 <button type="button" class="paymod__output-btn" data-output="ticket">
                     <span class="paymod__output-ic"><i class="xi-document"></i></span>
-                    <span class="paymod__output-t">번호표 출력</span>
-                    <span class="paymod__output-d">대기번호표를 받아요</span>
+                    <span class="paymod__output-txt">
+                        <span class="paymod__output-t">번호표 출력</span>
+                        <span class="paymod__output-d">대기번호표를 받아요</span>
+                    </span>
                 </button>
             </div>
         `);
-        _actions(`<button type="button" class="paymod__btn paymod__btn--ghost" data-output="none">출력 없이 완료</button>`);
+        _actions('');   // '출력 없이 완료' 버튼 제거 — 영수증/번호표 둘 중 하나 선택 (QA R3)
     }
 
     /* ---------- 단계 ④ fail ---------- */
@@ -173,7 +243,11 @@
 
     /* ---------- 슬롯 헬퍼 ---------- */
     function _body(html)    { _root.querySelector('[data-paymod-body]').innerHTML = html; }
-    function _actions(html) { _root.querySelector('[data-paymod-actions]').innerHTML = html; }
+    function _actions(html) {
+        const el = _root.querySelector('[data-paymod-actions]');
+        el.innerHTML = html || '';
+        el.style.display = html ? '' : 'none';   // 비면 하단 바 자체를 숨김
+    }
     function _setTip(t)     { const e = _root.querySelector('[data-paymod-htip]'); if (e) e.textContent = t; }
 
     /* ---------- 승인 처리 ---------- */

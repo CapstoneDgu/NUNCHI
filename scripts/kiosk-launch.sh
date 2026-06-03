@@ -17,11 +17,10 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 # 키오스크용 임시 프로필 (기존 개인 프로필과 분리)
 PROFILE_DIR="${TMPDIR:-/tmp}/nunchi-kiosk-profile"
 
-# 영수증 출력(P05)은 window.print() 로 80mm 감열 프린터에 인쇄한다 (js/common/receipt.js).
-# 운영(실매장)에서는 아래 --kiosk-printing 을 켜면 인쇄 대화상자 없이 OS 기본 프린터로
-# 즉시 발급된다. 이때 OS 기본 프린터를 영수증(감열) 프린터로 지정해 둘 것.
-# QA 단계에서는 주석 유지 → 인쇄 미리보기로 레이아웃만 확인. (QA2 #5)
-#   --kiosk-printing \
+# 영수증/번호표 출력(P05)은 크롬 인쇄가 아니라 로컬 프린트 에이전트(scripts/print_server.py,
+# 127.0.0.1:9100)로 텍스트 양식을 보내 실제 감열 프린터에 인쇄한다. (QA3 #2)
+# → 키오스크 PC 에서 print_server.py 와 print_ticket.bat 이 실행 중이어야 함.
+# (양식 미리보기만 보려면 브라우저 콘솔에서 NunchiReceipt.printPreview({...}) 사용)
 
 exec "$CHROME" \
   --kiosk "$URL" \

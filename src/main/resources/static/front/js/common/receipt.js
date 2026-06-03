@@ -167,7 +167,7 @@
   .r-item { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; }
   .r-item-name { flex: 1; font-weight: 700; word-break: break-all; }
   .r-item-fig  { display: flex; gap: 10px; white-space: nowrap; }
-  .r-qty { width: 22px; text-align: center; }
+  .r-qty { width: 34px; text-align: center; white-space: nowrap; }
   .r-amt { min-width: 62px; text-align: right; font-variant-numeric: tabular-nums; }
   .r-opt { font-size: 10.5px; color: #222; padding-left: 6px; }
 
@@ -203,7 +203,7 @@
   <hr class="r-hr">
   <div class="r-row" style="font-weight:700;">
     <span>상품명</span>
-    <span style="display:flex; gap:10px;"><span style="width:22px; text-align:center;">수량</span><span style="min-width:62px; text-align:right;">금액</span></span>
+    <span style="display:flex; gap:10px;"><span style="width:34px; text-align:center; white-space:nowrap;">수량</span><span style="min-width:62px; text-align:right;">금액</span></span>
   </div>
   <hr class="r-hr">
   ${itemRows(data.items)}
@@ -238,8 +238,132 @@
 </html>`;
     }
 
-    // 숨긴 iframe 에 영수증 문서를 써서 그 안에서만 인쇄 → 키오스크 본 화면은 그대로.
-    function print(data) {
+    /* ======================================================
+       하드웨어 감열 프린터 출력 (로컬 프린트 에이전트 — 127.0.0.1:9100)
+       - 브라우저 window.print(크롬 인쇄) 대신, 로컬 프린트 에이전트로 텍스트 양식을 보내
+         실제 영수증(감열) 프린터로 출력한다.
+       - 감열 프린터는 텍스트(CP949) 출력이라 한글 1자 = 2칸. 폭을 계산해 정렬한다.
+       - 프린터 1줄 폭(글자수)은 LINE_W 로 조정한다. (58mm 기준 보통 32)
+       ====================================================== */
+    const AGENT_URL = 'http://127.0.0.1:9100/print';
+    const LINE_W = 32;
+
+    function _charW(ch) {
+        const c = ch.codePointAt(0);
+        // 한글/CJK/전각 = 2칸
+        if ((c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
+            (c >= 0xAC00 && c <= 0xD7A3) || (c >= 0xF900 && c <= 0xFAFF) ||
+            (c >= 0xFE30 && c <= 0xFE4F) || (c >= 0xFF00 && c <= 0xFF60) ||
+            (c >= 0xFFE0 && c <= 0xFFE6)) return 2;
+        return 1;
+    }
+    function _w(s) { let n = 0; for (const ch of String(s)) n += _charW(ch); return n; }
+    function _trunc(s, w) {
+        let out = '', n = 0;
+        for (const ch of String(s)) { const cw = _charW(ch); if (n + cw > w) break; out += ch; n += cw; }
+        return out;
+    }
+    function _center(s, w) {
+        s = String(s); const d = _w(s);
+        if (d >= w) return _trunc(s, w);
+        const l = Math.floor((w - d) / 2);
+        return ' '.repeat(l) + s + ' '.repeat(w - d - l);
+    }
+    function _lr(l, r, w) {
+        l = String(l); r = String(r);
+        const gap = w - _w(l) - _w(r);
+        return gap > 0 ? l + ' '.repeat(gap) + r : _trunc(l, Math.max(0, w - _w(r) - 1)) + ' ' + r;
+    }
+    const _hr = (w) => '-'.repeat(w);
+    const _wonT = (n) => nf.format(Math.max(0, Math.round(n || 0))) + '원';
+
+    // 영수증 텍스트 양식 (감열 프린터용) — HTML 양식과 동일한 정보 구성
+    function buildReceiptLines(data) {
+        data = data || {};
+        const W = LINE_W;
+        const total = data.totalAmount || 0;
+        const supply = Math.round(total / (1 + VAT_RATE));
+        const vat = total - supply;
+        const orderType = data.orderType === 'TAKEOUT' ? '포장'
+                        : data.orderType === 'DINE_IN' ? '매장' : '';
+        const L = [];
+        L.push(_center(data.storeName || STORE_INFO.bizName, W));
+        L.push(_center(STORE_INFO.ceo, W));
+        L.push(_center('사업자 ' + STORE_INFO.bizNo, W));
+        L.push(_center('TEL ' + STORE_INFO.tel, W));
+        L.push(_hr(W));
+        L.push(_center('영 수 증', W));
+        L.push(_lr('주문일시', data.orderTime || fmtTime(), W));
+        if (orderType) L.push(_lr('식사구분', orderType, W));
+        if (data.orderId != null) L.push(_lr('주문번호', String(data.orderId), W));
+        L.push(_hr(W));
+        L.push(_lr('상품명', '금액', W));
+        L.push(_hr(W));
+        (data.items || []).forEach((it) => {
+            const qty = it.quantity || 1;
+            const amt = _wonT(it.itemTotal != null ? it.itemTotal : (it.unitPrice || 0) * qty);
+            L.push(_trunc(it.menuName || '', W));
+            L.push(_lr('  x' + qty, amt, W));
+            (it.options || []).filter((o) => o && o.optionName).forEach((o) => {
+                const ex = o.extraPrice ? ' (+' + _wonT(o.extraPrice) + ')' : '';
+                L.push(_trunc('   - ' + o.optionName + ex, W));
+            });
+        });
+        L.push(_hr(W));
+        L.push(_lr('공급가액', _wonT(supply), W));
+        L.push(_lr('부가세(10%)', _wonT(vat), W));
+        L.push(_lr('합계', _wonT(total), W));
+        L.push(_hr(W));
+        L.push(_lr('결제수단', data.methodLabel || '', W));
+        L.push(_hr(W));
+        L.push(_center('대기번호', W));
+        L.push(_center(data.orderNo || '-', W));
+        L.push(_center('번호 호출 시 카운터로 와주세요', W));
+        L.push('');
+        L.push(_center('이용해 주셔서 감사합니다', W));
+        return L;
+    }
+
+    // 번호표 텍스트 양식
+    function buildTicketLines(data) {
+        data = data || {};
+        const W = LINE_W;
+        const L = [];
+        L.push(_center(data.storeName || STORE_INFO.bizName, W));
+        L.push(_hr(W));
+        L.push(_center('대 기 번 호 표', W));
+        L.push('');
+        L.push(_center('대기번호', W));
+        L.push(_center(data.orderNo || '-', W));
+        L.push('');
+        L.push(_center(data.orderTime || fmtTime(), W));
+        L.push(_hr(W));
+        L.push(_center('번호가 호출되면', W));
+        L.push(_center('카운터로 와주세요', W));
+        return L;
+    }
+
+    // 로컬 프린트 에이전트로 전송 → 실제 감열 프린터 출력
+    function printHardware(data) {
+        data = data || {};
+        const kind = (data.docKind === 'ticket') ? 'ticket' : 'receipt';
+        const lines = (kind === 'ticket') ? buildTicketLines(data) : buildReceiptLines(data);
+        return fetch(AGENT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: kind, orderNumber: String(data.orderNo || '-'), lines: lines }),
+        }).then((res) => {
+            if (!res.ok) throw new Error('print agent HTTP ' + res.status);
+            return true;
+        }).catch((e) => {
+            console.warn('[Receipt] 하드웨어 인쇄 실패 — 프린트 에이전트(127.0.0.1:9100) 실행 여부 확인', e);
+            return false;
+        });
+    }
+
+    // (디버그/미리보기용) 브라우저 인쇄 — 숨긴 iframe 에 HTML 양식을 그려 window.print.
+    // 기본 출력 경로는 printHardware. 양식 레이아웃 확인용으로만 직접 호출한다.
+    function printPreview(data) {
         try {
             const html = buildHtml(data || {});
             const iframe = document.createElement('iframe');
@@ -259,19 +383,23 @@
                 } catch (e) {
                     console.warn('[Receipt] 인쇄 실패', e);
                 }
-                // 인쇄 대화/처리 후 정리
                 setTimeout(() => { try { document.body.removeChild(iframe); } catch (_) {} }, 1500);
             };
 
-            // 폰트/레이아웃 안정화 후 인쇄
             if (iframe.contentWindow.document.readyState === 'complete') setTimeout(fire, 250);
             else iframe.onload = () => setTimeout(fire, 250);
             return true;
         } catch (e) {
-            console.warn('[Receipt] 출력 준비 실패', e);
+            console.warn('[Receipt] 미리보기 준비 실패', e);
             return false;
         }
     }
 
-    window.NunchiReceipt = { print, buildHtml };
+    // 기본 출력 = 하드웨어 감열 프린터 (크롬 인쇄 X)
+    function print(data) { return printHardware(data); }
+
+    window.NunchiReceipt = {
+        print, printHardware, printPreview,
+        buildHtml, buildTicketHtml, buildReceiptLines, buildTicketLines,
+    };
 })();
