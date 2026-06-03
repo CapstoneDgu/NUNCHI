@@ -139,20 +139,79 @@
         backEl.addEventListener('click', () => confirmGoHome());
     }
 
+    // 백엔드 결제 메서드 enum 매핑
+    const PAY_ENUM = { ic: 'IC_CARD', vein: 'VEIN_AUTH' };
+
+    // 모달 "승인 요청" 시 호출 — 결제 3단계(주문확정→결제생성→성공)를 한 번에 처리. (QA R2-16)
+    //   반환: { ok:true } | { ok:false, reason }
+    async function approvePayment() {
+        const sid = getSessionId();
+        if (!sid) return { ok: false, reason: 'payment_failed' };
+        try {
+            // 재시도(다시 시도) 시 confirm 중복 방지 — 이미 확정된 orderId 가 있으면 재사용
+            let orderId = getOrderId();
+            if (!orderId) {
+                const order = await window.NunchiApi.Orders.confirm(sid);
+                if (!order || !order.orderId) throw new Error('confirm 응답에 orderId 없음');
+                orderId = order.orderId;
+                try { sessionStorage.setItem(ORDER_ID_KEY, String(orderId)); } catch (_) {}
+                // 영수증/완료 화면용 주문 요약 (품목 명세 포함)
+                try {
+                    sessionStorage.setItem('orderSummary', JSON.stringify({
+                        orderId:     order.orderId,
+                        orderType:   order.orderType,
+                        totalAmount: order.totalAmount,
+                        itemCount:   (order.items || []).length,
+                        firstName:   (order.items && order.items[0] && order.items[0].menuName) || '',
+                        totalQty:    (order.items || []).reduce((s, it) => s + (it.quantity || 0), 0),
+                        items:       order.items || [],
+                    }));
+                } catch (_) {}
+            }
+
+            if (selectedMethod === 'barcode') {
+                // 바코드는 payByBarcode 가 즉시 SUCCESS 결제 생성 (markSuccess 불필요)
+                const barcodeValue = String(Date.now()).slice(-13);
+                const pay = await window.NunchiApi.Payments.payByBarcode(orderId, barcodeValue);
+                if (!pay || !pay.paymentId) throw new Error('payByBarcode 응답에 paymentId 없음');
+                try { sessionStorage.setItem(PAYMENT_ID_KEY, String(pay.paymentId)); } catch (_) {}
+            } else {
+                const pay = await window.NunchiApi.Payments.create(orderId, PAY_ENUM[selectedMethod] || 'IC_CARD');
+                if (!pay || !pay.paymentId) throw new Error('payment.create 응답에 paymentId 없음');
+                try { sessionStorage.setItem(PAYMENT_ID_KEY, String(pay.paymentId)); } catch (_) {}
+                await window.NunchiApi.Payments.markSuccess(pay.paymentId);
+            }
+
+            try { sessionStorage.setItem('paymentStatus', 'approved'); } catch (_) {}
+            return { ok: true };
+        } catch (e) {
+            console.warn('[P02] 결제 승인 실패', e);
+            try { sessionStorage.setItem('paymentStatus', 'failed'); } catch (_) {}
+            const code = String((e && (e.code || e.msg)) || '');
+            const reason = /VEIN.*UNREGISTER|정맥.*등록/i.test(code) ? 'declined' : 'payment_failed';
+            return { ok: false, reason };
+        }
+    }
+
     if (ctaEl) {
-        // 결제수단 선택 후 결제 화면(P03/P04) 으로 단순 이동.
-        // 백엔드 호출(confirmOrder/payment.create) 은 인증/카드 승인 직전에 한 번에 묶어서.
+        // 결제하기 → 결제 승인 모달 (실제 키오스크 결제창). 모달이 승인·완료·영수증선택까지 전부 처리.
         ctaEl.addEventListener('click', () => {
             if (!selectedMethod) return;
             try { sessionStorage.setItem(METHOD_KEY, selectedMethod); } catch (_) {}
+            if (!window.PaymentModal) { location.href = '/complete'; return; }
 
-            if (selectedMethod === 'ic') {
-                location.href = '/processing';
-            } else if (selectedMethod === 'vein') {
-                location.href = '/vein';
-            } else if (selectedMethod === 'barcode') {
-                location.href = '/barcode';
-            }
+            window.PaymentModal.open({
+                method: selectedMethod,
+                items: cartItems,
+                totalAmount: cartItems.reduce((s, it) => s + (it.itemTotal || 0), 0),
+                approve: approvePayment,
+                onCancel: () => { /* 모달만 닫고 결제수단 화면 유지 */ },
+                onDone: (receiptKind) => {
+                    // 영수증/번호표 선택 결과를 완료 화면(P05)에 전달 → 거기서 실제 출력
+                    try { sessionStorage.setItem('receiptKind', receiptKind || 'none'); } catch (_) {}
+                    location.href = '/complete';
+                },
+            });
         });
     }
 

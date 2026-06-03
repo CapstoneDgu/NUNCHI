@@ -22,8 +22,6 @@
     const autoSecEl      = $('[data-bind="autoSec"]');
     const receiptEl      = $('[data-bind="receipt"]');
     const receiptTitleEl = $('[data-bind="receiptTitle"]');
-    const outputModalEl  = $('[data-output-modal]');
-
     const homeEls = Array.from(document.querySelectorAll('[data-action="home"]'));
 
     /* ---------- Session ---------- */
@@ -37,7 +35,7 @@
     const FLOW_KEYS_TO_CLEAR = [
         STORE_KEY, METHOD_KEY, STATUS_KEY, ORDERNO_KEY, ORDER_SUMMARY_KEY,
         SESSION_ID_KEY, 'mode', 'dineOption', 'currentFloor', 'currentStore',
-        'currentStep', 'orderId', 'paymentId'
+        'currentStep', 'orderId', 'paymentId', 'receiptKind'
     ];
 
     function loadOrderSummary() {
@@ -110,34 +108,49 @@
         if (receiptEl) receiptEl.classList.add('p05__receipt--done');
     }
 
-    /* ---------- 출력 선택 모달 (영수증 / 번호표) ---------- */
-    // 완료 화면 진입 시 출력 항목을 고르게 한다. 고른 뒤에야 출력 안내 + 카운트다운 시작.
-    let outputChosen = false;
-    function openOutputModal() {
-        if (!outputModalEl) { afterOutputChosen('receipt'); return; }
-        outputModalEl.hidden = false;
-        const choose = (kind) => {
-            if (outputChosen) return;
-            outputChosen = true;
-            outputModalEl.hidden = true;
-            afterOutputChosen(kind);
-        };
-        outputModalEl.querySelectorAll('[data-output]').forEach((btn) => {
-            btn.addEventListener('click', () => choose(btn.getAttribute('data-output')));
-        });
-        // 안전장치 — 아무도 안 고르면 20초 뒤 영수증으로 진행 (키오스크 멈춤 방지)
-        setTimeout(() => choose('receipt'), 20000);
-    }
+    /* ---------- 출력 처리 (영수증/번호표 선택은 결제 승인 모달에서 끝남 — QA R2-16) ----------
+       P02 결제 모달에서 고른 종류가 sessionStorage 'receiptKind' 에 담겨 온다.
+       여기서는 그 값을 읽어 바로 출력만 하고, 출력 안내 + 카운트다운을 시작한다. */
+    function handleChosenOutput() {
+        let kind = 'receipt';
+        try { kind = sessionStorage.getItem('receiptKind') || 'receipt'; } catch (_) {}
 
-    function afterOutputChosen(kind) {
+        if (kind === 'none') {
+            // 출력 안 함 — 안내 박스 숨기고 카운트다운만
+            if (receiptEl) receiptEl.hidden = true;
+            startCountdown();
+            return;
+        }
         if (receiptTitleEl) {
             receiptTitleEl.textContent = kind === 'ticket'
                 ? '번호표가 출력되고 있어요'
                 : '영수증이 출력되고 있어요';
         }
         if (receiptEl) receiptEl.hidden = false;
+        printReceipt(kind);
         setTimeout(markReceiptDone, 3000);
         startCountdown();
+    }
+
+    // 실제 영수증 인쇄 (QA R2-3) — orderSummary 의 품목 명세를 매장 양식으로 출력
+    function printReceipt(kind) {
+        if (!window.NunchiReceipt) return;
+        const summary = loadOrderSummary() || {};
+        try {
+            window.NunchiReceipt.print({
+                storeName:   sessionStorage.getItem(STORE_KEY) || '상록원',
+                orderNo:     sessionStorage.getItem(ORDERNO_KEY) || (orderNoEl && orderNoEl.textContent) || '-',
+                orderId:     summary.orderId != null ? summary.orderId : sessionStorage.getItem('orderId'),
+                orderType:   summary.orderType,
+                methodLabel: getMethodLabel(),
+                orderTime:   (orderTimeEl && orderTimeEl.textContent) || undefined,
+                items:       summary.items || [],
+                totalAmount: summary.totalAmount || 0,
+                docKind:     kind,
+            });
+        } catch (e) {
+            console.warn('[P05] 영수증 인쇄 실패', e);
+        }
     }
 
     /* ---------- Auto-reset countdown ---------- */
@@ -212,8 +225,8 @@
         window.AvatarGuide.speak('결제가 완료됐어요. 맛있게 드세요.');
     }
 
-    // 출력 항목(영수증/번호표) 선택 후 출력 안내 + 카운트다운 시작
-    openOutputModal();
+    // 결제 모달에서 고른 출력 항목(영수증/번호표/없음)으로 바로 출력 + 카운트다운
+    handleChosenOutput();
 
     // ---------- 음성 컨트롤 ----------
     if (window.VoiceController) {

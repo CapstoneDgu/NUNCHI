@@ -104,25 +104,7 @@
         </div>
     </section>
 
-    <!-- 출력 선택 모달 (영수증 / 번호표) -->
-    <div class="p05-output" data-output-modal hidden>
-        <div class="p05-output__box" role="dialog" aria-modal="true" aria-label="출력 선택">
-            <h2 class="p05-output__title">무엇을 출력할까요?</h2>
-            <p class="p05-output__desc">필요한 것을 선택하시면 출력해 드려요</p>
-            <div class="p05-output__choices">
-                <button type="button" class="p05-output__choice" data-output="receipt">
-                    <span class="p05-output__choice-icon" aria-hidden="true"><i class="xi-print"></i></span>
-                    <span class="p05-output__choice-title">영수증 출력</span>
-                    <span class="p05-output__choice-desc">결제 영수증을 받아요</span>
-                </button>
-                <button type="button" class="p05-output__choice" data-output="ticket">
-                    <span class="p05-output__choice-icon" aria-hidden="true"><i class="xi-document"></i></span>
-                    <span class="p05-output__choice-title">번호표 출력</span>
-                    <span class="p05-output__choice-desc">대기번호표를 받아요</span>
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- 출력(영수증/번호표) 선택은 결제 승인 모달(P02)에서 끝남 — QA R2-16 -->
 
     <!-- 하단 CTA -->
     <footer class="p05__cta-wrap">
@@ -138,6 +120,7 @@
     </footer>
 </main>
 
+<script src="/js/common/kiosk-guard.js"></script>
 <script src="/js/common/app-state.js"></script>
 <script src="/js/common/api-client.js"></script>
 <script src="/js/common/api.js"></script>
