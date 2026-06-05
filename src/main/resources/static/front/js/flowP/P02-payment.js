@@ -170,7 +170,7 @@
 
     // 모달 "승인 요청" 시 호출 — 결제 3단계(주문확정→결제생성→성공)를 한 번에 처리. (QA R2-16)
     //   반환: { ok:true } | { ok:false, reason }
-    async function approvePayment() {
+    async function approvePayment(hwInfo) {
         if (DEMO_PAY) {
             console.info('[P02] 데모 결제(?demo=1) — 백엔드 호출 없이 승인 성공 처리');
             seedDemoSummary();
@@ -201,8 +201,8 @@
             }
 
             if (selectedMethod === 'barcode') {
-                // 바코드는 payByBarcode 가 즉시 SUCCESS 결제 생성 (markSuccess 불필요)
-                const barcodeValue = String(Date.now()).slice(-13);
+                // 스캐너로 인식한 바코드값 사용(없으면 임의값). payByBarcode 가 즉시 SUCCESS 결제 생성
+                const barcodeValue = (hwInfo && hwInfo.barcodeValue) || String(Date.now()).slice(-13);
                 const pay = await window.NunchiApi.Payments.payByBarcode(orderId, barcodeValue);
                 if (!pay || !pay.paymentId) throw new Error('payByBarcode 응답에 paymentId 없음');
                 try { sessionStorage.setItem(PAYMENT_ID_KEY, String(pay.paymentId)); } catch (_) {}
@@ -235,6 +235,7 @@
                 method: selectedMethod,
                 items: cartItems,
                 totalAmount: cartItems.reduce((s, it) => s + (it.itemTotal || 0), 0),
+                hardware: !DEMO_PAY,   // 실제 HW(IC 카드/바코드) 인식 사용. 데모(?demo=1)면 건너뜀
                 approve: approvePayment,
                 onCancel: () => { /* 모달만 닫고 결제수단 화면 유지 */ },
                 onDone: (receiptKind) => {
