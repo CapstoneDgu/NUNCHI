@@ -122,7 +122,7 @@ def _try_msr():
 
 def read_card(timeout=30):
     if MOCK:
-        time.sleep(1.5)
+        time.sleep(float(os.environ.get("DUALI_MOCK_DELAY", "1.5")))
         return {"type": "ic", "atr": "3B 8F 80 01 (MOCK ATR)"}
     if not _port_open and not open_port():
         return None

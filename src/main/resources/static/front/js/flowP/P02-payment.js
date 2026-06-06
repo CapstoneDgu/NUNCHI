@@ -49,7 +49,7 @@
 
     /* ---------- State ---------- */
     let cartItems = [];
-    let selectedMethod = null;
+    let selectedMethod = 'ic';   // 결제수단은 카드(IC+마그네틱) 하나로 통합
 
     /* ---------- Render ---------- */
     function renderStoreName() {
@@ -66,40 +66,11 @@
     }
 
     function renderSelection() {
-        methodEls.forEach((el) => {
-            const isOn = el.dataset.method === selectedMethod;
-            el.setAttribute('aria-pressed', String(isOn));
-            el.setAttribute('aria-checked', String(isOn));
-            el.classList.toggle('is-selected', isOn);
-        });
-
-        if (selectedMethod === 'ic') {
-            ctaEl.textContent = 'IC카드로 결제하기 →';
-            if (hintEl && hintTxtEl) {
-                hintEl.classList.add('p02__hint--selected');
-                hintTxtEl.textContent = 'IC카드 투입구에 카드를 꽂아주세요';
-            }
-        } else if (selectedMethod === 'vein') {
-            ctaEl.textContent = '정맥인증으로 결제하기 →';
-            if (hintEl && hintTxtEl) {
-                hintEl.classList.add('p02__hint--selected');
-                hintTxtEl.textContent = '등록된 손바닥 정맥으로 간편하게 인증해요';
-            }
-        } else if (selectedMethod === 'barcode') {
-            ctaEl.textContent = '카카오페이로 결제하기 →';
-            if (hintEl && hintTxtEl) {
-                hintEl.classList.add('p02__hint--selected');
-                hintTxtEl.textContent = '카카오톡 결제 바코드 화면을 미리 켜두세요';
-            }
-        } else {
-            ctaEl.textContent = '결제 수단 선택 →';
-            if (hintEl && hintTxtEl) {
-                hintEl.classList.remove('p02__hint--selected');
-                hintTxtEl.textContent = '결제 수단을 선택하면 다음 단계로 진행할 수 있어요';
-            }
+        // 결제수단은 카드(IC+마그네틱) 하나로 통합 — 항상 결제 가능
+        if (ctaEl) {
+            ctaEl.textContent = '결제하기';
+            ctaEl.disabled = false;
         }
-
-        ctaEl.disabled = !selectedMethod;
     }
 
     function renderAll() {
@@ -233,9 +204,10 @@
 
             window.PaymentModal.open({
                 method: selectedMethod,
+                autoStart: true,       // 확인 단계 건너뛰고 바로 "카드를 넣어주세요"
                 items: cartItems,
                 totalAmount: cartItems.reduce((s, it) => s + (it.itemTotal || 0), 0),
-                hardware: !DEMO_PAY,   // 실제 HW(IC 카드/바코드) 인식 사용. 데모(?demo=1)면 건너뜀
+                hardware: !DEMO_PAY,   // 실제 HW(IC 카드/마그네틱) 인식 사용. 데모(?demo=1)면 건너뜀
                 approve: approvePayment,
                 onCancel: () => { /* 모달만 닫고 결제수단 화면 유지 */ },
                 onDone: (receiptKind) => {
