@@ -77,7 +77,8 @@
 
 .p02__methods {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+    justify-content: center;
     gap: 14px;
     margin-top: 18px;
 }

@@ -1,29 +1,3 @@
-# -*- coding: utf-8 -*-
-# ============================================================
-# card_reader_agent.py - Duali card "detect" agent (no VAN / no real charge)
-#
-# Controls Duali DKSRDE633R via DualCardDll.dll (Windows, serial COM6).
-# Detects a card by IC insert (DE_IC_PowerOn) OR magnetic swipe (MSR).
-# It only DETECTS - it does NOT approve/charge.
-#
-# Reader on this kiosk: COM6, baud 115200.
-#
-# Run (next to DualCardDll.dll):
-#   python card_reader_agent.py
-#
-# Env overrides:
-#   DUALI_PORT=6  DUALI_BAUD=115200  DUALI_SLOT=0  DUALI_DLL=DualCardDll.dll
-#   DUALI_MOCK=1  -> no device; /card returns a fake IC card after 1.5s
-#   DUALI_MSR=1   -> also try magnetic-stripe read each poll.
-#                    !! ApiMsrReadTrack2 signature is BEST-EFFORT; verify with the
-#                       DUALPAY SDK header before enabling. Default OFF.
-#
-# HTTP API (frontend card-terminal.js):
-#   GET /status -> { ok, port, baud, dll, version, mock, msr }
-#   GET /card   -> wait up to 30s for IC insert or MSR swipe
-#                  -> { ok:true, type:"ic", atr:"..." } | { ok:true, type:"msr", track:"masked" }
-#                  -> { ok:false, reason:"timeout" }
-# ============================================================
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
@@ -37,8 +11,10 @@ COM_PORT = int(os.environ.get("DUALI_PORT", "6"))
 BAUD     = int(os.environ.get("DUALI_BAUD", "115200"))
 SLOT     = int(os.environ.get("DUALI_SLOT", "0"))
 DLL_NAME = os.environ.get("DUALI_DLL", "DualCardDll.dll")
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DLL_PATH = DLL_NAME if os.path.isabs(DLL_NAME) else os.path.join(_SCRIPT_DIR, DLL_NAME)
 MOCK     = os.environ.get("DUALI_MOCK", "0") == "1"
-MSR_ON   = os.environ.get("DUALI_MSR", "0") == "1"
+MSR_ON   = os.environ.get("DUALI_MSR", "1") == "1"
 
 DE_OK = 0
 _dll = None
@@ -49,11 +25,24 @@ def load_dll():
     global _dll
     if _dll is not None:
         return _dll
-    import ctypes
+    import ctypes, struct
+    target = DLL_PATH if os.path.exists(DLL_PATH) else DLL_NAME
+    loader = getattr(ctypes, "WinDLL", None) or ctypes.CDLL
     try:
-        d = ctypes.WinDLL(DLL_NAME)
-    except Exception:
-        d = ctypes.CDLL(DLL_NAME)
+        d = loader(target)
+    except OSError as e:
+        bits = struct.calcsize("P") * 8
+        winerr = getattr(e, "winerror", None)
+        print("=" * 56)
+        print("[CARD_AGENT] DLL load failed:", e)
+        print(f"  - path: {target}  (exists: {os.path.exists(target)})")
+        print(f"  - python: {bits}-bit")
+        if winerr == 193:
+            print("  - [WinError 193] 32/64-bit mismatch -> if the DLL is 32-bit, run with 32-bit Python.")
+        elif winerr == 126:
+            print("  - [WinError 126] DLL or dependency not found -> put DualCardDll.dll (and bundled DLLs) next to this script.")
+        print("=" * 56)
+        raise
     ci = ctypes.c_int
     LPINT = ctypes.POINTER(ctypes.c_int)
     LPB = ctypes.c_char_p
@@ -111,7 +100,6 @@ def _try_ic():
 
 
 def _try_msr():
-    # BEST-EFFORT signature - verify with DUALPAY SDK header before DUALI_MSR=1.
     import ctypes
     d = load_dll()
     fn = getattr(d, "ApiMsrReadTrack2", None)
@@ -170,6 +158,32 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, {"ok": _port_open, "port": COM_PORT, "baud": BAUD, "dll": DLL_NAME,
                                  "version": get_version(), "mock": MOCK, "msr": MSR_ON})
                 return
+            if self.path.startswith("/diag"):
+                info = {"mock": MOCK, "port": COM_PORT, "baud": BAUD, "slot": SLOT}
+                try:
+                    if not MOCK:
+                        import ctypes
+                        d = load_dll()
+                        info["DE_InitPort_rc"] = d.DE_InitPort(COM_PORT, BAUD)
+                        info["expected_init_rc"] = COM_PORT
+                        ol = ctypes.c_int(0)
+                        buf = ctypes.create_string_buffer(512)
+                        info["DE_IC_PowerOn_rc"] = d.DE_IC_PowerOn(COM_PORT, SLOT, ctypes.byref(ol), buf)
+                        info["atr_len"] = ol.value
+                        info["atr"] = buf.raw[:ol.value].hex().upper() if ol.value > 0 else ""
+                        try:
+                            d.DE_IC_PowerOff(COM_PORT, SLOT)
+                        except Exception:
+                            pass
+                        info["msr_fn_exists"] = getattr(d, "ApiMsrReadTrack2", None) is not None
+                        info["msr_track"] = _try_msr() or ""
+                    print(f"[CARD_AGENT] diag: {info}")
+                    self._send(200, {"ok": True, "diag": info})
+                except Exception as e:
+                    info["error"] = str(e)
+                    print(f"[CARD_AGENT] diag error: {info}")
+                    self._send(200, {"ok": False, "diag": info})
+                return
             if self.path.startswith("/card"):
                 r = read_card(30)
                 if r:
@@ -191,13 +205,24 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print("=" * 56)
-    print(f"[CARD_AGENT] DLL={DLL_NAME} COM{COM_PORT} baud={BAUD} slot={SLOT} mock={MOCK} msr={MSR_ON}")
-    if not MOCK:
-        if open_port():
-            print(f"[CARD_AGENT] port open OK. firmware={get_version()}")
-        else:
-            print("[CARD_AGENT] WARNING: port open failed - check COM/DLL/reader")
-    print("=" * 56)
-    print(f"[CARD_AGENT] http://{HOST}:{PORT}  (GET /status /card)")
-    HTTPServer((HOST, PORT), Handler).serve_forever()
+    try:
+        print("=" * 56)
+        print(f"[CARD_AGENT] DLL={DLL_PATH} COM{COM_PORT} baud={BAUD} slot={SLOT} mock={MOCK} msr={MSR_ON}")
+        if not MOCK:
+            if open_port():
+                print(f"[CARD_AGENT] port open OK. firmware={get_version()}")
+            else:
+                print("[CARD_AGENT] WARNING: port open failed - check COM/DLL/reader")
+        print("=" * 56)
+        print(f"[CARD_AGENT] http://{HOST}:{PORT}  (GET /status /card)")
+        HTTPServer((HOST, PORT), Handler).serve_forever()
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        traceback.print_exc()
+        print("=" * 56)
+        print("[CARD_AGENT] startup failed. Please capture the error message above.")
+        try:
+            input("Press Enter to exit...")
+        except Exception:
+            pass
