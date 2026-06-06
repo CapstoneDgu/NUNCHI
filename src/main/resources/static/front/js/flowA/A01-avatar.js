@@ -561,6 +561,14 @@
             state.recommendCtx = null;
         }
 
+        // 터치로 들어온 직접 호출(시트 담기/추천카드/칩)은 엔진이 LISTENING(마이크 ON)인 채라,
+        // 이어지는 응답 TTS 가 스피커→마이크 echo 로 되돌아와 끊긴다. 요청 전에 마이크를 끄고
+        // THINKING 으로 내린다. (음성/텍스트 경로는 이미 THINKING 이라 no-op)
+        if (state.engineStarted && window.ConvEngine && window.ConvEngine.isActive()
+                && typeof window.ConvEngine.beginThinking === 'function') {
+            window.ConvEngine.beginThinking();
+        }
+
         // 이전 발화 abort (barge-in) + 새 signal
         if (state.speechAbort) {
             try { state.speechAbort.abort(); } catch (_) {}
