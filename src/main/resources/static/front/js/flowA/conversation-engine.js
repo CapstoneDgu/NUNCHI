@@ -28,7 +28,8 @@
         INACTIVE: 'INACTIVE',
         AI_SPEAKING: 'AI_SPEAKING',
         LISTENING: 'LISTENING',
-        THINKING: 'THINKING'
+        THINKING: 'THINKING',
+        READY: 'READY'        // AI 턴 종료 후 대기 — 마이크 끔, 사용자가 누르면 청취(눌러서 말하기)
     };
 
     const SILENCE_MS = 1000;     // 침묵 1초 → 누적 텍스트 있으면 즉시 final, 없으면 onSilencePrompt 콜백
@@ -39,6 +40,7 @@
     const CUE_URL = { open: '/audio/cue-open.wav', close: '/audio/cue-close.wav' };
     const CUE_VOLUME = 0.7;      // 효과음 볼륨 (0~1)
     const CUE_MAX_MS = 700;      // 안전망 — 효과음이 안 울려도 이 시간 뒤 다음 단계 진행
+    const CUE_SETTLE_MS = 200;   // 열림음 끝난 뒤 마이크 ON 까지 텀 — 효과음 꼬리 echo 차단
 
     let handlers = {
         speak: null,             // async (text, signal) => void
@@ -241,9 +243,9 @@
             // (발화 시작했으면 onresult 에서 listenStartedAt 갱신되어 여기 통과 안 함)
             if (listenTimeoutMs && state.listenStartedAt &&
                 Date.now() - state.listenStartedAt >= listenTimeoutMs) {
-                console.log(LOG, '⏱️ 발화 시작 대기 시간 초과 → 자동 종료', listenTimeoutMs, 'ms');
+                console.log(LOG, '⏱️ 발화 시작 대기 시간 초과 → 대기(READY) 복귀', listenTimeoutMs, 'ms');
                 _clearSilenceTimer();
-                stop();
+                rest();   // 세션 종료 대신 '눌러서 말하기' 대기로 복귀
                 if (handlers.onListenTimeout) {
                     try { handlers.onListenTimeout(); }
                     catch (e) { console.warn(LOG, 'onListenTimeout 처리 실패', e); }
@@ -363,22 +365,41 @@
     function endTurn() {
         if (!state.wantsRunning) return;
         if (state.mode === MODE.INACTIVE) return;
+        if (state.mode === MODE.LISTENING) return;   // 이미 청취 중 — 중복 endTurn 무시(중복 효과음/마이크 재시작 방지)
         setMode(MODE.LISTENING);
         state.finalAccum = '';
         state.interimAccum = '';
         state.listenStartedAt = Date.now();   // 발화 대기 타이머 기준점
         if (state.supported) {
             _ensureRecognition();
-            // 열림음 먼저 재생 → 끝난 뒤 마이크 ON (효과음이 STT 로 새지 않도록)
+            // 열림음 재생 → (settle 텀) → 마이크 ON. 효과음/꼬리가 STT 로 새지 않도록.
             _playCue('open').then(() => {
                 if (!state.wantsRunning || state.mode !== MODE.LISTENING) return;  // 그새 전환되면 취소
-                state.listenStartedAt = Date.now();   // 효과음 길이만큼 대기 타이머 기준 갱신
-                _scheduleStart();
-                _startSilenceTimer();
+                setTimeout(() => {
+                    if (!state.wantsRunning || state.mode !== MODE.LISTENING) return;
+                    state.listenStartedAt = Date.now();   // 효과음+텀 만큼 대기 타이머 기준 갱신
+                    _scheduleStart();
+                    _startSilenceTimer();
+                }, CUE_SETTLE_MS);
             });
         } else {
             _startSilenceTimer();
         }
+    }
+
+    /**
+     * AI 턴 종료 후 '눌러서 말하기' 대기 상태.
+     * 마이크를 끄고 READY 로 두어, 사용자가 마이크를 누를 때까지 어떤 소리도 듣지 않는다.
+     * (자동 청취가 주변 소음/대화에 계속 반응하던 문제 → 의도적 발화만 받도록)
+     */
+    function rest() {
+        if (!state.wantsRunning) return;
+        if (state.mode === MODE.INACTIVE || state.mode === MODE.READY) return;
+        _clearSilenceTimer();
+        _stopRecognition();
+        state.finalAccum = '';
+        state.interimAccum = '';
+        setMode(MODE.READY);
     }
 
     /** 텍스트 입력 폴백 — 음성 우회. */
@@ -441,7 +462,7 @@
 
     window.ConvEngine = {
         MODE,
-        init, start, stop, say, endTurn, submitText, beginThinking, bargeIn,
+        init, start, stop, say, endTurn, rest, submitText, beginThinking, bargeIn,
         isActive, getMode, isSupported
     };
 })();
