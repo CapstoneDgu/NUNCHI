@@ -724,10 +724,11 @@
             window.AiAction.handle(act);
         }
 
-        // 카트 변경 키워드 → 카트 재조회
-        if (window.ReplyKeywords && window.ReplyKeywords.replyHasCartChange(reply)) {
-            await refreshCart();
-        }
+        // 매 턴 카트 재조회 — AI 가 서버사이드(MCP 툴)로 담거나 뺐을 수 있으므로
+        // 응답 문구와 무관하게 항상 Spring 카트를 다시 가져와 미니카트를 동기화한다.
+        // (이전엔 reply 키워드 "담았어요" 등에 의존 → "담겼어요"·"추가했어요" 같은 표현은
+        //  누락돼 서버엔 담겼는데 미니카트가 안 바뀌던 문제. 카트 GET 은 가벼워 항상 호출 OK)
+        await refreshCart();
 
         // 결제 라우팅 — CHECKOUT 진입 또는 완료 키워드
         // 아바타가 마지막 말을 끝까지 들려준 뒤(TTS 큐 완료), 0.7초 텀을 두고 결제 화면으로.
@@ -1301,11 +1302,12 @@
             ariaPressed = 'false';
             ariaLabel = 'AI 응답 중';
         } else if (next === 'READY') {
-            // 눌러서 말하기 대기 — 마이크 OFF, 사용자가 누를 때까지 어떤 소리도 안 들음
+            // 눌러서 말하기 대기 — 마이크 OFF, 사용자가 누를 때까지 어떤 소리도 안 들음.
+            // AI 발화가 끝날 때마다 이 안내가 떠서 다음 차례를 명확히 알려준다.
             micClass = 'a01__btn-mic--inactive';
-            statusText = '대기';
-            placeholder = '마이크를 눌러 말씀하세요';
-            bubbleHint = '🎤 눌러서 말하기';
+            statusText = '눌러서 말하기';
+            placeholder = '🎤 마이크를 눌러 말씀해 주세요';
+            bubbleHint = '🎤 마이크를 눌러 말씀해 주세요';
             ariaPressed = 'false';
             ariaLabel = '마이크를 눌러 말하기';
         } else { // INACTIVE
