@@ -530,7 +530,7 @@
     //   onError : 토스트 + 청취 재개
     // OOD(clarify_responder) 응답은 token 없이 done 만 옴 → onDone 에서 reply 로 fallback TTS.
     // ========================================================
-    async function handleUserUtterance(text) {
+    async function handleUserUtterance(text, { silent = false } = {}) {
         if (state.aiSessionId == null) {
             showToast('AI 세션이 없어요. 새로고침 해주세요.');
             if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
@@ -546,7 +546,7 @@
                 matchedQuit: window.ReplyKeywords.QUIT_PATTERN.test(text),
                 hasInquiry: window.ReplyKeywords.INQUIRY_PATTERN.test(text),
             });
-            appendLog('user', text);
+            if (!silent) appendLog('user', text);
             AppState.set('CURRENT_STEP', 'P01');
             navigateWithFade('/summary');   // ConvEngine.stop 포함
             return;
@@ -862,8 +862,21 @@
                     })
                 );
                 if (cart) applyCartResponse(cart);
-                // 자연어로 AI 에게 알림 — 다음 단계 reply + suggestions 받기
-                handleUserUtterance(`방금 ${menuOptions.menu_name} 담았어`);
+
+                // 선택된 옵션명 추출 (option-sheet.js: option_id=숫자, name 필드)
+                const selectedOptNames = (menuOptions.option_groups || [])
+                    .flatMap((g) => g.options || [])
+                    .filter((o) => selectedOptionIds.includes(o.option_id))
+                    .map((o) => o.name);
+                const optionText = selectedOptNames.length ? ` (${selectedOptNames.join(', ')})` : '';
+
+                // AI 컨텍스트 동기화용 silent 알림 — 완료형("담겼어") + 옵션명으로
+                // "새 주문" 오인(옵션 재호출) 방지. silent: true → 채팅 로그엔 안 보이고,
+                // AI reply + suggestions + TTS 는 그대로 받는다.
+                handleUserUtterance(
+                    `${menuOptions.menu_name}${optionText} 장바구니에 담겼어`,
+                    { silent: true }
+                );
             },
             onCancel: () => {
                 if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
