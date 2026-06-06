@@ -249,6 +249,118 @@
 .paymod__anim .p04,
 .paymod__anim .p07 { padding: 0; }
 
+/* ── 카드 대기: 꽂기(IC, 세로 카드↓) / 긁기(마그네틱, 가로 카드→) 애니메이션 ── */
+.paymod__cardwait {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin: 2px 0 16px;
+}
+.cardway {
+    flex: 1 1 0;
+    max-width: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 8px;
+    border-radius: 16px;
+    background: var(--neutral-50, #f8f7f6);
+    border: 1px solid var(--neutral-200, #ece8e4);
+}
+.cardway__stage {
+    position: relative;
+    width: 124px; height: 112px;
+    overflow: hidden;
+}
+.cardway__card {
+    position: absolute;
+    border-radius: 7px;
+    background: linear-gradient(135deg, var(--primary-400, #ff9a4d), var(--primary-600, #cf5208));
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+.cardway__reader {
+    position: absolute;
+    background: var(--neutral-800, #2c2722);
+}
+
+/* 꽂기(IC): 세로로 긴 실제 카드 모양이 아래 단말 슬롯으로 꽂힘 */
+.cardway--insert .cardway__card {
+    width: 52px; height: 80px;
+    left: 50%; margin-left: -26px; top: 0;
+    z-index: 1;
+    animation: cardwayInsert 2.8s ease-in-out infinite;
+}
+.cardway--insert .cardway__chip {           /* 칩: 먼저 들어가는 아래쪽 끝 */
+    position: absolute;
+    left: 50%; bottom: 9px; margin-left: -11px;
+    width: 22px; height: 16px; border-radius: 3px;
+    background: linear-gradient(135deg, #ffe49b, #d6a132);
+}
+.cardway--insert .cardway__reader {         /* 카드 단말기 */
+    left: 50%; bottom: 0; margin-left: -41px;
+    width: 82px; height: 32px; border-radius: 8px; z-index: 2;
+}
+.cardway--insert .cardway__slot {           /* 카드 투입구(가로) */
+    position: absolute;
+    left: 50%; top: 6px; margin-left: -30px;
+    width: 60px; height: 6px; border-radius: 3px; background: #000;
+}
+@keyframes cardwayInsert {
+    0%   { transform: translateY(-10px); opacity: 0.25; }
+    24%  { transform: translateY(0);     opacity: 1; }
+    55%  { transform: translateY(30px);  opacity: 1; }
+    78%  { transform: translateY(30px);  opacity: 1; }
+    100% { transform: translateY(-10px); opacity: 0.25; }
+}
+
+/* 긁기(MSR): 가로 카드의 아래 마그네틱 띠를 슬롯에 살짝 넣고 옆으로 스와이프 */
+.cardway--swipe .cardway__card {
+    width: 88px; height: 54px;
+    left: 50%; margin-left: -44px; top: 22px;
+    z-index: 1;                              /* 카드 아래(띠)가 레일 뒤로 들어감 */
+    animation: cardwaySwipe 2.4s ease-in-out infinite;
+}
+.cardway--swipe .cardway__stripe {          /* 마그네틱 검은 띠: 슬롯에 들어가는 아래 끝 */
+    position: absolute;
+    left: 0; right: 0; bottom: 0; height: 13px;
+    border-radius: 0 0 7px 7px;
+    background: #1b1712;
+}
+.cardway--swipe .cardway__reader {          /* 스와이프 슬롯(가로 레일) — 카드 아래를 가림 */
+    left: 50%; bottom: 20px; margin-left: -58px;
+    width: 116px; height: 28px; border-radius: 8px;
+    z-index: 2;
+}
+.cardway--swipe .cardway__groove {          /* 슬롯 입구(가로 홈) */
+    position: absolute;
+    left: 10px; right: 10px; top: 5px; height: 5px;
+    border-radius: 3px; background: #000;
+}
+@keyframes cardwaySwipe {
+    0%   { transform: translateX(-60px); opacity: 0.3; }
+    20%  { transform: translateX(-38px); opacity: 1; }
+    62%  { transform: translateX(38px);  opacity: 1; }
+    100% { transform: translateX(60px);  opacity: 0.3; }
+}
+/* IC 미인식 → 마그네틱 유도: 긁기 강조 / 꽂기 흐리게 */
+.paymod__cardwait.is-msr-hint .cardway--insert {
+    opacity: 0.35;
+    transition: opacity 0.3s var(--ease-out, ease);
+}
+.paymod__cardwait.is-msr-hint .cardway--swipe {
+    border-color: var(--primary-500, #e8600a);
+    box-shadow: 0 0 0 2px var(--primary-200, #ffd1ad) inset;
+    background: var(--primary-50, #fff3ec);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cardway--insert .cardway__card,
+    .cardway--swipe .cardway__card { animation: none; }
+}
+
 /* ── 영수증/번호표 선택 — 2열(나란히) · 세로로 긴 버튼 (QA R3) ── */
 .paymod__output {
     display: flex;

@@ -29,7 +29,7 @@
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     const METHOD = {
-        ic:      { label: 'IC카드 결제',     icon: 'xi-credit-card', tip: '카드를 단말기에 꽂은 채 기다려 주세요' },
+        ic:      { label: '카드 결제',       icon: 'xi-credit-card', tip: '카드를 꽂거나 긁어 주세요' },
         vein:    { label: '정맥 인증 결제',  icon: 'xi-check',       tip: '손바닥 정맥으로 인증하고 있어요' },
         barcode: { label: '카카오페이 결제', icon: 'xi-barcode',     tip: '바코드를 스캐너에 대 주세요' },
     };
@@ -41,7 +41,10 @@
         payment_failed: '결제에 실패했어요. 다시 시도해 주세요.',
     };
 
-    let _root = null, _opts = null, _onKey = null;
+    let _root = null, _opts = null, _onKey = null, _cardWaitTimer = null;
+
+    // IC 미인식 → 마그네틱 유도까지 대기 시간(ms)
+    const MSR_HINT_MS = 10000;
 
     /* ---------- 결제내역(품목) ---------- */
     function _itemsHtml(items) {
@@ -180,7 +183,58 @@
             </div>`;
     }
 
-    /* ---------- 단계 ② processing ---------- */
+    /* ---------- 카드 대기용 좌우 애니메이션 (꽂기 IC / 긁기 마그네틱) ---------- */
+    function _cardWaitAnim() {
+        return `
+            <div class="paymod__cardwait" aria-hidden="true">
+              <div class="cardway cardway--insert">
+                <div class="cardway__stage">
+                  <div class="cardway__reader"><span class="cardway__slot"></span></div>
+                  <div class="cardway__card"><span class="cardway__chip"></span></div>
+                </div>
+              </div>
+              <div class="cardway cardway--swipe">
+                <div class="cardway__stage">
+                  <div class="cardway__reader"><span class="cardway__groove"></span></div>
+                  <div class="cardway__card"><span class="cardway__stripe"></span></div>
+                </div>
+              </div>
+            </div>`;
+    }
+
+    /* ---------- 단계 ②-a 카드 대기 ("카드를 넣어주세요") ---------- */
+    function _renderCardWait() {
+        _setTip('카드를 넣어주세요');
+        _body(`
+            <div class="paymod__state">
+                ${_cardWaitAnim()}
+                <strong class="paymod__state-title" data-paymod-cwtitle>카드를 넣어주세요</strong>
+                <span class="paymod__state-desc" data-paymod-cwdesc>IC 칩을 꽂거나, 마그네틱을 긁어 주세요</span>
+                <div class="paymod__state-amount">${won(_opts.totalAmount || 0)} · 일시불</div>
+            </div>
+        `);
+        _actions(`<button type="button" class="paymod__btn paymod__btn--cancel" data-act="cancel">취소</button>`);
+        // IC 가 일정 시간 인식 안 되면 → 마그네틱(긁기)으로 유도
+        _clearCardWaitTimer();
+        _cardWaitTimer = setTimeout(_hintMsr, MSR_HINT_MS);
+    }
+
+    /* IC 미인식 시: 긁기 강조 + 안내문구를 마그네틱 유도로 전환 */
+    function _hintMsr() {
+        if (!_root) return;
+        const wrap  = _root.querySelector('.paymod__cardwait');
+        const title = _root.querySelector('[data-paymod-cwtitle]');
+        const desc  = _root.querySelector('[data-paymod-cwdesc]');
+        if (wrap)  wrap.classList.add('is-msr-hint');
+        if (title) title.textContent = '마그네틱으로 긁어 주세요';
+        if (desc)  desc.textContent = 'IC가 인식되지 않으면, 카드를 옆으로 긁어 주세요';
+    }
+
+    function _clearCardWaitTimer() {
+        if (_cardWaitTimer) { clearTimeout(_cardWaitTimer); _cardWaitTimer = null; }
+    }
+
+    /* ---------- 단계 ②-b processing (승인 요청 중) ---------- */
     function _renderProcessing() {
         const m = METHOD[_opts.method] || METHOD.ic;
         _setTip('잠시만 기다려 주세요');
@@ -250,16 +304,72 @@
     }
     function _setTip(t)     { const e = _root.querySelector('[data-paymod-htip]'); if (e) e.textContent = t; }
 
+    /* ---------- HID 바코드 스캐너 입력 캡처 (카카오페이) ----------
+       스캐너는 키보드처럼 숫자를 빠르게 연타 후 Enter. 그 패턴을 잡아 스캔값으로 인식. */
+    function _waitBarcodeScan(timeoutMs) {
+        return new Promise((resolve) => {
+            let buf = '', last = 0, done = false, to = null;
+            const finish = (val) => {
+                if (done) return;
+                done = true;
+                document.removeEventListener('keydown', onKey, true);
+                if (to) clearTimeout(to);
+                resolve(val);
+            };
+            const onKey = (e) => {
+                const now = Date.now();
+                if (now - last > 120) buf = '';   // 입력 간격이 길면 새 스캔으로 간주
+                last = now;
+                if (e.key === 'Enter') { e.preventDefault(); if (buf.length >= 6) finish(buf); else buf = ''; return; }
+                if (e.key && e.key.length === 1 && /[0-9A-Za-z]/.test(e.key)) { buf += e.key; e.preventDefault(); }
+            };
+            document.addEventListener('keydown', onKey, true);
+            to = setTimeout(() => finish(null), timeoutMs);
+        });
+    }
+
+    /* ---------- 하드웨어 인식 단계 (실결제처럼 — 실제 카드/바코드를 읽되 승인·출금은 목업) ----------
+       ic      → 카드 에이전트(window.CardTerminal)로 카드 꽂힘/마그네틱 인식
+       barcode → HID 스캐너로 바코드 스캔 인식
+       vein 등 → HW 단계 없음(바로 통과) */
+    async function _waitHardware(method) {
+        if (method === 'ic') {
+            if (window.CardTerminal && window.CardTerminal.requestApproval) {
+                const r = await window.CardTerminal.requestApproval({ amount: _opts.totalAmount });
+                return (r && r.approved) ? { ok: true, atr: r.atr, track: r.track }
+                                         : { ok: false, reason: (r && r.reason) || 'card_error' };
+            }
+            return { ok: true };   // 어댑터 없으면 통과(데모)
+        }
+        if (method === 'barcode') {
+            const code = await _waitBarcodeScan(45000);
+            return code ? { ok: true, barcodeValue: code } : { ok: false, reason: 'barcode_error' };
+        }
+        return { ok: true };
+    }
+
     /* ---------- 승인 처리 ---------- */
     // 백엔드 승인이 즉시 끝나도 진행 애니메이션이 최소 이만큼은 보이도록 보장.
     const MIN_PROCESSING_MS = 2600;
 
     async function _runApprove() {
-        _renderProcessing();
         const startedAt = Date.now();
+
+        // 1) 하드웨어 인식 — "카드를 넣어주세요" 대기(꽂힘/긁힘). opts.hardware 일 때만(데모면 건너뜀)
+        let hw = { ok: true };
+        if (_opts.hardware) {
+            _renderCardWait();
+            hw = await _waitHardware(_opts.method);
+            _clearCardWaitTimer();
+            if (!_root) return;
+            if (!hw.ok) { _renderFail(hw.reason); return; }
+        }
+
+        // 2) 승인 요청 중 (목업 백엔드 — 실제 돈은 빠지지 않음). 인식 결과(바코드값/ATR)를 넘김.
+        _renderProcessing();
         let r;
         try {
-            r = _opts.approve ? await _opts.approve() : { ok: true };
+            r = _opts.approve ? await _opts.approve({ barcodeValue: hw.barcodeValue, atr: hw.atr }) : { ok: true };
         } catch (e) {
             r = { ok: false, reason: (e && e.reason) || 'payment_failed' };
         }
@@ -297,7 +407,8 @@
         _opts = opts;
         _root = _shell(opts.method);
         document.body.appendChild(_root);
-        _renderConfirm();
+        if (opts.autoStart) _runApprove();   // 확인 단계 건너뛰고 바로 "카드를 넣어주세요"
+        else _renderConfirm();
         requestAnimationFrame(() => _root && _root.classList.add('is-open'));
 
         _root.addEventListener('click', _onClick);
@@ -312,6 +423,7 @@
     }
 
     function close() {
+        _clearCardWaitTimer();
         if (_onKey) { document.removeEventListener('keydown', _onKey); _onKey = null; }
         if (_root && _root.parentNode) _root.parentNode.removeChild(_root);
         _root = null; _opts = null;
