@@ -73,38 +73,49 @@
     color: var(--color-text-secondary);
 }
 
-/* ---- 결제 수단 그리드 ---- */
+/* ---- 카드 결제 안내 (IC + 마그네틱 통합) ---- */
 
-.p02__methods {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
+.p02__pay-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
     margin-top: 18px;
+    padding: 20px 22px;
+    background-color: var(--color-surface, #fff);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--card-radius);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
-.p02__method {
-    min-height: 196px;
-    padding-bottom: 36px;
+.p02__pay-info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    font-size: 30px;
+    color: var(--primary-600);
+    background-color: var(--primary-50);
+    border-radius: 16px;
 }
 
-.p02__method .method-card__desc {
-    line-height: 1.45;
+.p02__pay-info-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
-/* ---- 정맥 커스텀 SVG 아이콘 ----
-   .method-card__icon 는 기본 font-size 36px(아이콘폰트 기준) 이라,
-   SVG 는 자체 width/height 로 제어.
-   stroke="currentColor" 로 선택 전/후 color 토큰을 자동 상속. */
-.p02__method-icon--vein svg {
-    display: block;
-    width: 40px;
-    height: 40px;
-    transition: transform var(--duration-fast) var(--ease-out);
+.p02__pay-info-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-heading);
+    letter-spacing: -0.3px;
 }
 
-.p02__method[aria-pressed="true"] .p02__method-icon--vein svg,
-.p02__method.is-selected .p02__method-icon--vein svg {
-    transform: scale(1.04);
+.p02__pay-info-desc {
+    font-size: 13px;
+    color: var(--color-text-secondary);
 }
 
 /* ---- 힌트 (정보 안내) ---- */
