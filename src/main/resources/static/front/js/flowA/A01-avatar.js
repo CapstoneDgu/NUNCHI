@@ -1301,11 +1301,12 @@
             ariaPressed = 'false';
             ariaLabel = 'AI 응답 중';
         } else if (next === 'READY') {
-            // 눌러서 말하기 대기 — 마이크 OFF, 사용자가 누를 때까지 어떤 소리도 안 들음
+            // 눌러서 말하기 대기 — 마이크 OFF, 사용자가 누를 때까지 어떤 소리도 안 들음.
+            // AI 발화가 끝날 때마다 이 안내가 떠서 다음 차례를 명확히 알려준다.
             micClass = 'a01__btn-mic--inactive';
-            statusText = '대기';
-            placeholder = '마이크를 눌러 말씀하세요';
-            bubbleHint = '🎤 눌러서 말하기';
+            statusText = '눌러서 말하기';
+            placeholder = '🎤 마이크를 눌러 말씀해 주세요';
+            bubbleHint = '🎤 마이크를 눌러 말씀해 주세요';
             ariaPressed = 'false';
             ariaLabel = '마이크를 눌러 말하기';
         } else { // INACTIVE
