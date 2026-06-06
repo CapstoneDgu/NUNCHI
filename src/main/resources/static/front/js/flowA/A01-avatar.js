@@ -748,11 +748,11 @@
         renderChips(doneRes.suggestions);
 
         // TTS 큐 끝나면 아바타 idle + 청취 재개.
-        // 200ms 잔향 가드: 스피커 음향이 마이크로 되돌아오는 echo 안정화 시간.
+        // 400ms 잔향/차분 가드: 스피커 음향이 마이크로 되돌아오는 echo 안정화 + 턴 사이 텀.
         // (abort 시엔 sleep 이 reject → catch 로 흡수, endTurn 호출 안 함)
         const finalize = () => {
             ttsQueue
-                .then(() => sleep(200, signal))
+                .then(() => sleep(400, signal))
                 .then(() => {
                     setAvatar('idle');
                     if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
@@ -818,10 +818,9 @@
 
         window.RecommendSheet.open({ menus, onPick, onAnother, onCancel });
 
-        // 시트가 뜨면 즉시 LISTENING 전환 — 음성+터치 둘 다 받게 마이크 ON 유지
-        if (state.engineStarted && window.ConvEngine.isActive()) {
-            window.ConvEngine.endTurn();
-        }
+        // 마이크는 여기서 즉시 열지 않는다 — 응답 TTS 가 아직 재생 중이라 마이크를 켜면
+        // AI 자기 목소리를 STT 가 주워듣는 echo 루프가 생긴다. 마이크는 finalize() 가
+        // 발화 끝난 뒤 한 번만 연다(터치 선택은 마이크와 무관하게 가능).
     }
 
     /**
@@ -893,10 +892,9 @@
                 if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
             }
         });
-        // 시트 뜨면 즉시 LISTENING — 음성+터치 둘 다 받게 마이크 ON
-        if (state.engineStarted && window.ConvEngine.isActive()) {
-            window.ConvEngine.endTurn();
-        }
+        // 마이크는 여기서 즉시 열지 않는다 — 응답 TTS 가 아직 재생 중이라 마이크를 켜면
+        // AI 자기 목소리를 STT 가 주워듣는 echo 루프가 생긴다. 마이크는 finalize() 가
+        // 발화 끝난 뒤 한 번만 연다(터치 선택은 마이크와 무관하게 가능).
     }
 
     /** 카트 추가 — 작업 1 에서 제거됐던 함수 재도입 (추천 시트 onPick 용). */
