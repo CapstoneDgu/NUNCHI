@@ -34,6 +34,12 @@
     const SILENCE_MS = 1000;     // 침묵 1초 → 누적 텍스트 있으면 즉시 final, 없으면 onSilencePrompt 콜백
     const SILENCE_TICK = 200;    // 타이머 폴링 간격
 
+    // 턴 전환 효과음(earcon) — 사용자 발화 구간을 소리로 감싼다.
+    //   open : 마이크 열기 직전(이제 말씀하세요) / close : 발화 받고 마이크 닫을 때(다 들었어요)
+    const CUE_URL = { open: '/audio/cue-open.wav', close: '/audio/cue-close.wav' };
+    const CUE_VOLUME = 0.7;      // 효과음 볼륨 (0~1)
+    const CUE_MAX_MS = 700;      // 안전망 — 효과음이 안 울려도 이 시간 뒤 다음 단계 진행
+
     let handlers = {
         speak: null,             // async (text, signal) => void
         onUserUtterance: null,   // (text) => void          — final
@@ -132,6 +138,7 @@
                 _clearSilenceTimer();
                 _stopRecognition();
                 setMode(MODE.THINKING);
+                _playCue('close');   // 마이크 이미 OFF — echo 걱정 없음 (다 들었어요)
                 // interim 화면 비우기 신호
                 if (handlers.onInterim) {
                     try { handlers.onInterim(''); } catch (_) {}
@@ -200,6 +207,30 @@
         }
     }
 
+    /** A01 음소거 토글(AVATAR_MUTED)과 동기화 — 음소거 시 효과음 생략. */
+    function _cueMuted() {
+        try { return !!(window.AppState && window.AppState.get('AVATAR_MUTED') === '1'); }
+        catch (_) { return false; }
+    }
+
+    /** 턴 전환 효과음 재생. 반환 Promise 는 재생 종료/실패/안전망 시점에 resolve. */
+    function _playCue(kind) {
+        return new Promise((resolve) => {
+            const url = CUE_URL[kind];
+            if (!url || _cueMuted()) { resolve(); return; }
+            let audio;
+            try { audio = new Audio(url); audio.volume = CUE_VOLUME; }
+            catch (_) { resolve(); return; }
+            let done = false;
+            const fin = () => { if (done) return; done = true; resolve(); };
+            audio.addEventListener('ended', fin, { once: true });
+            audio.addEventListener('error', fin, { once: true });
+            setTimeout(fin, CUE_MAX_MS);   // 안전망
+            try { const p = audio.play(); if (p && p.catch) p.catch(fin); }
+            catch (_) { fin(); }
+        });
+    }
+
     function _startSilenceTimer() {
         _clearSilenceTimer();
         state.lastInterimAt = Date.now();
@@ -231,6 +262,7 @@
                 state.interimAccum = '';
                 _stopRecognition();
                 setMode(MODE.THINKING);
+                _playCue('close');   // 마이크 이미 OFF — echo 걱정 없음 (다 들었어요)
                 if (handlers.onInterim) {
                     try { handlers.onInterim(''); } catch (_) {}
                 }
@@ -337,9 +369,16 @@
         state.listenStartedAt = Date.now();   // 발화 대기 타이머 기준점
         if (state.supported) {
             _ensureRecognition();
-            _scheduleStart();
+            // 열림음 먼저 재생 → 끝난 뒤 마이크 ON (효과음이 STT 로 새지 않도록)
+            _playCue('open').then(() => {
+                if (!state.wantsRunning || state.mode !== MODE.LISTENING) return;  // 그새 전환되면 취소
+                state.listenStartedAt = Date.now();   // 효과음 길이만큼 대기 타이머 기준 갱신
+                _scheduleStart();
+                _startSilenceTimer();
+            });
+        } else {
+            _startSilenceTimer();
         }
-        _startSilenceTimer();
     }
 
     /** 텍스트 입력 폴백 — 음성 우회. */
