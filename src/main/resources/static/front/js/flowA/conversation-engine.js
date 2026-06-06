@@ -359,6 +359,23 @@
     }
 
     /**
+     * 외부 입력 진입 — 추천/옵션 시트 담기, 칩 클릭 등 호스트가 엔진을 거치지 않고
+     * 직접 발화를 보낼 때 호출. LISTENING(마이크 ON) 상태면 마이크를 끄고 THINKING 으로
+     * 내려, 이어지는 응답·TTS 동안 스피커 음성이 STT 로 되돌아와(echo) 발화가 끊기는 것을 방지.
+     * 음성/텍스트 경로는 이미 THINKING(또는 AI_SPEAKING)이라 no-op 으로 안전하게 통과.
+     */
+    function beginThinking() {
+        if (!state.wantsRunning) return;
+        if (state.mode !== MODE.LISTENING) return;   // LISTENING 일 때만 마이크 정리
+        console.log(LOG, '🤫 외부 입력 — 마이크 끄고 THINKING 전환 (echo 컷 방지)');
+        _clearSilenceTimer();
+        _stopRecognition();
+        state.finalAccum = '';
+        state.interimAccum = '';
+        setMode(MODE.THINKING);
+    }
+
+    /**
      * 명시적 바지인 — 마이크 버튼 클릭 등 사용자 의도가 명확한 경우.
      * AI 발화 즉시 중단 + LISTENING 으로 전환 + recognition 시작.
      */
@@ -385,7 +402,7 @@
 
     window.ConvEngine = {
         MODE,
-        init, start, stop, say, endTurn, submitText, bargeIn,
+        init, start, stop, say, endTurn, submitText, beginThinking, bargeIn,
         isActive, getMode, isSupported
     };
 })();
