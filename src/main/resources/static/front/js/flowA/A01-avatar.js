@@ -755,14 +755,17 @@
         };
 
         // 옵션 시트는 즉시 열고 TTS 끝나면 청취 재개
-        if (doneRes.menu_options) {
+        // silent 알림(담기 완료 등)은 사용자가 새로 요청한 게 아니므로 시트를 재오픈하지 않는다.
+        // → AI 가 menu_options 를 다시 돌려줘도 옵션 시트 재오픈 루프 / 중복 담기 / TTS 씹힘(즉시 endTurn 레이스) 방지.
+        // (reply·suggestions·TTS·step·cart 갱신은 그대로 받는다)
+        if (!silent && doneRes.menu_options) {
             openOptionSheet(doneRes.menu_options);
             finalize();
             return;
         }
 
-        // 추천 시트도 즉시 열고 TTS 끝나면 마이크 ON 유지
-        if (Array.isArray(doneRes.recommendations) && doneRes.recommendations.length > 0) {
+        // 추천 시트도 즉시 열고 TTS 끝나면 마이크 ON 유지 (silent 알림은 재오픈 안 함)
+        if (!silent && Array.isArray(doneRes.recommendations) && doneRes.recommendations.length > 0) {
             openRecommendSheet(doneRes.recommendations);
             finalize();
             return;
