@@ -28,7 +28,8 @@
         INACTIVE: 'INACTIVE',
         AI_SPEAKING: 'AI_SPEAKING',
         LISTENING: 'LISTENING',
-        THINKING: 'THINKING'
+        THINKING: 'THINKING',
+        READY: 'READY'        // AI 턴 종료 후 대기 — 마이크 끔, 사용자가 누르면 청취(눌러서 말하기)
     };
 
     const SILENCE_MS = 1000;     // 침묵 1초 → 누적 텍스트 있으면 즉시 final, 없으면 onSilencePrompt 콜백
@@ -242,9 +243,9 @@
             // (발화 시작했으면 onresult 에서 listenStartedAt 갱신되어 여기 통과 안 함)
             if (listenTimeoutMs && state.listenStartedAt &&
                 Date.now() - state.listenStartedAt >= listenTimeoutMs) {
-                console.log(LOG, '⏱️ 발화 시작 대기 시간 초과 → 자동 종료', listenTimeoutMs, 'ms');
+                console.log(LOG, '⏱️ 발화 시작 대기 시간 초과 → 대기(READY) 복귀', listenTimeoutMs, 'ms');
                 _clearSilenceTimer();
-                stop();
+                rest();   // 세션 종료 대신 '눌러서 말하기' 대기로 복귀
                 if (handlers.onListenTimeout) {
                     try { handlers.onListenTimeout(); }
                     catch (e) { console.warn(LOG, 'onListenTimeout 처리 실패', e); }
@@ -386,6 +387,21 @@
         }
     }
 
+    /**
+     * AI 턴 종료 후 '눌러서 말하기' 대기 상태.
+     * 마이크를 끄고 READY 로 두어, 사용자가 마이크를 누를 때까지 어떤 소리도 듣지 않는다.
+     * (자동 청취가 주변 소음/대화에 계속 반응하던 문제 → 의도적 발화만 받도록)
+     */
+    function rest() {
+        if (!state.wantsRunning) return;
+        if (state.mode === MODE.INACTIVE || state.mode === MODE.READY) return;
+        _clearSilenceTimer();
+        _stopRecognition();
+        state.finalAccum = '';
+        state.interimAccum = '';
+        setMode(MODE.READY);
+    }
+
     /** 텍스트 입력 폴백 — 음성 우회. */
     function submitText(text) {
         const t = (text || '').trim();
@@ -446,7 +462,7 @@
 
     window.ConvEngine = {
         MODE,
-        init, start, stop, say, endTurn, submitText, beginThinking, bargeIn,
+        init, start, stop, say, endTurn, rest, submitText, beginThinking, bargeIn,
         isActive, getMode, isSupported
     };
 })();

@@ -468,7 +468,7 @@
         runner(signal).then(() => {
             if (signal.aborted) return;
             if (state.engineStarted && window.ConvEngine && window.ConvEngine.isActive()) {
-                window.ConvEngine.endTurn();
+                window.ConvEngine.rest();
             }
         }).catch((e) => {
             if (!e || e.name !== 'AbortError') console.warn('[A01] FSM runner error', e);
@@ -533,7 +533,7 @@
     async function handleUserUtterance(text, { silent = false } = {}) {
         if (state.aiSessionId == null) {
             showToast('AI 세션이 없어요. 새로고침 해주세요.');
-            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.rest();
             return;
         }
 
@@ -669,7 +669,7 @@
                 showToast(msg);
             }
             setAvatar('idle');
-            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.rest();
             return;
         }
 
@@ -678,14 +678,14 @@
             showToast(errorMsg);
             appendLog('ai', errorMsg);
             ttsQueue.then(() => setAvatar('idle'));
-            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.rest();
             return;
         }
 
         // done 없음 또는 빈 응답 — 폴백 멘트 추가 금지, 청취만 재개
         if (!doneRes || (!fullText && !(doneRes && doneRes.reply))) {
             setAvatar('idle');
-            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.rest();
             return;
         }
 
@@ -755,7 +755,7 @@
                 .then(() => sleep(400, signal))
                 .then(() => {
                     setAvatar('idle');
-                    if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+                    if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.rest();
                 })
                 .catch(() => {
                     setAvatar('idle');
@@ -810,7 +810,7 @@
         };
         const onCancel = () => {
             state.recommendCtx = null;
-            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+            if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.rest();
         };
 
         // 시트 열려있는 동안 음성 매칭에 사용할 컨텍스트 등록
@@ -889,7 +889,7 @@
                 );
             },
             onCancel: () => {
-                if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.endTurn();
+                if (state.engineStarted && window.ConvEngine.isActive()) window.ConvEngine.rest();
             }
         });
         // 마이크는 여기서 즉시 열지 않는다 — 응답 TTS 가 아직 재생 중이라 마이크를 켜면
@@ -1251,6 +1251,12 @@
             return;
         }
 
+        if (mode === 'READY') {
+            // 눌러서 말하기 — 한 턴만 청취 시작 (열림음 → 마이크 ON)
+            window.ConvEngine.endTurn();
+            return;
+        }
+
         if (mode === 'AI_SPEAKING' || mode === 'THINKING') {
             // 눈치가 말하거나 응답 대기 중 — 사용자가 바로 말하고 싶을 때.
             // AI 즉시 멈추고 LISTENING 으로 전환.
@@ -1259,8 +1265,8 @@
         }
 
         if (mode === 'LISTENING') {
-            // 듣는 중 마이크 클릭 → 대화 종료
-            window.ConvEngine.stop();
+            // 듣는 중 다시 누르면 청취 취소 → 대기(READY)
+            window.ConvEngine.rest();
         }
     }
 
@@ -1294,6 +1300,14 @@
             bubbleHint = null; // 텍스트 대신 점점점(…) 애니메이션으로 표시
             ariaPressed = 'false';
             ariaLabel = 'AI 응답 중';
+        } else if (next === 'READY') {
+            // 눌러서 말하기 대기 — 마이크 OFF, 사용자가 누를 때까지 어떤 소리도 안 들음
+            micClass = 'a01__btn-mic--inactive';
+            statusText = '대기';
+            placeholder = '마이크를 눌러 말씀하세요';
+            bubbleHint = '🎤 눌러서 말하기';
+            ariaPressed = 'false';
+            ariaLabel = '마이크를 눌러 말하기';
         } else { // INACTIVE
             micClass = 'a01__btn-mic--inactive';
             statusText = '대기';
@@ -1485,9 +1499,9 @@
         await startAiSession();
         if (state.sessionId) await refreshCart();
 
-        // 자동 청취 시작 — ConvEngine.start() 가 AI_SPEAKING 으로 진입,
-        // greeting 발화 끝나면 endTurn() 으로 LISTENING 전환 (마이크 권한 팝업).
-        // 사용자가 마이크 버튼으로 끄기 전까지 자동으로 듣고 끊고 응답.
+        // 세션 시작 — ConvEngine.start() 가 AI_SPEAKING 으로 진입해 greeting 발화,
+        // 끝나면 rest() 로 READY(눌러서 말하기) 대기. 마이크는 사용자가 버튼을 누를 때만
+        // 한 턴씩 열린다(자동 청취 X — 주변 소음/대화 오작동 방지).
         if (window.ConvEngine.isSupported()) {
             state.engineStarted = true;
             window.ConvEngine.start();
@@ -1495,7 +1509,7 @@
                 await window.ConvEngine.say(state.bootGreeting);
             }
             state.greetedOnBoot = true;
-            window.ConvEngine.endTurn();
+            window.ConvEngine.rest();
         } else {
             // 브라우저 미지원 — 텍스트 입력으로 폴백
             showToast('이 브라우저는 음성 입력을 지원하지 않아요. 텍스트로 입력해주세요.');
