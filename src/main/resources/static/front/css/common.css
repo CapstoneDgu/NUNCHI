@@ -308,7 +308,7 @@ body {
        zoom 사용 이유: transform: scale 은 시각만 축소하고 box 크기는 그대로 → 데스크탑 dev 환경에서
        1280px 세로가 viewport 밖으로 잘리는 문제. zoom 은 box 크기 자체를 줄여 flex center 정렬도 자연스럽다.
        비표준이지만 Chrome/Edge/Safari 지원(키오스크 실기기는 Chrome 기반이라 영향 없음). */
-    zoom: min(calc(100vw / 720), calc(100vh / 1280), 1);
+    zoom: min(calc(100vw / 720), calc(100vh / 1280));   /* 큰 화면(키오스크 1080×1920 등)은 확대해 화면을 꽉 채움 */
 }
 
 h1, h2, h3, h4, h5, h6 {

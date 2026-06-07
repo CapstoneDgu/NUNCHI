@@ -153,3 +153,33 @@
         get, set, remove, onChange, clear,
     };
 });
+
+/* ── 저자세(배리어프리) 모드 로더 — app-state.js 를 로드하는 모든 키오스크 페이지 공통 ──
+   sessionStorage 의 저장값을 먼저 반영(깜빡임 최소화)한 뒤, CSS/JS 를 주입한다. */
+(function () {
+    try {
+        // URL(?posture=low)은 '최초 진입 seed' 용도 — 저장값이 없을 때만 1회 반영한다.
+        // (매번 우선 적용하면 토글로 끈 뒤 새로고침 시 다시 켜져 끌 수 없게 된다)
+        var forced = /[?&]posture=low(\b|$)/.test(location.search);
+        if (forced && sessionStorage.getItem('postureLow') === null) {
+            sessionStorage.setItem('postureLow', '1');
+        }
+        if (sessionStorage.getItem('postureLow') === '1') {
+            document.documentElement.classList.add('posture-low');
+        }
+    } catch (e) {}
+    if (!document.getElementById('lpost-css')) {
+        var css = document.createElement('link');
+        css.id = 'lpost-css';
+        css.rel = 'stylesheet';
+        css.href = '/css/common/low-posture.css';
+        document.head.appendChild(css);
+    }
+    if (!document.getElementById('lpost-js')) {
+        var js = document.createElement('script');
+        js.id = 'lpost-js';
+        js.src = '/js/common/low-posture.js';
+        js.defer = true;
+        document.head.appendChild(js);
+    }
+})();
