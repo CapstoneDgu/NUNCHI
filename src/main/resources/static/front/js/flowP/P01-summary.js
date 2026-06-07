@@ -30,12 +30,17 @@
     const totalEl  = $('[data-bind="total"]');
     const storeEl  = $('[data-bind="storeName"]');
     const ctaEl    = $('[data-action="next"]');
-    const backEl   = $('[data-action="back"]');
+    const backEl   = $('[data-action="nav-back"]');
     const itemTpl  = $('#tpl-p01-item');
 
     /* ---------- State (서버 응답 그대로) ---------- */
     // items: [{ itemId, menuId, menuName, unitPrice, quantity, itemTotal, options[] }]
     let items = [];
+
+    function refreshVisionSelectables() {
+        if (!window.NunchiVisionClient || !window.NunchiVisionClient.isEnabled()) return;
+        setTimeout(() => window.NunchiVisionClient.refresh(), 0);
+    }
 
     /* ---------- Render ---------- */
     function renderStoreName() {
@@ -98,6 +103,7 @@
         renderStoreName();
         renderList();
         renderSummary();
+        refreshVisionSelectables();
     }
 
     function applyCart(cartResponse) {

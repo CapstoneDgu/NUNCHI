@@ -44,7 +44,7 @@
     const hintEl    = $('[data-bind="hint"]');
     const hintTxtEl = hintEl ? $('span', hintEl) : null;
     const ctaEl     = $('[data-action="next"]');
-    const backEl    = $('[data-action="back"]');
+    const backEl    = $('[data-action="nav-back"]');
     const methodEls = $$('.method-card[data-method]');
 
     /* ---------- State ---------- */

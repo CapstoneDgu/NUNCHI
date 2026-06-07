@@ -385,25 +385,30 @@
    ======================================================== */
 .s00__cta-wrap {
     position: absolute;
-    bottom: 80px;
+    bottom: 60px;
     left: 28px;
     right: 28px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 22px;
+    gap: 14px;
     z-index: 2;
 }
 
 .s00__cta {
     width: 100%;
     max-width: 624px;        /* 슬라이더 내부 콘텐츠 폭과 일치 (664 - 좌우 padding 20*2) */
-    min-height: 108px;
-    font-size: 36px;
+    min-height: 88px;
+    font-size: 32px;
     font-weight: 800;
     letter-spacing: -0.6px;
-    border-radius: 26px;
+    border-radius: 22px;
     box-shadow: 0 16px 44px rgba(232, 96, 10, 0.4);
+}
+
+.s00__cta--vision {
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 12px 32px rgba(30, 25, 21, 0.12);
 }
 
 /* ========================================================

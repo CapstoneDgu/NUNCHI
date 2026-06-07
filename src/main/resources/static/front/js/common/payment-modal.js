@@ -73,6 +73,7 @@
         const m = METHOD[method] || METHOD.ic;
         const el = document.createElement('div');
         el.className = 'paymod';
+        el.setAttribute('data-vision-scope', '');
         el.innerHTML = `
             <div class="paymod__backdrop"></div>
             <div class="paymod__box" role="dialog" aria-modal="true" aria-label="결제">
@@ -112,8 +113,8 @@
             </div>
         `);
         _actions(`
-            <button type="button" class="paymod__btn paymod__btn--cancel" data-act="cancel">취소</button>
-            <button type="button" class="paymod__btn paymod__btn--approve" data-act="approve">승인 요청</button>
+            <button type="button" class="paymod__btn paymod__btn--cancel vision-selectable" data-act="cancel">취소</button>
+            <button type="button" class="paymod__btn paymod__btn--approve vision-selectable" data-act="approve">승인 요청</button>
         `);
     }
 
@@ -213,7 +214,7 @@
                 <div class="paymod__state-amount">${won(_opts.totalAmount || 0)} · 일시불</div>
             </div>
         `);
-        _actions(`<button type="button" class="paymod__btn paymod__btn--cancel" data-act="cancel">취소</button>`);
+        _actions(`<button type="button" class="paymod__btn paymod__btn--cancel vision-selectable" data-act="cancel">취소</button>`);
         // IC 가 일정 시간 인식 안 되면 → 마그네틱(긁기)으로 유도
         _clearCardWaitTimer();
         _cardWaitTimer = setTimeout(_hintMsr, MSR_HINT_MS);
@@ -246,7 +247,7 @@
                 <div class="paymod__state-amount">${won(_opts.totalAmount || 0)} · 일시불</div>
             </div>
         `);
-        _actions(`<button type="button" class="paymod__btn paymod__btn--cancel" data-act="noop" disabled>처리 중…</button>`);
+        _actions(`<button type="button" class="paymod__btn paymod__btn--cancel vision-selectable" data-act="noop" disabled>처리 중…</button>`);
     }
 
     /* ---------- 단계 ③ done (영수증/번호표 선택) ---------- */
@@ -260,14 +261,14 @@
             </div>
             <div class="paymod__section-label" style="margin-top:8px;">출력할 항목을 선택해 주세요</div>
             <div class="paymod__output">
-                <button type="button" class="paymod__output-btn" data-output="receipt">
+                <button type="button" class="paymod__output-btn vision-selectable" data-output="receipt">
                     <span class="paymod__output-ic"><i class="xi-print"></i></span>
                     <span class="paymod__output-txt">
                         <span class="paymod__output-t">영수증 출력</span>
                         <span class="paymod__output-d">결제 영수증을 받아요</span>
                     </span>
                 </button>
-                <button type="button" class="paymod__output-btn" data-output="ticket">
+                <button type="button" class="paymod__output-btn vision-selectable" data-output="ticket">
                     <span class="paymod__output-ic"><i class="xi-document"></i></span>
                     <span class="paymod__output-txt">
                         <span class="paymod__output-t">번호표 출력</span>
@@ -290,8 +291,8 @@
             </div>
         `);
         _actions(`
-            <button type="button" class="paymod__btn paymod__btn--cancel" data-act="cancel">취소</button>
-            <button type="button" class="paymod__btn paymod__btn--approve" data-act="approve">다시 시도</button>
+            <button type="button" class="paymod__btn paymod__btn--cancel vision-selectable" data-act="cancel">취소</button>
+            <button type="button" class="paymod__btn paymod__btn--approve vision-selectable" data-act="approve">다시 시도</button>
         `);
     }
 
