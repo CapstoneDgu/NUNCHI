@@ -1,0 +1,136 @@
+/* ========================================================
+   low-posture.css — 저자세(배리어프리) 모드
+   휠체어/착석 사용자가 높이 조절 없이 쓰도록 화면을 하단 절반으로 내린다.
+   토글 버튼은 항상 화면 하단에 고정 → 두 모드 모두에서 닿는다.
+   적용: <html> 에 .posture-low 클래스 (low-posture.js 가 토글)
+   ======================================================== */
+
+/* ---- 저자세 토글 버튼 (항상 하단 고정) ---- */
+.lpost-toggle {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 2147483000;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 18px;
+    border: 0;
+    border-radius: 999px;
+    background: #1e1915;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.lpost-toggle__icon { font-size: 22px; }
+.lpost-toggle:active { transform: scale(0.96); }
+html.posture-low .lpost-toggle { background: #cf5208; }
+
+/* ---- 저자세 모드: 가로(720)는 유지, 세로만 절반으로 줄여 하단 정렬 ---- */
+html.posture-low body {
+    align-items: flex-end;
+    padding-bottom: 84px;   /* 하단에 ♿토글 버튼 공간 확보 (페이지와 겹침 방지) */
+}
+html.posture-low .page-bg {
+    height: calc(var(--screen-height) * 0.5);   /* 1280 → 640 (가로 720 그대로) */
+    overflow-y: auto;                            /* 페이지별 콘텐츠 정리 전 임시: 넘치면 스크롤 */
+}
+
+/* ========================================================
+   페이지별 저자세(640px) 맞춤 — 1280용 큰 여백/높이를 압축해 한눈에
+   ======================================================== */
+
+/* index(s00) 시작화면: 절대배치 → 저자세에선 세로 흐름으로 (겹침 제거, 필요시 스크롤) */
+html.posture-low .s00 {
+    height: auto;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 18px 24px 24px;
+    gap: 14px;
+}
+html.posture-low .s00 > * { position: static !important; left: auto; right: auto; top: auto; bottom: auto; }
+html.posture-low .s00__dongguk-logo { align-self: flex-end; width: 128px; }
+html.posture-low .s00__title-main { font-size: 52px; }
+html.posture-low .s00__title-sub { font-size: 16px; }
+html.posture-low .s00__slider { width: 100%; gap: 10px; }
+html.posture-low .s00__slider-viewport { height: 300px; }
+html.posture-low .s00__slide-media { height: 190px; }
+html.posture-low .s00__cta-wrap { width: 100%; padding: 0; }
+html.posture-low .s00__cta { max-width: 100%; min-height: 80px; }
+
+/* S01 주문방식 선택: 상단 200px·헤더 125px·카드 480px → 압축 */
+html.posture-low .s01 { padding-top: 28px; padding-bottom: 28px; }
+html.posture-low .s01__header { margin-bottom: 24px; }
+html.posture-low .s01__title { font-size: 32px; }
+html.posture-low .s01__subtitle { font-size: 17px; }
+html.posture-low .s01__card { min-height: 0; padding: 26px 22px 24px; }
+html.posture-low .s01__card-icon { width: 92px; height: 92px; font-size: 50px; border-radius: 24px; }
+html.posture-low .s01__card-body { gap: 6px; }
+html.posture-low .s01__card-title { font-size: 22px; }
+html.posture-low .s01__card-desc { font-size: 14px; }
+
+/* S02 식사장소 선택: S01 과 동일 구조 → 동일 압축 */
+html.posture-low .s02 { padding-top: 28px; padding-bottom: 28px; }
+html.posture-low .s02__header { margin-bottom: 24px; }
+html.posture-low .s02__title { font-size: 32px; }
+html.posture-low .s02__subtitle { font-size: 17px; }
+html.posture-low .s02__card { min-height: 0; padding: 26px 22px 24px; }
+html.posture-low .s02__card-icon { width: 92px; height: 92px; font-size: 50px; border-radius: 24px; }
+html.posture-low .s02__card-body { gap: 6px; }
+html.posture-low .s02__card-title { font-size: 22px; }
+html.posture-low .s02__card-desc { font-size: 14px; }
+
+/* 결제 모달(.paymod): inset:0 오버레이 → 저자세 시 박스를 하단 절반으로 내림 */
+html.posture-low .paymod { align-items: flex-end; }
+html.posture-low .paymod__box {
+    height: auto;
+    max-height: 48vh;
+    margin-bottom: 92px;   /* ♿버튼 공간 */
+}
+
+/* 대화 기록 패널(.ai-chat-panel): 우측 드로어 → 저자세에선 하단 시트(절반)로 */
+html.posture-low .ai-chat-dim { position: fixed; }
+html.posture-low .ai-chat-panel {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    height: 50vh;
+    transform: translateY(100%);
+    box-shadow: 0 -16px 48px rgba(30, 25, 21, 0.18);
+}
+html.posture-low .ai-chat-panel--open { transform: translateY(0); }
+/* 하단 시트(대화기록) 열리면 ♿ 토글 숨김 — 패널 하단 버튼과 겹침 방지 */
+html.posture-low body:has(.ai-chat-panel--open) .lpost-toggle { display: none; }
+
+/* N02 AI 가이드: 좌표기반 화살표/강조블록(.lit)은 640과 안 맞아 숨기고,
+   안내 콜아웃은 화면 하단 절반 '바로 위'(보이는 곳)로 고정해 올린다 */
+html.posture-low .n02-guide__svg,
+html.posture-low .n02-guide__lit { display: none !important; }
+html.posture-low .n02-guide__callout {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: calc(50vh + 14px) !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    max-width: 88vw !important;
+    z-index: 2147483001;
+}
+html.posture-low .n02-guide__hint { top: auto !important; bottom: calc(50vh + 96px) !important; }
+
+/* P05 주문완료: 히어로·번호·간격 압축 */
+html.posture-low .p05 { gap: 12px; }
+html.posture-low .p05__hero,
+html.posture-low .p05__hero-ring { height: 100px; }
+html.posture-low .p05__hero-circle { width: 86px; height: 86px; font-size: 48px; }
+html.posture-low .p05__order-number { font-size: 44px; }
+html.posture-low .p05__order-card { padding: 12px 20px 10px; }
+html.posture-low .p05__summary { display: none; }   /* 저자세: 상세 요약 숨겨 번호+처음으로 버튼 우선(겹침 제거) */
