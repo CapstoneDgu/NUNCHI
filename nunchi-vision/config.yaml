@@ -23,7 +23,7 @@ presence:
 eye_selection:
   left_threshold: 0.45
   right_threshold: 0.55
-  gaze_hold_seconds: 0.7
+  gaze_hold_seconds: 0.5
   blink_threshold: 0.16
   double_blink_interval: 0.65
   click_cooldown_seconds: 1.2

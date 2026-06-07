@@ -245,6 +245,7 @@
     }
 
     function refreshSelectables() {
+        const currentFocused = document.querySelector('.vision-focused');
         const activeScope = Array.from(document.querySelectorAll('[data-vision-scope]'))
             .find(isVisibleSelectable);
         const roots = activeScope ? [activeScope] : [document];
@@ -263,8 +264,17 @@
             return;
         }
 
-        if (focusedIndex < 0 || focusedIndex >= selectables.length) {
-            focusedIndex = 0;
+        const currentFocusedIndex = currentFocused
+            ? selectables.indexOf(currentFocused)
+            : -1;
+
+        if (currentFocusedIndex >= 0) {
+            focusedIndex = currentFocusedIndex;
+        } else if (focusedIndex < 0 || focusedIndex >= selectables.length) {
+            const defaultIndex = selectables.findIndex(function (el) {
+                return el.hasAttribute('data-vision-default');
+            });
+            focusedIndex = defaultIndex >= 0 ? defaultIndex : 0;
         }
 
         applyFocus();

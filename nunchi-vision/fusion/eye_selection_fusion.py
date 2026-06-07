@@ -6,10 +6,10 @@ import time
 class EyeSelectionFusion:
     def __init__(
             self,
-            gaze_hold_threshold=0.7,
+            gaze_hold_threshold=0.5,
             blink_threshold=0.16,
             double_blink_interval=0.65,
-            move_cooldown=0.8,
+            move_cooldown=0.65,
             click_cooldown=1.2,
             click_after_move_grace=0.9,
     ):
