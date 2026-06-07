@@ -23,16 +23,22 @@ public record MenuResponse(
         Integer calorie,
         Integer floor,
         String restaurantName,
-        String operatingHours
+        String operatingHours,
+        String reason
 ) {
 
     public static MenuResponse from(Menu menu) {
+        return ofRecommendation(menu, menu.getIsRecommended(), null);
+    }
+
+    // 추천 응답 전용 - isRecommended/추천 이유를 응답 시점에 덮어씀 (엔티티 값 변경 없음)
+    public static MenuResponse ofRecommendation(Menu menu, Boolean isRecommended, String reason) {
         return new MenuResponse(
                 menu.getMenuId(),
                 menu.getName(),
                 menu.getPrice(),
                 menu.getIsSoldOut(),
-                menu.getIsRecommended(),
+                isRecommended,
                 menu.getImageUrl(),
                 menu.getSpicyLevel(),
                 menu.getTemperatureType(),
@@ -42,7 +48,8 @@ public record MenuResponse(
                 menu.getNutrition() != null ? menu.getNutrition().getCalorie() : null,
                 menu.getFloor(),
                 menu.getRestaurantName(),
-                menu.getOperatingHours()
+                menu.getOperatingHours(),
+                reason
         );
     }
 }

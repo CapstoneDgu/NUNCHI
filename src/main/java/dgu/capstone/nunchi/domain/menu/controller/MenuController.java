@@ -5,6 +5,7 @@ import dgu.capstone.nunchi.domain.menu.dto.request.MenuSearchRequest;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuCategoryResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuDetailResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuFilterResponse;
+import dgu.capstone.nunchi.domain.menu.dto.response.MenuRecommendationResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.MenuResponse;
 import dgu.capstone.nunchi.domain.menu.dto.response.TopMenuResponse;
 import dgu.capstone.nunchi.domain.menu.service.MenuService;
@@ -32,6 +33,13 @@ public class MenuController {
             @Parameter(description = "조회할 메뉴 수") @RequestParam(defaultValue = "5") int limit
     ) {
         return ResponseEntity.ok(ApiResponse.ok(menuService.getTopMenus(limit)));
+    }
+
+    @Operation(summary = "홈 화면 추천 메뉴 모음 조회",
+            description = "저지방/고단백/저칼로리/cold/hot 각 3개 랜덤(묶음별 공통 추천 이유 포함) + 오늘 판매량 1위 메뉴 1개(고정, isRecommended=true + 추천 이유 포함). 추가메뉴/음료는 제외.")
+    @GetMapping("/recommendations")
+    public ResponseEntity<ApiResponse<MenuRecommendationResponse>> getRecommendations() {
+        return ResponseEntity.ok(ApiResponse.ok(menuService.getRecommendations()));
     }
 
     @Operation(summary = "카테고리 목록 조회")
