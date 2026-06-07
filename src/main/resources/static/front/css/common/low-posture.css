@@ -109,22 +109,44 @@ html.posture-low .ai-chat-panel--open { transform: translateY(0); }
 /* 하단 시트(대화기록) 열리면 ♿ 토글 숨김 — 패널 하단 버튼과 겹침 방지 */
 html.posture-low body:has(.ai-chat-panel--open) .lpost-toggle { display: none; }
 
-/* N02 AI 가이드: 좌표기반 화살표/강조블록(.lit)은 640과 안 맞아 숨기고,
-   안내 콜아웃은 화면 하단 절반 '바로 위'(보이는 곳)로 고정해 올린다 */
+/* N02 AI 가이드(저자세):
+   가이드는 5개 콜아웃이 인라인 left/top 좌표 + JS 화살표로 각 버튼을 가리키는 구조라
+   640 프레임에선 좌표가 안 맞는다. 좌표기반 화살표(svg)·강조 복제(lift)는 숨기고,
+   가이드 전체를 화면 전체 오버레이로 승격한 뒤 콜아웃들을 '세로 목록'으로 펼쳐
+   한 점에 겹치지 않고 모두 읽히도록 한다. */
+html.posture-low .n02-guide {
+    position: fixed !important;          /* page-bg(640 클립) 밖, 화면 전체로 승격 */
+    inset: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    padding: 28px 16px !important;
+    overflow-y: auto !important;
+}
 html.posture-low .n02-guide__svg,
-html.posture-low .n02-guide__lit { display: none !important; }
+html.posture-low .n02-guide__lift { display: none !important; }   /* 좌표 화살표·강조 복제 숨김 */
 html.posture-low .n02-guide__callout {
-    position: fixed !important;
-    left: 50% !important;
+    position: static !important;         /* 인라인 left/top 무력화 → 세로 흐름, 겹침 제거 */
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 460px !important;
+    margin: 0 !important;
+}
+html.posture-low .n02-guide__hint {
+    position: static !important;
+    left: auto !important;
     right: auto !important;
     top: auto !important;
-    bottom: calc(50vh + 14px) !important;
-    transform: translateX(-50%) !important;
-    width: auto !important;
-    max-width: 88vw !important;
-    z-index: 2147483001;
+    bottom: auto !important;
+    transform: none !important;
+    margin-top: 6px !important;
 }
-html.posture-low .n02-guide__hint { top: auto !important; bottom: calc(50vh + 96px) !important; }
 
 /* P05 주문완료: 히어로·번호·간격 압축 */
 html.posture-low .p05 { gap: 12px; }

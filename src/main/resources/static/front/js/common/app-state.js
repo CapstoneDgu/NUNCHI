@@ -158,8 +158,13 @@
    sessionStorage 의 저장값을 먼저 반영(깜빡임 최소화)한 뒤, CSS/JS 를 주입한다. */
 (function () {
     try {
+        // URL(?posture=low)은 '최초 진입 seed' 용도 — 저장값이 없을 때만 1회 반영한다.
+        // (매번 우선 적용하면 토글로 끈 뒤 새로고침 시 다시 켜져 끌 수 없게 된다)
         var forced = /[?&]posture=low(\b|$)/.test(location.search);
-        if (forced || sessionStorage.getItem('postureLow') === '1') {
+        if (forced && sessionStorage.getItem('postureLow') === null) {
+            sessionStorage.setItem('postureLow', '1');
+        }
+        if (sessionStorage.getItem('postureLow') === '1') {
             document.documentElement.classList.add('posture-low');
         }
     } catch (e) {}

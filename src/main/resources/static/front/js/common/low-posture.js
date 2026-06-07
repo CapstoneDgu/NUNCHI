@@ -17,9 +17,15 @@
         try { return /[?&]posture=low(\b|$)/.test(location.search); } catch (e) { return false; }
     }
 
+    // 상태의 단일 기준은 sessionStorage. URL(?posture=low)은 '최초 진입 seed' 용도일 뿐
+    // (init 에서 1회만 저장값에 반영) — 매번 우선시키면 토글로 끈 뒤 다시 켤 수 없다.
     function isOn() {
-        if (urlForced()) return true;
-        try { return sessionStorage.getItem(KEY) === '1'; } catch (e) { return false; }
+        try { return sessionStorage.getItem(KEY) === '1'; } catch (e) { return urlForced(); }
+    }
+
+    // 현재 화면에 실제 적용된 상태(클래스) — 토글은 이 실제 상태를 뒤집어야 안전하다.
+    function currentlyOn() {
+        return document.documentElement.classList.contains('posture-low');
     }
 
     function apply(on) {
@@ -33,7 +39,7 @@
     }
 
     function toggle() {
-        var on = !isOn();
+        var on = !currentlyOn();   // 저장값/URL 이 아닌 '실제 적용 상태'를 뒤집는다
         try { sessionStorage.setItem(KEY, on ? '1' : '0'); } catch (e) {}
         apply(on);
     }
@@ -54,6 +60,9 @@
     }
 
     function init() {
+        // URL 강제 진입은 '최초 1회'만 저장값으로 seed → 이후엔 토글/저장값이 기준이 되어
+        // ?posture=low 페이지에서 껐다 다시 켜는 것이 정상 동작한다.
+        try { if (urlForced() && sessionStorage.getItem(KEY) === null) sessionStorage.setItem(KEY, '1'); } catch (e) {}
         injectButton();
         apply(isOn());
     }
