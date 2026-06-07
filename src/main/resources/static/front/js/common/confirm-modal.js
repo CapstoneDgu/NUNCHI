@@ -12,6 +12,10 @@
 // 또는 홈 이동 헬퍼:
 //   onclick="confirmGoHome()"
 //   confirmGoHome(() => clearAllTimers());  // 이동 직전 정리 콜백
+//
+// NUNCHI Vision 연동:
+//   YES 눈 선택 -> 확인 버튼 클릭
+//   NO 눈 선택  -> 취소 버튼 클릭
 // ========================================================
 
 (function (root) {
@@ -90,11 +94,14 @@
     `;
 
     let stylesInjected = false;
+
     function ensureStyles() {
         if (stylesInjected) return;
+
         const $s = document.createElement('style');
         $s.textContent = STYLES;
         document.head.appendChild($s);
+
         stylesInjected = true;
     }
 
@@ -102,6 +109,7 @@
 
     function show(opts) {
         ensureStyles();
+
         const o = opts || {};
         const title = o.title || '확인';
         const message = o.message || '';
@@ -119,66 +127,89 @@
             $overlay.setAttribute('aria-modal', 'true');
             $overlay.setAttribute('aria-labelledby', titleId);
             $overlay.setAttribute('aria-describedby', messageId);
+
             $overlay.innerHTML =
                 '<div class="confirm-modal__box">' +
-                    '<h2 class="confirm-modal__title"></h2>' +
-                    '<p class="confirm-modal__message"></p>' +
-                    '<div class="confirm-modal__actions">' +
-                        '<button type="button" class="confirm-modal__btn confirm-modal__btn--cancel"></button>' +
-                        '<button type="button" class="confirm-modal__btn confirm-modal__btn--confirm"></button>' +
-                    '</div>' +
+                '<h2 class="confirm-modal__title"></h2>' +
+                '<p class="confirm-modal__message"></p>' +
+                '<div class="confirm-modal__actions">' +
+                '<button type="button" class="confirm-modal__btn confirm-modal__btn--cancel"></button>' +
+                '<button type="button" class="confirm-modal__btn confirm-modal__btn--confirm"></button>' +
+                '</div>' +
                 '</div>';
+
             const $title = $overlay.querySelector('.confirm-modal__title');
             const $message = $overlay.querySelector('.confirm-modal__message');
+
             $title.id = titleId;
             $title.textContent = title;
+
             $message.id = messageId;
             $message.textContent = message;
-            $overlay.querySelector('.confirm-modal__btn--cancel').textContent = cancelLabel;
-            $overlay.querySelector('.confirm-modal__btn--confirm').textContent = confirmLabel;
 
             const $confirmBtn = $overlay.querySelector('.confirm-modal__btn--confirm');
-            const $cancelBtn  = $overlay.querySelector('.confirm-modal__btn--cancel');
+            const $cancelBtn = $overlay.querySelector('.confirm-modal__btn--cancel');
+
+            $cancelBtn.textContent = cancelLabel;
+            $confirmBtn.textContent = confirmLabel;
+
+            // NUNCHI Vision 연동용
+            $confirmBtn.id = 'visionConfirmYesBtn';
+            $cancelBtn.id = 'visionConfirmNoBtn';
+
+            $confirmBtn.setAttribute('data-vision-action', 'YES');
+            $cancelBtn.setAttribute('data-vision-action', 'NO');
 
             const cleanup = (result) => {
                 $overlay.remove();
                 document.removeEventListener('keydown', onKey);
                 resolve(result);
             };
+
             const onKey = (e) => {
                 if (e.key === 'Escape') {
                     cleanup(false);
                     return;
                 }
-                // Enter 는 confirm 버튼이 포커스됐을 때만 confirm.
-                // (취소 버튼 포커스에서 Enter 누르면 취소 의도이므로 confirm 트리거 X)
+
                 if (e.key === 'Enter' && document.activeElement === $confirmBtn) {
                     cleanup(true);
                 }
             };
+
             $cancelBtn.addEventListener('click', () => cleanup(false));
             $confirmBtn.addEventListener('click', () => cleanup(true));
+
             $overlay.addEventListener('click', (e) => {
-                if (e.target === $overlay) cleanup(false);
+                if (e.target === $overlay) {
+                    cleanup(false);
+                }
             });
+
             document.addEventListener('keydown', onKey);
+
             (document.querySelector('.page-bg') || document.body).appendChild($overlay);
-            // 포커스 — 확인 버튼
+
             $confirmBtn.focus();
         });
     }
 
-    /**
-     * 홈(/start) 이동 확인 헬퍼.
-     * @param {Function} [beforeNav] 이동 직전 정리 콜백 (e.g. clearAllTimers)
-     */
     async function confirmGoHome(beforeNav) {
-        // 머무르기 버튼은 현재 화면에 맞춰 목적어를 넣어 명확히 (QA #10)
         const p = (typeof location !== 'undefined') ? location.pathname : '';
+
         let stayLabel = '계속하기';
-        if (p === '/menu') stayLabel = '메뉴 계속 보기';
-        else if (p === '/summary' || p === '/payment' || p === '/processing'
-                 || p === '/vein' || p === '/barcode') stayLabel = '결제 계속하기';
+
+        if (p === '/menu') {
+            stayLabel = '메뉴 계속 보기';
+        } else if (
+            p === '/summary' ||
+            p === '/payment' ||
+            p === '/processing' ||
+            p === '/vein' ||
+            p === '/barcode'
+        ) {
+            stayLabel = '결제 계속하기';
+        }
 
         const ok = await show({
             title: '홈으로 돌아가시겠습니까?',
@@ -186,13 +217,21 @@
             confirmLabel: '홈으로 돌아가기',
             cancelLabel: stayLabel
         });
+
         if (!ok) return;
+
         if (typeof beforeNav === 'function') {
-            try { beforeNav(); } catch (_) { /* noop */ }
+            try {
+                beforeNav();
+            } catch (_) {
+                // noop
+            }
         }
+
         location.href = '/start';
     }
 
     root.ConfirmModal = { show };
     root.confirmGoHome = confirmGoHome;
+
 })(typeof self !== 'undefined' ? self : this);

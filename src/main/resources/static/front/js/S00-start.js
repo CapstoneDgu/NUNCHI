@@ -27,10 +27,25 @@
     function startOrder() {
         try {
             sessionStorage.setItem("currentStep", "S01");
+            sessionStorage.setItem("nunchiVisionEnabled", "false");
+            sessionStorage.removeItem("nunchiVisionCalibrated");
+            sessionStorage.removeItem("nunchiVisionCalibration");
         } catch (e) {
             console.warn("[S00] sessionStorage 쓰기 실패", e);
         }
         location.href = "/mode";
+    }
+
+    function startVisionOrder() {
+        try {
+            sessionStorage.setItem("currentStep", "S00");
+            sessionStorage.setItem("nunchiVisionEnabled", "true");
+            sessionStorage.removeItem("nunchiVisionCalibrated");
+            sessionStorage.removeItem("nunchiVisionCalibration");
+        } catch (e) {
+            console.warn("[S00] sessionStorage write failed", e);
+        }
+        location.href = "/vision-calibration?next=/mode";
     }
 
     // ---- 음식 슬라이드 캐러셀 ----
@@ -240,7 +255,21 @@
         // CTA 버튼
         const $cta = document.querySelector("[data-action='start-order']");
         if ($cta) {
+            $cta.textContent = "\uD130\uCE58\uB85C \uC8FC\uBB38\uD558\uAE30";
+            $cta.setAttribute("aria-label", "\uD130\uCE58\uB85C \uC8FC\uBB38 \uC2DC\uC791\uD558\uAE30");
             $cta.addEventListener("click", startOrder);
+        }
+
+        const $visionCta = document.querySelector("[data-action='start-vision-order']");
+        if ($visionCta) {
+            $visionCta.textContent = "\uC2DC\uC120\uC73C\uB85C \uC8FC\uBB38\uD558\uAE30";
+            $visionCta.setAttribute("aria-label", "\uC2DC\uC120\uC73C\uB85C \uC8FC\uBB38 \uC2DC\uC791\uD558\uAE30");
+            $visionCta.addEventListener("click", startVisionOrder);
+        }
+
+        const $hint = document.querySelector(".s00__cta-hint span");
+        if ($hint) {
+            $hint.textContent = "\uC6D0\uD558\uB294 \uC8FC\uBB38 \uBC29\uC2DD\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694";
         }
     });
 })();

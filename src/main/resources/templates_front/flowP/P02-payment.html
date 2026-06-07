@@ -20,7 +20,7 @@
 
     <!-- 상단바 -->
     <header class="p-topbar">
-        <button type="button" class="p-topbar__back" data-action="nav-back" aria-label="뒤로">
+        <button type="button" class="p-topbar__back vision-selectable" data-action="nav-back" aria-label="뒤로">
             <i class="xi-angle-left-thin" aria-hidden="true"></i>
         </button>
         <div class="p-topbar__titles">
@@ -95,7 +95,8 @@
     <!-- 하단 CTA -->
     <footer class="p02__cta-wrap">
         <button type="button"
-                class="p-cta p-cta--primary p-cta--block p02__cta"
+                class="p-cta p-cta--primary p-cta--block p02__cta vision-selectable"
+                data-vision-default
                 data-action="next">
             결제하기
         </button>
@@ -113,6 +114,7 @@
 <script src="/js/flowA/conversation-engine.js"></script>
 <script src="/js/common/voice-controller.js"></script>
 <script src="/js/common/card-terminal.js"></script>
+<script src="/js/vision-client.js"></script>
 <script src="/js/common/payment-modal.js"></script>
 <script src="/js/flowP/P02-payment.js" defer></script>
 </body>

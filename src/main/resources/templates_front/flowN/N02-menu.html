@@ -130,7 +130,7 @@
                 </button>
             </div>
 
-            <button class="n02__pay" type="button" data-action="checkout">
+            <button class="n02__pay vision-selectable" type="button" data-action="checkout">
                 <i class="xi xi-cart" aria-hidden="true"></i>
                 <span>결제하기</span>
                 <span class="n02__cart-pay-amount" data-cart-pay-amount>· ₩ 0</span>
@@ -141,7 +141,7 @@
     <!-- ========================================================
          ⑤ 메뉴 상세 풀스크린 오버레이
          ======================================================== -->
-    <div class="n02__detail" data-detail hidden aria-hidden="true">
+    <div class="n02__detail" data-detail data-vision-scope hidden aria-hidden="true">
         <article class="n02__detail-panel">
             <!-- 히어로 (사진 placeholder + 메뉴명/가격 + X) -->
             <div class="n02__detail-hero" data-detail-hero>
@@ -220,7 +220,7 @@
 
             <!-- 하단 CTA -->
             <div class="n02__detail-cta-wrap">
-                <button class="n02__detail-cta"
+                <button class="n02__detail-cta vision-selectable"
                         type="button"
                         data-action="add-from-detail">
                     <i class="xi xi-cart" aria-hidden="true"></i>
@@ -234,7 +234,7 @@
     <!-- ========================================================
          옵션 선택 모달 (담기 시 — QA #9). 옵션 있는 메뉴는 여기서 선택 후 담기.
          ======================================================== -->
-    <div class="n02-opt" data-opt-modal hidden>
+    <div class="n02-opt" data-opt-modal data-vision-scope hidden>
         <div class="n02-opt__backdrop" data-opt-close></div>
         <div class="n02-opt__box" role="dialog" aria-modal="true" aria-label="옵션 선택">
             <button class="n02-opt__close" type="button" data-opt-close aria-label="닫기">
@@ -247,9 +247,9 @@
             <p class="n02-opt__hint">옵션을 선택하거나 그대로 담을 수 있어요</p>
             <div class="n02-opt__groups n02__detail-options" data-opt-groups></div>
             <div class="n02-opt__actions">
-                <button class="btn-cta btn-cta--secondary n02-opt__btn"
+                <button class="btn-cta btn-cta--secondary n02-opt__btn vision-selectable"
                         type="button" data-opt-action="more">더 담기</button>
-                <button class="btn-cta btn-cta--primary n02-opt__btn"
+                <button class="btn-cta btn-cta--primary n02-opt__btn vision-selectable"
                         type="button" data-opt-action="order">바로 주문 →</button>
             </div>
         </div>
@@ -306,7 +306,7 @@
     <!-- ========================================================
          첫 진입 가이드 오버레이 (회색 쉐이드 · 터치하면 해제) — QA #13
          ======================================================== -->
-    <div class="n02-guide" data-guide hidden>
+    <div class="n02-guide vision-selectable" data-guide data-vision-scope hidden>
         <!-- 점선 + 화살표 레이어 : 좌표는 JS 가 실제 버튼 위치를 재서 그림 (프레임 720x1280) -->
         <!-- preserveAspectRatio="none" : viewBox 를 SVG 박스에 x·y 독립으로 늘려 채움.
              JS(drawGuideLines)의 kx/ky 선형 환산과 정확히 일치해야 화살표가 제 위치에 찍힌다. (QA R2-13) -->
@@ -390,6 +390,7 @@
 <script src="/js/common/nunchi-sensor.js"></script>
 <script src="/js/flowA/conversation-engine.js"></script>
 <script src="/js/flowN/menu-data.js"></script>
+<script src="/js/vision-client.js"></script>
 <script src="/js/flowN/N02-menu.js"></script>
 </body>
 </html>

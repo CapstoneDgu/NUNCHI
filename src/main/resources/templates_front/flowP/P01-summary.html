@@ -15,7 +15,7 @@
 
     <!-- 상단바 -->
     <header class="p-topbar">
-        <button type="button" class="p-topbar__back" data-action="nav-back" aria-label="뒤로">
+        <button type="button" class="p-topbar__back vision-selectable" data-action="nav-back" aria-label="뒤로">
             <i class="xi-angle-left-thin" aria-hidden="true"></i>
         </button>
         <div class="p-topbar__titles">
@@ -73,7 +73,8 @@
 
     <!-- 하단 CTA -->
     <footer class="p01__cta-wrap">
-        <button type="button" class="p-cta p-cta--primary p-cta--block p01__cta"
+        <button type="button" class="p-cta p-cta--primary p-cta--block p01__cta vision-selectable"
+                data-vision-default
                 data-action="next">
             주문 확인 완료 →
         </button>
@@ -91,15 +92,15 @@
             <span class="p01__price" data-price></span>
         </div>
         <div class="p01__qty" role="group" aria-label="수량">
-            <button type="button" class="p01__qty-btn" data-qty-dec aria-label="수량 감소">
+            <button type="button" class="p01__qty-btn vision-selectable" data-qty-dec aria-label="수량 감소">
                 <i class="xi-minus" aria-hidden="true"></i>
             </button>
             <span class="p01__qty-value" data-qty-value>1</span>
-            <button type="button" class="p01__qty-btn" data-qty-inc aria-label="수량 증가">
+            <button type="button" class="p01__qty-btn vision-selectable" data-qty-inc aria-label="수량 증가">
                 <i class="xi-plus" aria-hidden="true"></i>
             </button>
         </div>
-        <button type="button" class="p01__del" data-del aria-label="삭제">
+        <button type="button" class="p01__del vision-selectable" data-del aria-label="삭제">
             <i class="xi-trash" aria-hidden="true"></i>
         </button>
     </li>
@@ -115,6 +116,7 @@
 <script src="/js/common/ai-action.js"></script>
 <script src="/js/flowA/conversation-engine.js"></script>
 <script src="/js/common/voice-controller.js"></script>
+<script src="/js/vision-client.js"></script>
 <script src="/js/flowP/P01-summary.js" defer></script>
 </body>
 </html>
