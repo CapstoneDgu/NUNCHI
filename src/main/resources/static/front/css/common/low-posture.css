@@ -114,15 +114,17 @@ html.posture-low body:has(.ai-chat-panel--open) .lpost-toggle { display: none; }
    640 프레임에선 좌표가 안 맞는다. 좌표기반 화살표(svg)·강조 복제(lift)는 숨기고,
    가이드 전체를 화면 전체 오버레이로 승격한 뒤 콜아웃들을 '세로 목록'으로 펼쳐
    한 점에 겹치지 않고 모두 읽히도록 한다. */
-html.posture-low .n02-guide {
+/* :not([hidden]) 로 한정 — 터치 시 JS 가 hidden=true 로 닫을 때 display:flex !important 가
+   .n02-guide[hidden]{display:none} 를 덮어써 안 닫히던 문제 방지(터치로 넘어가짐). */
+html.posture-low .n02-guide:not([hidden]) {
     position: fixed !important;          /* page-bg(640 클립) 밖, 화면 전체로 승격 */
     inset: 0 !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-end !important; /* 저자세: 콜아웃을 화면 하단으로 내림(착석 사용자 손 닿는 곳) */
     gap: 10px !important;
-    padding: 28px 16px !important;
+    padding: 24px 16px 96px !important;   /* 하단 96px: ♿ 토글 버튼 공간 확보 */
     overflow-y: auto !important;
 }
 html.posture-low .n02-guide__svg,
