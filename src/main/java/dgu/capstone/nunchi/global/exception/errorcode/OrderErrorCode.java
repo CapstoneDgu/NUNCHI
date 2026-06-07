@@ -15,6 +15,11 @@ public enum OrderErrorCode implements ErrorCode {
     NOT_FOUND_CART_ITEM(HttpStatus.NOT_FOUND, 404, "장바구니에 존재하지 않는 아이템입니다."),
 
     /**
+     * 409 CONFLICT
+     */
+    CART_LOCK_ACQUIRE_FAILED(HttpStatus.CONFLICT, 409, "장바구니 처리 중입니다. 잠시 후 다시 시도해 주세요."),
+
+    /**
      * 404 NOT_FOUND
      */
     NOT_FOUND_ORDER(HttpStatus.NOT_FOUND, 404, "존재하지 않는 주문입니다."),
