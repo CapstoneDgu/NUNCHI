@@ -712,16 +712,28 @@
         if (window.AiAction && doneRes.action) {
             const act = doneRes.action;
             if (act.type === 'navigate' && act.page) {
-                await ttsQueue.catch(() => {});       // 발화 끝까지 대기
-                try {
-                    await sleep(700, signal);          // 마무리 텀
-                } catch (_) {
-                    return;                            // 도중 barge-in/abort → 이동 취소
+                // 가드: 조회성 발화("장바구니 확인/보여줘/얼마야")인데 AI 가 결제/요약 화면으로
+                // navigate 하면 무시한다. (담은 내용만 확인하려던 건데 결제 화면으로 튀는 오작동 방지.
+                //  명시적 결제 의도 "결제/주문할게/이걸로" 가 함께 있으면 정상 이동 허용)
+                const toCheckoutPage = /\/(summary|payment)/.test(act.page);
+                const userInquiry = /(확인|보여|알려|얼마|뭐.{0,3}(있|담)|담긴|내역|목록|남았)/.test(text);
+                const userCheckout = /(결제|계산|주문.{0,2}(할|완료|확정|하자)|이대로|이걸로|다.?골랐|마무리)/.test(text);
+                if (toCheckoutPage && userInquiry && !userCheckout) {
+                    console.warn('[A01] 조회성 발화 → 결제화면 navigate 차단:', { text, page: act.page });
+                    // navigate 무시 — 아래 일반 흐름(카트 갱신/칩/finalize)으로 진행
+                } else {
+                    await ttsQueue.catch(() => {});       // 발화 끝까지 대기
+                    try {
+                        await sleep(700, signal);          // 마무리 텀
+                    } catch (_) {
+                        return;                            // 도중 barge-in/abort → 이동 취소
+                    }
+                    navigateWithFade(act.page);            // 페이드 전환으로 이동
+                    return;
                 }
-                navigateWithFade(act.page);            // 페이드 전환으로 이동
-                return;
+            } else {
+                window.AiAction.handle(act);
             }
-            window.AiAction.handle(act);
         }
 
         // 매 턴 카트 재조회 — AI 가 서버사이드(MCP 툴)로 담거나 뺐을 수 있으므로
