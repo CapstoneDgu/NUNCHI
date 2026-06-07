@@ -174,6 +174,11 @@
         renderCartBar();
     }
 
+    function refreshVisionSelectables() {
+        if (!window.NunchiVisionClient || !window.NunchiVisionClient.isEnabled()) return;
+        setTimeout(() => window.NunchiVisionClient.refresh(), 0);
+    }
+
     // 메뉴 카드의 in-cart 강조 + 수량 뱃지만 제자리 갱신 (DOM 재생성 X → 이미지 재요청 없음)
     function syncCardCartState() {
         if (!$menuGrid) return;
@@ -206,11 +211,12 @@
     function renderFloorTabs() {
         const html = window.MenuData.data.floors.map((f) => {
             const active = f.id === state.currentFloorId;
-            return `<button class="pill-tab ${active ? "pill-tab--active" : ""}"
+            return `<button class="pill-tab vision-selectable ${active ? "pill-tab--active" : ""}"
                             type="button"
                             data-floor="${f.id}">${f.label}</button>`;
         }).join("");
         $floorTabs.innerHTML = html;
+        refreshVisionSelectables();
     }
 
     // ---------- 렌더링: 식당 사이드바 ----------
@@ -222,7 +228,7 @@
             const open   = window.MenuData.isOpenNow(s.hours);
             const active = s.id === state.currentStoreId;
             return `
-                <li class="n02__store-item ${active ? "n02__store-item--active" : ""}"
+                <li class="n02__store-item vision-selectable ${active ? "n02__store-item--active" : ""}"
                     data-store="${s.id}">
                     <span class="n02__store-name">${s.name}</span>
                     <span class="n02__store-hours">${s.hours}</span>
@@ -233,6 +239,7 @@
                 </li>`;
         }).join("");
         $storeList.innerHTML = html;
+        refreshVisionSelectables();
     }
 
     // ---------- 렌더링: 메뉴 그리드 ----------
@@ -270,7 +277,7 @@
                 : "";
 
             return `
-                <li class="n02__menu-card ${inCart ? "n02__menu-card--in-cart" : ""} ${m.soldOut ? "n02__menu-card--sold-out" : ""}"
+                <li class="n02__menu-card ${m.soldOut ? "" : "vision-selectable"} ${inCart ? "n02__menu-card--in-cart" : ""} ${m.soldOut ? "n02__menu-card--sold-out" : ""}"
                     data-menu="${m.id}">
                     <div class="n02__menu-card-thumb" data-detail-trigger="${m.id}" ${thumbStyle}>
                         ${m.aiPick ? `
@@ -300,6 +307,7 @@
                 </li>`;
         }).join("");
         $menuGrid.innerHTML = html;
+        refreshVisionSelectables();
     }
 
     // ---------- 렌더링: 카트 바 ----------
@@ -310,6 +318,7 @@
             $cartBar.classList.add("n02__cart-bar--empty");
             $cartEmpty.hidden = false;
             $cartFilled.hidden = true;
+            refreshVisionSelectables();
             return;
         }
 
@@ -369,6 +378,7 @@
         const showArrows = state.cart.length > 2;
         $cartArrowPrev.hidden = !showArrows;
         $cartArrowNext.hidden = !showArrows;
+        refreshVisionSelectables();
     }
 
     // ---------- 옵션 선택 모달 (담기 시 — QA #9) ----------
@@ -395,7 +405,7 @@
                 const sel = first && o.optionId === first.optionId ? " is-selected" : "";
                 const price = o.extraPrice > 0
                     ? `<span class="n02__detail-opt-price">+${fmt(o.extraPrice)}</span>` : "";
-                return `<button type="button" class="n02__detail-opt${sel}"
+                return `<button type="button" class="n02__detail-opt vision-selectable${sel}"
                                 data-group-id="${g.groupId}" data-option-id="${o.optionId}">
                             <span class="n02__detail-opt-name">${o.name}</span>${price}
                         </button>`;
@@ -408,6 +418,7 @@
                     </div>`;
         }).join("");
         recomputeOptPrice();
+        refreshVisionSelectables();
     }
 
     function selectOpt(groupId, optionId) {
@@ -448,6 +459,7 @@
             if ($optName) $optName.textContent = m.name;
             renderOptGroups();
             if ($optModal) $optModal.hidden = false;
+            refreshVisionSelectables();
         }).catch((e) => {
             console.warn("[N02] 옵션 조회 실패", e);
             addToCart(menuId, { optionIds: [] });
@@ -458,6 +470,7 @@
         optMenuId = null;
         optGroups = [];
         if ($optModal) $optModal.hidden = true;
+        refreshVisionSelectables();
     }
 
     // 더 담기(thenCheckout=false): 담고 닫고 계속 / 바로 주문(true): 담고 결제로
@@ -580,6 +593,7 @@
 
         $detail.hidden = false;
         $detail.setAttribute("aria-hidden", "false");
+        refreshVisionSelectables();
 
         // 눈치 감지 — 담지 않고 상세만 반복해서 열면 repeat_browse 신호
         if (window.NunchiSensor) window.NunchiSensor.noteDetailOpen(menuId);
@@ -589,6 +603,7 @@
         openDetailMenuId = null;
         $detail.hidden = true;
         $detail.setAttribute("aria-hidden", "true");
+        refreshVisionSelectables();
     }
 
     // ---------- 카트 조작 (모두 서버 Api.cart.* 호출) ----------
@@ -967,6 +982,36 @@
         try { seen = sessionStorage.getItem('n02GuideSeen') === '1'; } catch (_) {}
         if (seen) return;
         $guide.hidden = false;
+        refreshVisionSelectables();
+
+        const closeGuide = () => {
+            if ($guide.hidden) return;
+            $guide.hidden = true;
+            clearGuideLit();
+            try { sessionStorage.setItem('n02GuideSeen', '1'); } catch (_) {}
+            window.removeEventListener('resize', $guide._redraw);
+            window.removeEventListener('nunchi:vision-move', onGuideVisionMove);
+            window.removeEventListener('nunchi:vision-click', onGuideVisionClick);
+            if (window.NunchiSensor) window.NunchiSensor.resume();
+            refreshVisionSelectables();
+        };
+
+        const onGuideVisionMove = (event) => {
+            if ($guide.hidden) return;
+            if (event.detail && event.detail.direction === 'RIGHT') {
+                event.preventDefault();
+                closeGuide();
+            }
+        };
+
+        const onGuideVisionClick = (event) => {
+            if ($guide.hidden) return;
+            event.preventDefault();
+            closeGuide();
+        };
+
+        window.addEventListener('nunchi:vision-move', onGuideVisionMove);
+        window.addEventListener('nunchi:vision-click', onGuideVisionClick);
 
         // 실제 버튼 위치를 재서 점선 + 화살표를 그림 (메뉴 카드는 동적이라 좌표를 고정할 수 없음)
         drawGuideLines($guide);
@@ -992,6 +1037,7 @@
             window.removeEventListener('resize', $guide._redraw);
             // 가이드를 닫고 실제 주문을 시작하는 시점부터 눈치 감지 재개
             if (window.NunchiSensor) window.NunchiSensor.resume();
+            refreshVisionSelectables();
         }, { once: true });
 
         // 창 크기 변동 시 다시 그림
@@ -1162,6 +1208,12 @@
             const thumb = e.target.closest("[data-detail-trigger]");
             if (thumb) {
                 openDetail(parseInt(thumb.getAttribute("data-detail-trigger"), 10));
+                return;
+            }
+            // 3) 눈 포커스/카드 직접 클릭은 "+ 담기"와 같은 흐름으로 처리
+            const card = e.target.closest("[data-menu]");
+            if (card) {
+                openOptionModal(parseInt(card.getAttribute("data-menu"), 10));
                 return;
             }
         });

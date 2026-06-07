@@ -48,6 +48,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addViewController("/start").setViewName("forward:/index.html");
         registry.addViewController("/mode").setViewName("forward:/S01-mode.html");
         registry.addViewController("/dine").setViewName("forward:/S02-dine.html");
+        registry.addViewController("/vision-calibration").setViewName("forward:/vision-calibration.html");
         registry.addViewController("/menu").setViewName("forward:/flowN/N02-menu.html");
         registry.addViewController("/avatar").setViewName("forward:/flowA/A01-avatar.html");
         registry.addViewController("/summary").setViewName("forward:/flowP/P01-summary.html");

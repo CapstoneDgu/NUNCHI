@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=720, initial-scale=1" />
+    <title>눈 인식 보정 · 눈치 키오스크</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/vision-calibration.css">
+</head>
+<body>
+<main class="vision-calibration">
+    <section class="vc-panel" aria-live="polite">
+        <div class="vc-target" data-target>
+            <span class="vc-target__dot"></span>
+        </div>
+        <p class="vc-step" data-step>준비 중</p>
+        <h1 class="vc-title" data-title>눈 인식 기준을 맞추고 있어요</h1>
+        <p class="vc-desc" data-desc>화면의 점을 편하게 바라봐 주세요.</p>
+        <div class="vc-progress">
+            <span data-progress></span>
+        </div>
+        <button type="button" class="vc-skip vision-selectable" data-action="skip">
+            건너뛰기
+        </button>
+    </section>
+</main>
+
+<script src="/js/vision-calibration.js"></script>
+</body>
+</html>

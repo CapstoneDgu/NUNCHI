@@ -1,0 +1,40 @@
+camera:
+  index: 0
+  width: 640
+  height: 480
+  fps: 15
+  flip: true
+
+websocket:
+  host: "127.0.0.1"
+  port: 8765
+
+spring:
+  enabled: true
+  base_url: "http://localhost:8080"
+  event_endpoint: "/api/nunchi-vision/events"
+
+presence:
+  min_face_area_ratio: 0.06
+  approach_frames: 5
+  leave_seconds: 2.0
+  cooldown_seconds: 3.0
+
+eye_selection:
+  left_threshold: 0.45
+  right_threshold: 0.55
+  gaze_hold_seconds: 0.5
+  blink_threshold: 0.16
+  double_blink_interval: 0.65
+  click_cooldown_seconds: 1.2
+
+hesitation:
+  enabled: true
+  threshold: 0.7
+  ema_alpha: 0.3
+  cooldown_seconds: 5.0
+  weights:
+    dwell: 0.4
+    gaze_scatter: 0.35
+    brow_down: 0.25
+  dwell_seconds: 6.0
