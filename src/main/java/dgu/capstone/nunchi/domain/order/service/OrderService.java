@@ -81,99 +81,106 @@ public class OrderService {
         }
 
         // 같은 메뉴 + 동일 옵션 조합이 이미 있으면 수량만 증가, 없으면 새 라인 추가
-        List<CartItem> items = new ArrayList<>(cartRedisRepository.getItems(request.sessionId()));
-        Set<Long> newOptionIds = cartOptions.stream()
-                .map(CartItem.CartOption::getOptionId)
-                .collect(Collectors.toSet());
-
-        int existingIdx = -1;
-        for (int i = 0; i < items.size(); i++) {
-            CartItem it = items.get(i);
-            if (!it.getMenuId().equals(menu.getMenuId())) continue;
-            Set<Long> existingOptionIds = (it.getOptions() == null ? List.<CartItem.CartOption>of() : it.getOptions()).stream()
+        // (조회→수정→저장 구간을 락으로 직렬화해 동시 요청 시 항목이 유실되는 레이스 컨디션 방지)
+        return cartRedisRepository.withLock(request.sessionId(), () -> {
+            List<CartItem> items = new ArrayList<>(cartRedisRepository.getItems(request.sessionId()));
+            Set<Long> newOptionIds = cartOptions.stream()
                     .map(CartItem.CartOption::getOptionId)
                     .collect(Collectors.toSet());
-            if (existingOptionIds.equals(newOptionIds)) {
-                existingIdx = i;
-                break;
+
+            int existingIdx = -1;
+            for (int i = 0; i < items.size(); i++) {
+                CartItem it = items.get(i);
+                if (!it.getMenuId().equals(menu.getMenuId())) continue;
+                Set<Long> existingOptionIds = (it.getOptions() == null ? List.<CartItem.CartOption>of() : it.getOptions()).stream()
+                        .map(CartItem.CartOption::getOptionId)
+                        .collect(Collectors.toSet());
+                if (existingOptionIds.equals(newOptionIds)) {
+                    existingIdx = i;
+                    break;
+                }
             }
-        }
 
-        if (existingIdx >= 0) {
-            CartItem prev = items.get(existingIdx);
-            CartItem merged = CartItem.builder()
-                    .itemId(prev.getItemId())
-                    .menuId(prev.getMenuId())
-                    .menuName(prev.getMenuName())
-                    .imageUrl(prev.getImageUrl())
-                    .unitPrice(prev.getUnitPrice())
-                    .quantity(prev.getQuantity() + request.quantity())
-                    .options(prev.getOptions())
-                    .build();
-            items.set(existingIdx, merged);
-        } else {
-            items.add(CartItem.builder()
-                    .itemId(UUID.randomUUID().toString())
-                    .menuId(menu.getMenuId())
-                    .menuName(menu.getName())
-                    .imageUrl(menu.getImageUrl())
-                    .unitPrice(menu.getPrice())
-                    .quantity(request.quantity())
-                    .options(cartOptions)
-                    .build());
-        }
+            if (existingIdx >= 0) {
+                CartItem prev = items.get(existingIdx);
+                CartItem merged = CartItem.builder()
+                        .itemId(prev.getItemId())
+                        .menuId(prev.getMenuId())
+                        .menuName(prev.getMenuName())
+                        .imageUrl(prev.getImageUrl())
+                        .unitPrice(prev.getUnitPrice())
+                        .quantity(prev.getQuantity() + request.quantity())
+                        .options(prev.getOptions())
+                        .build();
+                items.set(existingIdx, merged);
+            } else {
+                items.add(CartItem.builder()
+                        .itemId(UUID.randomUUID().toString())
+                        .menuId(menu.getMenuId())
+                        .menuName(menu.getName())
+                        .imageUrl(menu.getImageUrl())
+                        .unitPrice(menu.getPrice())
+                        .quantity(request.quantity())
+                        .options(cartOptions)
+                        .build());
+            }
 
-        cartRedisRepository.saveItems(request.sessionId(), items);
-        return CartResponse.from(request.sessionId(), items);
+            cartRedisRepository.saveItems(request.sessionId(), items);
+            return CartResponse.from(request.sessionId(), items);
+        });
     }
 
     /** 장바구니 아이템 수량 수정 */
     @Transactional
     public CartResponse updateItem(Long sessionId, String itemId, CartItemUpdateRequest request) {
-        List<CartItem> items = cartRedisRepository.getItems(sessionId);
+        return cartRedisRepository.withLock(sessionId, () -> {
+            List<CartItem> items = cartRedisRepository.getItems(sessionId);
 
-        boolean exists = items.stream().anyMatch(item -> item.getItemId().equals(itemId));
-        if (!exists) {
-            throw new OrderException(OrderErrorCode.NOT_FOUND_CART_ITEM);
-        }
+            boolean exists = items.stream().anyMatch(item -> item.getItemId().equals(itemId));
+            if (!exists) {
+                throw new OrderException(OrderErrorCode.NOT_FOUND_CART_ITEM);
+            }
 
-        List<CartItem> updatedItems = items.stream()
-                .map(item -> {
-                    if (item.getItemId().equals(itemId)) {
-                        return CartItem.builder()
-                                .itemId(item.getItemId())
-                                .menuId(item.getMenuId())
-                                .menuName(item.getMenuName())
-                                .imageUrl(item.getImageUrl())
-                                .unitPrice(item.getUnitPrice())
-                                .quantity(request.quantity())
-                                .options(item.getOptions())
-                                .build();
-                    }
-                    return item;
-                })
-                .toList();
+            List<CartItem> updatedItems = items.stream()
+                    .map(item -> {
+                        if (item.getItemId().equals(itemId)) {
+                            return CartItem.builder()
+                                    .itemId(item.getItemId())
+                                    .menuId(item.getMenuId())
+                                    .menuName(item.getMenuName())
+                                    .imageUrl(item.getImageUrl())
+                                    .unitPrice(item.getUnitPrice())
+                                    .quantity(request.quantity())
+                                    .options(item.getOptions())
+                                    .build();
+                        }
+                        return item;
+                    })
+                    .toList();
 
-        cartRedisRepository.saveItems(sessionId, updatedItems);
-        return CartResponse.from(sessionId, updatedItems);
+            cartRedisRepository.saveItems(sessionId, updatedItems);
+            return CartResponse.from(sessionId, updatedItems);
+        });
     }
 
     /** 장바구니 아이템 삭제 */
     @Transactional
     public CartResponse removeItem(Long sessionId, String itemId) {
-        List<CartItem> items = cartRedisRepository.getItems(sessionId);
+        return cartRedisRepository.withLock(sessionId, () -> {
+            List<CartItem> items = cartRedisRepository.getItems(sessionId);
 
-        boolean exists = items.stream().anyMatch(item -> item.getItemId().equals(itemId));
-        if (!exists) {
-            throw new OrderException(OrderErrorCode.NOT_FOUND_CART_ITEM);
-        }
+            boolean exists = items.stream().anyMatch(item -> item.getItemId().equals(itemId));
+            if (!exists) {
+                throw new OrderException(OrderErrorCode.NOT_FOUND_CART_ITEM);
+            }
 
-        List<CartItem> updatedItems = items.stream()
-                .filter(item -> !item.getItemId().equals(itemId))
-                .toList();
+            List<CartItem> updatedItems = items.stream()
+                    .filter(item -> !item.getItemId().equals(itemId))
+                    .toList();
 
-        cartRedisRepository.saveItems(sessionId, updatedItems);
-        return CartResponse.from(sessionId, updatedItems);
+            cartRedisRepository.saveItems(sessionId, updatedItems);
+            return CartResponse.from(sessionId, updatedItems);
+        });
     }
 
     /** 주문 확정: Redis 장바구니 → PostgreSQL Order + OrderItem + OrderItemOption */
