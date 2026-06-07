@@ -400,7 +400,7 @@ public class DataInitializer implements CommandLineRunner {
                 .category(catSet).isSoldOut(false)
                 .nutrition(nutrition(1330, 53.0, 150.0, 42.0, 1700, 14.0, 0.4, 120, 5.5))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG, AllergyType.PORK, AllergyType.MILK))
-                .spicyLevel(0).temperatureType(TemperatureType.BOTH).vegetarianType(VegetarianType.NONE)
+                .spicyLevel(0).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.NONE)
                 .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산, 돼지고기:국내산, 치즈:뉴질랜드산, 밀:미국산").floor(1).restaurantName("솥앤누들").build());
 
         Menu setNaengIkura = menuRepository.save(Menu.builder()
@@ -408,7 +408,7 @@ public class DataInitializer implements CommandLineRunner {
                 .category(catSet).isSoldOut(false)
                 .nutrition(nutrition(1200, 40.0, 174.0, 26.0, 1700, 15.0, 0.1, 200, 5.0))
                 .allergies(allergies(AllergyType.WHEAT, AllergyType.SOY, AllergyType.EGG, AllergyType.SQUID))
-                .spicyLevel(0).temperatureType(TemperatureType.BOTH).vegetarianType(VegetarianType.NONE)
+                .spicyLevel(0).temperatureType(TemperatureType.COLD).vegetarianType(VegetarianType.NONE)
                 .seasonRecommended(Season.SUMMER).originInfo("메밀:국내산, 쌀:국내산, 날치알:러시아산").floor(1).restaurantName("솥앤누들").build());
 
         Menu setDonkatsuCurry = menuRepository.save(Menu.builder()
