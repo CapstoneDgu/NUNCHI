@@ -18,6 +18,7 @@ public record MenuDetailResponse(
         String name,
         Integer price,
         Boolean isSoldOut,
+        Boolean isRecommended,
         String imageUrl,
         List<OptionGroupInfo> optionGroups,
         NutritionInfo nutrition,
@@ -26,7 +27,8 @@ public record MenuDetailResponse(
         TemperatureType temperatureType,
         VegetarianType vegetarianType,
         Season seasonRecommended,
-        String originInfo
+        String originInfo,
+        String reason
 ) {
 
     public record OptionGroupInfo(Long groupId, String groupName, List<OptionInfo> options) {
@@ -46,7 +48,8 @@ public record MenuDetailResponse(
         }
     }
 
-    public static MenuDetailResponse from(Menu menu, List<MenuOptionGroup> groups, Map<Long, List<MenuOption>> optionsByGroupId) {
+    public static MenuDetailResponse from(Menu menu, List<MenuOptionGroup> groups, Map<Long, List<MenuOption>> optionsByGroupId,
+                                           Boolean isRecommended, String reason) {
         List<OptionGroupInfo> groupInfos = groups.stream()
                 .map(group -> OptionGroupInfo.from(
                         group,
@@ -59,6 +62,7 @@ public record MenuDetailResponse(
                 menu.getName(),
                 menu.getPrice(),
                 menu.getIsSoldOut(),
+                isRecommended,
                 menu.getImageUrl(),
                 groupInfos,
                 menu.getNutrition(),
@@ -67,7 +71,8 @@ public record MenuDetailResponse(
                 menu.getTemperatureType(),
                 menu.getVegetarianType(),
                 menu.getSeasonRecommended(),
-                menu.getOriginInfo()
+                menu.getOriginInfo(),
+                reason
         );
     }
 }
