@@ -1,0 +1,23 @@
+[    2011ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://43-201-20-11.sslip.io/favicon.ico:0
+[   38975ms] [LOG] [Conv] 초기화 — 음성인식 지원: true | listenTimeoutMs: 80000 @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:282
+[   39333ms] [LOG] [A01] refreshCart (Spring sessionId=19) → {sessionId: 19, items: Array(0), totalAmount: 0} @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:917
+[   39334ms] [LOG] [Conv] 🔄 모드 전환: INACTIVE → AI_SPEAKING @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:69
+[   40502ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://43-201-20-11.sslip.io/favicon.ico:0
+[   46857ms] [LOG] [Conv] 🔄 모드 전환: AI_SPEAKING → LISTENING @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:69
+[   67638ms] [LOG] [Conv] ⌨️ 텍스트 입력: 추천해줘 @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:348
+[   67638ms] [LOG] [Conv] 🔄 모드 전환: LISTENING → THINKING @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:69
+[   67651ms] [LOG] [Conv] 🎤 마이크 꺼짐 — 음성 인식 종료 @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:161
+[   74245ms] [LOG] [A01] chatStream done: {type: done, reply: 오늘 인기 메뉴를 추천해 드릴게요!, recommendations: Array(3), menu_options: null, suggestions: Array(3)} @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:683
+[   74245ms] [LOG] [A01] current_step: BROWSE | currentStep: undefined | step: undefined @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:684
+[   74245ms] [LOG] [A01] step 분석: {prevFsm: opening, currFsm: opening, enteredCheckout: false, replyComplete: false} @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:693
+[   74245ms] [LOG] [AiAction] dispatch {type: highlight_menu, menu_id: 13} @ https://43-201-20-11.sslip.io/js/common/ai-action.js:30
+[   74246ms] [LOG] [Conv] 🔄 모드 전환: THINKING → LISTENING @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:69
+[  125738ms] [LOG] [A01] chatStream done: {type: done, reply: 다음과 같은 옵션이 있어요! 원하시는 옵션을 선택해주세요., recommendations: null, menu_options: Object, suggestions: Array(3)} @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:683
+[  125738ms] [LOG] [A01] current_step: CONFIGURE | currentStep: undefined | step: undefined @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:684
+[  125738ms] [LOG] [A01] step 분석: {prevFsm: opening, currFsm: addmore, enteredCheckout: false, replyComplete: false} @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:693
+[  144826ms] [WARNING] [Conv] 🚫 마이크 권한 차단: not-allowed @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:151
+[  144826ms] [LOG] [Conv] 🔄 모드 전환: LISTENING → INACTIVE @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:69
+[  144826ms] [LOG] [Conv] 🎤 마이크 꺼짐 — 음성 인식 종료 @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:161
+[  223126ms] [LOG] [A01] chatStream done: {type: done, reply: 철판치즈돈가스 담겼어요! 더 시키실 메뉴가 있나요?, recommendations: null, menu_options: Object, suggestions: Array(3)} @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:683
+[  223126ms] [LOG] [A01] current_step: BROWSE | currentStep: undefined | step: undefined @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:684
+[  223126ms] [LOG] [A01] step 분석: {prevFsm: addmore, currFsm: opening, enteredCheckout: false, replyComplete: false} @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:693

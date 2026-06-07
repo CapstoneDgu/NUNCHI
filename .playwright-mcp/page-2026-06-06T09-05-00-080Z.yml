@@ -1,0 +1,61 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - button "처음으로" [ref=e4] [cursor=pointer]:
+      - generic [ref=e5]: 
+    - generic [ref=e6]:
+      - generic [ref=e7]: 듣고 있어요
+      - generic [ref=e9]: 눈치
+    - generic [ref=e10]:
+      - button "일반 주문으로 전환" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: 
+        - generic [ref=e13]: 일반 주문
+      - button "소리 끄기/켜기" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: 
+  - region "눈치 아바타" [ref=e16]:
+    - status [ref=e18]:
+      - text: 🎤 말씀해 주세요
+      - generic [ref=e19]: "|"
+  - generic [ref=e20]:
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - generic [ref=e23]: 
+        - generic [ref=e24]: 아직 담은 메뉴가 없어요
+      - text: 
+    - generic "빠른 응답" [ref=e25]:
+      - button "장바구니 확인해줘" [ref=e38] [cursor=pointer]
+      - button "조건 바꿔서 추천해줘" [ref=e39] [cursor=pointer]
+      - button "다른 메뉴도 추천해줘" [ref=e40] [cursor=pointer]
+  - generic [ref=e26]:
+    - generic [ref=e27]:
+      - textbox "눈치에게 메시지 입력" [active] [ref=e28]:
+        - /placeholder: 듣고 있어요...
+      - button "보내기" [ref=e29] [cursor=pointer]:
+        - generic [ref=e30]: 
+    - button "대화 종료" [pressed] [ref=e36] [cursor=pointer]:
+      - generic [ref=e32]: 
+  - button "대화 기록 보기" [ref=e33] [cursor=pointer]:
+    - generic [ref=e34]: 
+  - text:  
+  - dialog "추천 메뉴" [ref=e42]:
+    - generic [ref=e44]:
+      - heading "눈치의 추천" [level=2] [ref=e45]
+      - button "닫기" [ref=e46] [cursor=pointer]: ×
+    - generic [ref=e47]:
+      - generic [ref=e48]:
+        - img "일식카레덮밥" [ref=e50]
+        - generic "일식카레덮밥" [ref=e51]
+        - generic [ref=e52]: ₩ 7,000
+        - button "담기" [ref=e53] [cursor=pointer]
+      - generic [ref=e54]:
+        - img "데리야끼치킨솥밥" [ref=e56]
+        - generic "데리야끼치킨솥밥" [ref=e57]
+        - generic [ref=e58]: ₩ 7,500
+        - button "담기" [ref=e59] [cursor=pointer]
+      - generic [ref=e60]:
+        - img "철판치즈돈가스" [ref=e62]
+        - generic "철판치즈돈가스" [ref=e63]
+        - generic [ref=e64]: ₩ 8,000
+        - button "담기" [ref=e65] [cursor=pointer]
+    - generic [ref=e66]:
+      - button "다른 메뉴 추천받기" [ref=e67] [cursor=pointer]
+      - button "닫기" [ref=e68] [cursor=pointer]

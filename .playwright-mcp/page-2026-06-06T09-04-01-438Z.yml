@@ -1,0 +1,25 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - heading "주문 방식을 선택해주세요" [level=1] [ref=e4]
+    - paragraph [ref=e5]: 원하는 방식으로 주문을 시작할 수 있어요
+  - region "주문 방식" [ref=e6]:
+    - button "일반 주문으로 시작하기" [ref=e7] [cursor=pointer]:
+      - generic [ref=e9]: 
+      - generic [ref=e10]:
+        - generic [ref=e11]: Touch Order
+        - generic [ref=e12]: 일반 주문
+        - paragraph [ref=e13]:
+          - text: 메뉴를 직접 골라
+          - text: 주문해요
+      - generic [ref=e15]: 
+    - button "AI 아바타와 대화해서 주문하기" [ref=e16] [cursor=pointer]:
+      - generic [ref=e18]: 
+      - generic [ref=e19]:
+        - generic [ref=e20]: AI Avatar
+        - generic [ref=e21]: AI 대화 주문
+        - paragraph [ref=e22]:
+          - text: 캐릭터와 대화하며
+          - text: 주문해요
+      - generic [ref=e24]: 
+  - button "처음으로" [ref=e25] [cursor=pointer]:
+    - generic [ref=e26]: 

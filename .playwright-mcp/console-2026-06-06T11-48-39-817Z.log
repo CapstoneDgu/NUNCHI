@@ -1,0 +1,5 @@
+[     227ms] [LOG] [Conv] 초기화 — 음성인식 지원: true | listenTimeoutMs: 80000 @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:316
+[     319ms] [LOG] [A01] refreshCart (Spring sessionId=53) → {sessionId: 53, items: Array(0), totalAmount: 0} @ https://43-201-20-11.sslip.io/js/flowA/A01-avatar.js:926
+[     322ms] [LOG] [Conv] 🔄 모드 전환: INACTIVE → AI_SPEAKING @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:77
+[    1569ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://43-201-20-11.sslip.io/favicon.ico:0
+[    7797ms] [LOG] [Conv] 🔄 모드 전환: AI_SPEAKING → READY @ https://43-201-20-11.sslip.io/js/flowA/conversation-engine.js:77

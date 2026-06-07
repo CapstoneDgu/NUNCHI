@@ -1,0 +1,101 @@
+- main [ref=e2]:
+  - img "동국대학교"
+  - generic [ref=e3]:
+    - generic [ref=e4]: 학생식당
+    - generic [ref=e5]: 상록원
+  - region "오늘의 추천 메뉴" [ref=e6]:
+    - generic [ref=e8]:
+      - article [ref=e9]:
+        - generic [ref=e10]:
+          - generic [ref=e12]:
+            - generic [ref=e13]: 
+            - generic [ref=e14]: 눈치 있는 키오스크
+          - generic [ref=e15]:
+            - generic [ref=e16]:
+              - text: 키오스크 주문,
+              - text: 어렵지 않아요
+            - generic [ref=e17]: AI가 눈치 있게 도와드릴게요
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - generic [ref=e20]: 
+            - generic [ref=e21]: AI 대화 주문
+            - generic [ref=e22]: 직원처럼 말로 편하게
+          - generic [ref=e23]:
+            - generic [ref=e24]: 
+            - generic [ref=e25]: 눈치 추천
+            - generic [ref=e26]: 고민하면 먼저 다가감
+          - generic [ref=e27]:
+            - generic [ref=e28]: 
+            - generic [ref=e29]: 터치도 OK
+            - generic [ref=e30]: 익숙한 방식 그대로
+      - article [ref=e31]:
+        - img "숯불삼겹솥밥" [ref=e32]:
+          - img "일식카레덮밥" [ref=e33]
+          - generic [ref=e36]: 지금 1위
+          - generic [ref=e37]:
+            - generic [ref=e38]: 일식카레덮밥
+            - generic [ref=e39]: ₩ 7,000
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - generic [ref=e42]:
+              - generic [ref=e43]: 현재 판매량 1위
+              - generic [ref=e44]: 오늘 50개 주문
+            - generic [ref=e45]: 100%
+          - progressbar [ref=e46]
+      - article [ref=e48]:
+        - img "김치찌개정식" [ref=e49]:
+          - img "데리야끼치킨솥밥" [ref=e50]
+          - generic [ref=e53]: 인기
+          - generic [ref=e54]:
+            - generic [ref=e55]: 데리야끼치킨솥밥
+            - generic [ref=e56]: ₩ 7,500
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]:
+              - generic [ref=e60]: 지금 인기 메뉴 2위
+              - generic [ref=e61]: 오늘 45개 주문
+            - generic [ref=e62]: 90%
+          - progressbar [ref=e63]
+      - article [ref=e65]:
+        - img "얼큰수제비" [ref=e66]:
+          - img "철판치즈돈가스" [ref=e67]
+          - generic [ref=e69]:
+            - generic [ref=e70]: 
+            - generic [ref=e71]: 추천
+          - generic [ref=e72]:
+            - generic [ref=e73]: 철판치즈돈가스
+            - generic [ref=e74]: ₩ 8,000
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - generic [ref=e78]: 지금 인기 메뉴 3위
+              - generic [ref=e79]: 오늘 40개 주문
+            - generic [ref=e80]: 80%
+          - progressbar [ref=e81]
+      - article [ref=e83]:
+        - img "제육덮밥" [ref=e84]:
+          - img "가츠동" [ref=e85]
+          - generic [ref=e87]:
+            - generic [ref=e88]: 
+            - generic [ref=e89]: 오늘의 픽
+          - generic [ref=e90]:
+            - generic [ref=e91]: 가츠동
+            - generic [ref=e92]: ₩ 8,000
+        - generic [ref=e93]:
+          - generic [ref=e94]:
+            - generic [ref=e95]:
+              - generic [ref=e96]: 지금 인기 메뉴 4위
+              - generic [ref=e97]: 오늘 35개 주문
+            - generic [ref=e98]: 70%
+          - progressbar [ref=e99]
+    - group "슬라이드 탐색" [ref=e101]:
+      - button "눈치 소개" [ref=e102] [cursor=pointer]
+      - button "슬라이드 1" [ref=e103] [cursor=pointer]
+      - button "슬라이드 2" [ref=e104] [cursor=pointer]
+      - button "슬라이드 3" [ref=e105] [cursor=pointer]
+      - button "슬라이드 4" [ref=e106] [cursor=pointer]
+  - generic [ref=e107]:
+    - button "주문 시작하기" [ref=e108] [cursor=pointer]
+    - generic [ref=e109]:
+      - generic [ref=e110]: 
+      - generic [ref=e111]: 화면을 터치해주세요
