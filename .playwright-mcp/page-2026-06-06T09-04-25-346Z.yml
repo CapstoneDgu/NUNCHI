@@ -1,0 +1,35 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - button "처음으로" [ref=e4] [cursor=pointer]:
+      - generic [ref=e5]: 
+    - generic [ref=e6]:
+      - generic [ref=e7]: 대화 중
+      - generic [ref=e9]: 눈치
+    - generic [ref=e10]:
+      - button "일반 주문으로 전환" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: 
+        - generic [ref=e13]: 일반 주문
+      - button "소리 끄기/켜기" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: 
+  - region "눈치 아바타" [ref=e16]:
+    - status [ref=e18]:
+      - text: 안녕하세요!
+      - generic [ref=e19]: "|"
+  - generic [ref=e20]:
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - generic [ref=e23]: 
+        - generic [ref=e24]: 아직 담은 메뉴가 없어요
+      - text: 
+    - generic "빠른 응답" [ref=e25]
+  - generic [ref=e26]:
+    - generic [ref=e27]:
+      - textbox "눈치에게 메시지 입력" [ref=e28]:
+        - /placeholder: 눈치가 말하고 있어요
+      - button "보내기" [ref=e29] [cursor=pointer]:
+        - generic [ref=e30]: 
+    - button "대화 종료 (말씀하시면 끼어들 수 있어요)" [pressed] [ref=e31] [cursor=pointer]:
+      - generic [ref=e32]: 
+  - button "대화 기록 보기" [ref=e33] [cursor=pointer]:
+    - generic [ref=e34]: 
+  - text:  

@@ -1,0 +1,25 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - heading "어디서 드실 건가요?" [level=1] [ref=e4]
+    - paragraph [ref=e5]: 드시는 장소를 선택해주세요
+  - region "식사 장소" [ref=e6]:
+    - button "매장에서 식사하기" [ref=e7] [cursor=pointer]:
+      - generic [ref=e9]: 
+      - generic [ref=e10]:
+        - generic [ref=e11]: Dine In
+        - generic [ref=e12]: 매장에서
+        - paragraph [ref=e13]:
+          - text: 식당에서
+          - text: 편하게 드세요
+      - generic [ref=e15]: 
+    - button "포장해서 가져가기" [ref=e16] [cursor=pointer]:
+      - generic [ref=e18]: 
+      - generic [ref=e19]:
+        - generic [ref=e20]: Take Out
+        - generic [ref=e21]: 포장해서
+        - paragraph [ref=e22]:
+          - text: 가져가서
+          - text: 드세요
+      - generic [ref=e24]: 
+  - button "처음으로" [ref=e25] [cursor=pointer]:
+    - generic [ref=e26]: 

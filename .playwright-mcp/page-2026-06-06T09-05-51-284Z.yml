@@ -1,0 +1,91 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - button "처음으로" [ref=e4] [cursor=pointer]:
+      - generic [ref=e5]: 
+    - generic [ref=e6]:
+      - generic [ref=e7]: 듣고 있어요
+      - generic [ref=e9]: 눈치
+    - generic [ref=e10]:
+      - button "일반 주문으로 전환" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: 
+        - generic [ref=e13]: 일반 주문
+      - button "소리 끄기/켜기" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: 
+  - region "눈치 아바타" [ref=e16]:
+    - status [ref=e18]:
+      - generic [ref=e19]: "|"
+  - generic [ref=e20]:
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - generic [ref=e23]: 
+        - generic [ref=e24]: 아직 담은 메뉴가 없어요
+      - text: 
+    - generic "빠른 응답" [ref=e25]:
+      - button "돈가스소스로 할게" [ref=e69] [cursor=pointer]
+      - button "카레소스로 할게" [ref=e70] [cursor=pointer]
+      - button "크림소스로 할게" [ref=e71] [cursor=pointer]
+  - generic [ref=e26]:
+    - generic [ref=e27]:
+      - textbox "눈치에게 메시지 입력" [ref=e28]:
+        - /placeholder: 듣고 있어요...
+      - button "보내기" [ref=e29] [cursor=pointer]:
+        - generic [ref=e30]: 
+    - button "대화 종료" [pressed] [ref=e36] [cursor=pointer]:
+      - generic [ref=e32]: 
+  - button "대화 기록 보기" [ref=e33] [cursor=pointer]:
+    - generic [ref=e34]: 
+  - text:  
+  - dialog "옵션 선택" [ref=e73]:
+    - generic [ref=e75]:
+      - heading "철판치즈돈가스" [level=2] [ref=e76]
+      - button "닫기" [ref=e77] [cursor=pointer]: ×
+    - generic [ref=e78]:
+      - generic [ref=e79]:
+        - generic [ref=e81]: 소스 선택
+        - generic [ref=e82]:
+          - generic [ref=e83] [cursor=pointer]:
+            - radio "돈가스소스" [ref=e84]
+            - generic [ref=e85]: 돈가스소스
+          - generic [ref=e86] [cursor=pointer]:
+            - radio "카레소스" [ref=e87]
+            - generic [ref=e88]: 카레소스
+          - generic [ref=e89] [cursor=pointer]:
+            - radio "크림소스 + ₩500" [ref=e90]
+            - generic [ref=e91]: 크림소스
+            - generic [ref=e92]: + ₩500
+      - generic [ref=e93]:
+        - generic [ref=e95]: 와사비
+        - generic [ref=e96]:
+          - generic [ref=e97] [cursor=pointer]:
+            - radio "와사비 없이" [ref=e98]
+            - generic [ref=e99]: 와사비 없이
+          - generic [ref=e100] [cursor=pointer]:
+            - radio "와사비 추가" [ref=e101]
+            - generic [ref=e102]: 와사비 추가
+      - generic [ref=e103]:
+        - generic [ref=e105]: 소금
+        - generic [ref=e106]:
+          - generic [ref=e107] [cursor=pointer]:
+            - radio "소금 없이" [ref=e108]
+            - generic [ref=e109]: 소금 없이
+          - generic [ref=e110] [cursor=pointer]:
+            - radio "소금 추가" [ref=e111]
+            - generic [ref=e112]: 소금 추가
+      - generic [ref=e113]:
+        - generic [ref=e115]: 계란 추가
+        - generic [ref=e116]:
+          - generic [ref=e117] [cursor=pointer]:
+            - radio "없음" [ref=e118]
+            - generic [ref=e119]: 없음
+          - generic [ref=e120] [cursor=pointer]:
+            - radio "1개 + ₩500" [ref=e121]
+            - generic [ref=e122]: 1개
+            - generic [ref=e123]: + ₩500
+          - generic [ref=e124] [cursor=pointer]:
+            - radio "2개 + ₩1,000" [ref=e125]
+            - generic [ref=e126]: 2개
+            - generic [ref=e127]: + ₩1,000
+    - generic: 필수 옵션을 선택해 주세요
+    - generic [ref=e128]:
+      - button "취소" [ref=e129] [cursor=pointer]
+      - button "담기" [ref=e130] [cursor=pointer]
