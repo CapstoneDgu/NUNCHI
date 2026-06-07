@@ -5,6 +5,12 @@ on:
     branches:
       - main
 
+# 배포 겹침 방지 — 같은 ref 의 이전 배포가 돌고 있으면 취소하고 최신 것만 실행.
+# (동시 실행이 latest 태그를 서로 덮어써 옛 이미지가 뜨던 문제 방지)
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -47,10 +53,13 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          # 커밋 SHA 고정태그(불변) + latest(편의) 둘 다 push.
+          # 배포는 SHA 태그 이미지를 쓰므로 "latest pull 했는데 옛 이미지" 문제가 사라진다.
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Deploy on EC2
@@ -65,12 +74,14 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: ECR_IMAGE,ECR_REGISTRY,AWS_REGION
           script: |
+            set -e
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
             cd /home/ubuntu/nunchi
             export ECR_IMAGE=$ECR_IMAGE
+            # SHA 태그 이미지를 받아 app 만 강제 재생성 (DB/redis/nginx 는 건드리지 않음)
             docker compose pull app
-            docker compose down
-            docker compose up -d
+            docker compose up -d --force-recreate app
+            docker image prune -f
 
   notify-discord:
     needs: deploy
