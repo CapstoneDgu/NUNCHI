@@ -82,6 +82,11 @@ public class MenuSpecification {
         return (root, query, cb) -> cb.equal(root.get("category").get("categoryId"), id);
     }
 
+    // 지정 카테고리명을 가진 메뉴 제외 (예: 추천에서 추가메뉴/음료 제외)
+    public static Specification<Menu> excludeCategoryNames(List<String> names) {
+        return (root, query, cb) -> cb.not(root.get("category").get("name").in(names));
+    }
+
     public static Specification<Menu> minPrice(Integer min) {
         return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("price"), min);
     }
