@@ -31,16 +31,18 @@
     const LOG = '[Nunchi]';
 
     // ── 튜닝 파라미터 ───────────────────────────────────────
-    const IDLE_MS      = 25000;   // 25초 무반응 → silence 후보
-    const CHECK_MS     = 5000;    // 유휴 검사 주기
-    const REPEAT_OPENS = 3;       // 상세 N회 열고도 안 담으면 repeat_browse
-    const COOLDOWN_MS  = 45000;   // 개입 사이 최소 간격
-    const MAX_NUDGES   = 3;       // 세션당 최대 개입 횟수
+    const IDLE_MS        = 15000;   // 15초 무반응 → silence 후보 (조금 짧게)
+    const CHECK_MS       = 4000;    // 유휴 검사 주기
+    const REPEAT_OPENS   = 3;       // 상세 N회 열고도 안 담으면 repeat_browse
+    const STORE_SWITCHES = 5;       // 층/식당 N회 전환하고도 안 담으면 browse_floors
+    const COOLDOWN_MS    = 45000;   // 개입 사이 최소 간격
+    const MAX_NUDGES     = 3;       // 세션당 최대 개입 횟수
 
     let _opts = {};
     let _inited = false;
     let _lastActivity = Date.now();
     let _detailOpens = 0;
+    let _storeSwitches = 0;
     let _lastNudge = 0;
     let _nudgeCount = 0;
     let _paused = false;
@@ -60,7 +62,8 @@
     function _fire(signal) {
         _lastNudge = Date.now();
         _nudgeCount += 1;
-        _detailOpens = 0;          // 개입 후 반복탐색 카운터 초기화
+        _detailOpens = 0;          // 개입 후 반복탐색/전환 카운터 초기화
+        _storeSwitches = 0;
         _lastActivity = Date.now();
         console.log(LOG, '신호 발생 →', signal, '(누적', _nudgeCount + '/' + MAX_NUDGES + ')');
         if (_opts.onSignal) {
@@ -80,9 +83,19 @@
         }
     }
 
-    // 장바구니 담기 성공 — "결정함" → 반복탐색 카운터 리셋
+    // 층/식당 전환 — 여러 매장을 옮겨다니며 못 고르면 browse_floors
+    function noteStoreSwitch() {
+        _storeSwitches += 1;
+        _lastActivity = Date.now();
+        if (_storeSwitches >= STORE_SWITCHES && _cartCount() === 0 && _canNudge()) {
+            _fire('browse_floors');
+        }
+    }
+
+    // 장바구니 담기 성공 — "결정함" → 반복탐색/전환 카운터 리셋
     function noteCartAdd() {
         _detailOpens = 0;
+        _storeSwitches = 0;
         _lastActivity = Date.now();
     }
 
@@ -115,6 +128,7 @@
         init,
         noteActivity,
         noteDetailOpen,
+        noteStoreSwitch,
         noteCartAdd,
         pause,
         resume,

@@ -388,6 +388,9 @@
     const $optName     = document.querySelector('[data-opt-name]');
     const $optPrice    = document.querySelector('[data-opt-price]');
     const $optGroupsEl = document.querySelector('[data-opt-groups]');
+    const $nunchiModal = document.querySelector('[data-nunchi-modal]');
+    const $nunchiList  = document.querySelector('[data-nunchi-list]');
+    const $nunchiTitle = document.querySelector('[data-nunchi-title]');
 
     let optMenuId = null;
     let optGroups = [];
@@ -967,6 +970,72 @@
             : '매장 식사로 변경했어요');
     }
 
+    // ---------- 눈치 추천 모달 (망설임 감지 시) ----------
+    // NunchiSensor 가 silence(체류)/repeat_browse(상세 반복)/browse_floors(매장 5회 전환)
+    // 신호를 주면, GET /api/menus/recommendations 로 추천 메뉴를 받아 모달로 제안한다.
+    let _nunchiBusy = false;
+    const NUNCHI_TITLES = {
+        silence:       "한참 고민 중이신가요? 이런 메뉴는 어떠세요?",
+        repeat_browse: "메뉴 고르기 어려우신가요? 이런 메뉴 추천드려요",
+        browse_floors: "여러 매장을 둘러보고 계시네요! 인기 메뉴는 어떠세요?",
+    };
+
+    function closeNunchiModal() {
+        if ($nunchiModal) $nunchiModal.hidden = true;
+    }
+
+    // 추천 응답에서 서로 다른 메뉴 2~3개 추출 (베스트셀러 + 다이어트/온도 테마 랜덤)
+    function pickNunchiMenus(rec) {
+        const out = [];
+        const seen = new Set();
+        const rand = (arr) => (Array.isArray(arr) && arr.length) ? arr[Math.floor(Math.random() * arr.length)] : null;
+        const push = (m) => {
+            if (!m || m.menuId == null || seen.has(m.menuId)) return;
+            seen.add(m.menuId);
+            out.push({ menuId: m.menuId, name: m.name, price: m.price, imageUrl: m.imageUrl, reason: m.reason || "" });
+        };
+        push(rec.bestSeller);
+        const diet = rand([rec.lowFat, rec.highProtein, rec.lowCalorie].filter((a) => a && a.length));
+        if (diet) push(rand(diet));
+        const temp = rand([rec.cold, rec.hot].filter((a) => a && a.length));
+        if (temp) push(rand(temp));
+        return out.slice(0, 3);
+    }
+
+    async function showNunchiModal(signal) {
+        if (!$nunchiModal || _nunchiBusy) return;
+        // 사용자가 이미 무언가에 집중 중(상세/옵션/눈치 모달이 떠 있음)이면 방해하지 않는다
+        if ((!$detail.hidden) || ($optModal && !$optModal.hidden) || !$nunchiModal.hidden) return;
+        _nunchiBusy = true;
+        try {
+            const rec = await window.Api.menu.recommendations();
+            const menus = pickNunchiMenus(rec || {});
+            if (!menus.length) return;
+            if ($nunchiTitle) {
+                $nunchiTitle.textContent = NUNCHI_TITLES[signal] || "고민되시나요? 이런 메뉴는 어떠세요?";
+            }
+            $nunchiList.innerHTML = menus.map((m) => {
+                const thumb = m.imageUrl ? `style="background-image:url('${m.imageUrl}')"` : "";
+                return `
+                    <li class="n02-nunchi__item vision-selectable" data-nunchi-pick="${m.menuId}">
+                        <div class="n02-nunchi__thumb" ${thumb}></div>
+                        <div class="n02-nunchi__info">
+                            <span class="n02-nunchi__name">${m.name}</span>
+                            ${m.reason ? `<span class="n02-nunchi__reason">${m.reason}</span>` : ""}
+                            <span class="n02-nunchi__price">${fmt(m.price)}</span>
+                        </div>
+                        <i class="xi xi-angle-right-thin n02-nunchi__chevron" aria-hidden="true"></i>
+                    </li>`;
+            }).join("");
+            $nunchiModal.hidden = false;
+            refreshVisionSelectables();
+        } catch (e) {
+            console.warn("[N02] 눈치 추천 모달 실패", e);
+        } finally {
+            _nunchiBusy = false;
+        }
+    }
+
     // ---------- 토스트 ----------
     function showN02Toast(msg) {
         let t = document.querySelector('.n02__toast');
@@ -1192,6 +1261,7 @@
             renderFloorTabs();
             renderStoreList();
             renderMenuGrid();
+            if (window.NunchiSensor) window.NunchiSensor.noteStoreSwitch();
         });
 
         // 사이드바 식당 클릭
@@ -1204,7 +1274,21 @@
             persistFloorStore();
             renderStoreList();
             renderMenuGrid();
+            if (window.NunchiSensor) window.NunchiSensor.noteStoreSwitch();
         });
+
+        // 눈치 추천 모달 — 닫기 / 추천 메뉴 선택(→ 상세 오버레이)
+        if ($nunchiModal) {
+            $nunchiModal.addEventListener("click", (e) => {
+                if (e.target.closest("[data-nunchi-close]")) { closeNunchiModal(); return; }
+                const pick = e.target.closest("[data-nunchi-pick]");
+                if (pick) {
+                    const id = parseInt(pick.getAttribute("data-nunchi-pick"), 10);
+                    closeNunchiModal();
+                    openDetail(id);
+                }
+            });
+        }
 
         // 메뉴 그리드 위임
         $menuGrid.addEventListener("click", (e) => {
@@ -1336,7 +1420,7 @@
         if (window.NunchiSensor) {
             window.NunchiSensor.init({
                 getCartCount: () => state.cart.length,
-                onSignal: (signal) => sendNunchiSignal(signal),
+                onSignal: (signal) => showNunchiModal(signal),
             });
             // 첫 진입 가이드가 떠 있으면 닫힐 때까지 감지 일시정지
             const $g0 = document.querySelector('[data-guide]');

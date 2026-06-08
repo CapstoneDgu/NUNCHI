@@ -256,6 +256,26 @@
     </div>
 
     <!-- ========================================================
+         ⑤-b 눈치 추천 모달 — 망설임 감지(체류 15초 / 상세 3회 / 매장 5회 전환) 시
+              추천 메뉴를 제안한다. JS(showNunchiModal)가 채우고 띄운다.
+         ======================================================== -->
+    <div class="n02-nunchi" data-nunchi-modal data-vision-scope hidden>
+        <div class="n02-nunchi__backdrop" data-nunchi-close></div>
+        <div class="n02-nunchi__box" role="dialog" aria-modal="true" aria-label="눈치 추천">
+            <button class="n02-nunchi__close" type="button" data-nunchi-close aria-label="닫기">
+                <i class="xi xi-close-thin" aria-hidden="true"></i>
+            </button>
+            <div class="n02-nunchi__head">
+                <span class="n02-nunchi__badge"><i class="xi xi-lightning" aria-hidden="true"></i>눈치 추천</span>
+                <strong class="n02-nunchi__title" data-nunchi-title>고민되시나요? 이런 메뉴는 어떠세요?</strong>
+            </div>
+            <ul class="n02-nunchi__list" data-nunchi-list></ul>
+            <button class="btn-cta btn-cta--secondary n02-nunchi__dismiss vision-selectable"
+                    type="button" data-nunchi-close>괜찮아요, 더 둘러볼게요</button>
+        </div>
+    </div>
+
+    <!-- ========================================================
          ⑥ AI 대화 기록 패널 (우측 슬라이드)
          ======================================================== -->
     <div class="ai-chat-dim" data-chat-dim aria-hidden="true"></div>
