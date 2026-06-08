@@ -1004,13 +1004,16 @@
 
     async function showNunchiModal(signal) {
         if (!$nunchiModal || _nunchiBusy) return;
-        // 사용자가 이미 무언가에 집중 중(상세/옵션/눈치 모달이 떠 있음)이면 방해하지 않는다
-        if ((!$detail.hidden) || ($optModal && !$optModal.hidden) || !$nunchiModal.hidden) return;
+        // 옵션 모달(주문 중)이나 눈치 모달이 이미 떠 있으면 방해하지 않는다.
+        // 상세 오버레이는 반복 탐색(repeat_browse) 시 열려 있을 수 있으므로 차단하지 않고 아래에서 닫는다.
+        if (($optModal && !$optModal.hidden) || !$nunchiModal.hidden) return;
         _nunchiBusy = true;
         try {
             const rec = await window.Api.menu.recommendations();
             const menus = pickNunchiMenus(rec || {});
             if (!menus.length) return;
+            // 상세(정보)를 보고 있었다면 닫고 추천 모달로 전환 — repeat_browse 신호가 가드에 막히지 않게
+            if (!$detail.hidden) closeDetail();
             if ($nunchiTitle) {
                 $nunchiTitle.textContent = NUNCHI_TITLES[signal] || "고민되시나요? 이런 메뉴는 어떠세요?";
             }

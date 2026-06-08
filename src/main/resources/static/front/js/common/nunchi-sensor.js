@@ -35,8 +35,8 @@
     const CHECK_MS       = 4000;    // 유휴 검사 주기
     const REPEAT_OPENS   = 3;       // 상세 N회 열고도 안 담으면 repeat_browse
     const STORE_SWITCHES = 5;       // 층/식당 N회 전환하고도 안 담으면 browse_floors
-    const COOLDOWN_MS    = 45000;   // 개입 사이 최소 간격
-    const MAX_NUDGES     = 3;       // 세션당 최대 개입 횟수
+    const COOLDOWN_MS    = 20000;   // 개입 사이 최소 간격
+    const MAX_NUDGES     = 5;       // 세션당 최대 개입 횟수
 
     let _opts = {};
     let _inited = false;
