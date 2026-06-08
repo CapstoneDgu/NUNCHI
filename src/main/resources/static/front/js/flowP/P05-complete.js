@@ -132,6 +132,17 @@
         startCountdown();
     }
 
+    // 음성으로 "영수증/번호표 뽑아줘" 시 재출력 (quick-action 의 print_receipt/print_ticket 룰에서 호출)
+    window.NunchiPrint = function (kind) {
+        const k = (kind === 'ticket') ? 'ticket' : 'receipt';
+        if (receiptTitleEl) {
+            receiptTitleEl.textContent = k === 'ticket' ? '번호표가 출력되고 있어요' : '영수증이 출력되고 있어요';
+        }
+        if (receiptEl) { receiptEl.hidden = false; receiptEl.classList.remove('p05__receipt--done'); }
+        printReceipt(k);
+        setTimeout(markReceiptDone, 3000);
+    };
+
     // 실제 영수증 인쇄 (QA R2-3) — orderSummary 의 품목 명세를 매장 양식으로 출력
     function printReceipt(kind) {
         if (!window.NunchiReceipt) return;

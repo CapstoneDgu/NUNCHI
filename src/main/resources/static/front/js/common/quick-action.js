@@ -142,6 +142,21 @@
             },
         },
 
+        // ───────── 영수증/번호표 음성 출력 (주문완료 등 출력 가능한 화면) ─────────
+        // window.NunchiPrint(kind) 가 노출된 페이지(P05 주문완료)에서만 발동. 없으면 LLM 으로 넘어감.
+        {
+            name: 'print_receipt',
+            match: /영수증.{0,5}(뽑|출력|인쇄|발급|프린트|줘|주세요)|(뽑아|출력|인쇄|발급|프린트).{0,5}영수증/,
+            allowOn: () => typeof window.NunchiPrint === 'function',
+            run: () => window.NunchiPrint('receipt'),
+        },
+        {
+            name: 'print_ticket',
+            match: /(번호표|대기\s*번호).{0,5}(뽑|출력|인쇄|발급|프린트|줘|주세요)|(뽑아|출력|인쇄|발급|프린트).{0,5}(번호표|대기\s*번호)/,
+            allowOn: () => typeof window.NunchiPrint === 'function',
+            run: () => window.NunchiPrint('ticket'),
+        },
+
         // ───────── 마이크 끄기 (안전) ─────────
         {
             name: 'mic_off',
