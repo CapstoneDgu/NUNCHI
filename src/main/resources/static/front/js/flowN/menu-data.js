@@ -38,7 +38,11 @@
     }
 
     // -------- 3. 층 라벨 ("1층", "지하1층" 등) --------
+    // 음료 전용 가상 층: floor/매장명이 없는 음료를 일반모드 목록에 노출하기 위한 별도 그룹.
+    const DRINK_FLOOR_NUM = 90;
+
     function floorLabel(floorNum) {
+        if (floorNum === DRINK_FLOOR_NUM) return "음료";
         if (floorNum == null) return "기타";
         if (floorNum < 0) return "지하" + Math.abs(floorNum) + "층";
         return floorNum + "층";
@@ -65,10 +69,20 @@
         const floorMap = new Map();
 
         for (const m of apiMenus) {
-            if (m.floor == null || !m.restaurantName) continue;
+            let fNum  = m.floor;
+            let rName = m.restaurantName;
 
-            const fNum  = m.floor;
-            const rName = m.restaurantName;
+            // 음료는 floor/매장명이 없어도 전용 '음료' 그룹으로 노출.
+            // (추가메뉴 등 그 외 floor/매장 미지정 메뉴는 기존대로 목록에서 제외)
+            if (fNum == null || !rName) {
+                if (m.categoryName === "음료") {
+                    fNum  = DRINK_FLOOR_NUM;
+                    rName = "음료";
+                } else {
+                    continue;
+                }
+            }
+
             const fKey  = floorId(fNum);
 
             if (!floorMap.has(fKey)) {
@@ -95,6 +109,7 @@
             store.menus.push({
                 id:       m.menuId,
                 name:     m.name,
+                categoryName: m.categoryName,
                 price:    m.price,
                 imageUrl: m.imageUrl,
                 aiPick:   !!m.isRecommended,
@@ -164,6 +179,7 @@
     ];
 
     function detectCategory(menu) {
+        if (menu.categoryName === "음료") return "drink";
         const name = menu.name || "";
         for (const rule of CATEGORY_RULES) {
             if (rule.keywords.some((kw) => name.toLowerCase().indexOf(kw.toLowerCase()) >= 0)) {
@@ -314,6 +330,14 @@
                 { name: "참기름",     origin: "국내산" },
             ],
             nutritionBase: { kcal: 760, protein: 30, carb: 85, fat: 24 },
+        },
+        drink: {
+            description: "식사와 곁들이기 좋은 시원한 음료 한 잔",
+            components: ["음료"],
+            ingredients: [
+                { name: "음료", origin: "상품 표기 참조" },
+            ],
+            nutritionBase: { kcal: 140, protein: 0, carb: 38, fat: 0 },
         },
         etc: {
             description: "오늘의 메뉴 — 정성껏 준비한 한 끼",

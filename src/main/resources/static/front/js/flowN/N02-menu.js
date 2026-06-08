@@ -579,12 +579,12 @@
         // CTA 가격 (옵션 로딩 전 base 가격)
         $detailCtaPrice.textContent = "· " + fmt(m.price);
 
-        // AI 추천 이유 — 우선 숨기고, 상세 API 응답에 aiReason 있으면 노출 (QA #5, 백엔드 제공 전제)
+        // AI 추천 이유 — 우선 숨기고, 상세 API 응답에 reason 있으면 노출 (오늘의 베스트셀러일 때만 채워짐)
         // (옵션 선택은 상세가 아니라 담기 시 옵션 모달에서 처리 — QA #9)
         if ($detailAiSection) $detailAiSection.hidden = true;
         window.Api.menu.detail(menuId).then((d) => {
             if (openDetailMenuId !== menuId) return;   // 그새 다른 메뉴 열렸으면 무시
-            const reason = d && (d.aiReason || d.aiRecommendReason);
+            const reason = d && (d.reason || d.aiReason || d.aiRecommendReason);
             if (reason && $detailAiSection && $detailAiReason) {
                 $detailAiReason.textContent = reason;
                 $detailAiSection.hidden = false;
