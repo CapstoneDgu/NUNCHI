@@ -581,10 +581,17 @@
 
         // AI 추천 이유 — 우선 숨기고, 상세 API 응답에 reason 있으면 노출 (오늘의 베스트셀러일 때만 채워짐)
         // (옵션 선택은 상세가 아니라 담기 시 옵션 모달에서 처리 — QA #9)
+        // 시작화면(광고)에서 추천된 메뉴면 세션에 저장된 이유를 먼저 노출,
+        // 상세 API 의 reason(오늘의 베스트셀러)이 있으면 그것으로 갱신
         if ($detailAiSection) $detailAiSection.hidden = true;
+        const sessionReason = (m && m.aiReason) || "";
+        if (sessionReason && $detailAiSection && $detailAiReason) {
+            $detailAiReason.textContent = sessionReason;
+            $detailAiSection.hidden = false;
+        }
         window.Api.menu.detail(menuId).then((d) => {
             if (openDetailMenuId !== menuId) return;   // 그새 다른 메뉴 열렸으면 무시
-            const reason = d && (d.reason || d.aiReason || d.aiRecommendReason);
+            const reason = (d && (d.reason || d.aiReason || d.aiRecommendReason)) || sessionReason;
             if (reason && $detailAiSection && $detailAiReason) {
                 $detailAiReason.textContent = reason;
                 $detailAiSection.hidden = false;
@@ -840,9 +847,10 @@
                     window.AiAction.handle(a);
                 }
             }
-            // 5) 추천 시각화
+            // 5) 추천 시각화 — 대화로 특정 메뉴 1개를 지목했으면 상세 오버레이 자동 오픈
+            //    (상세 → "주문해줘" → 옵션 모달, 실제 주문 플로우와 동일하게)
             if (window.AiAction && res && res.recommendations) {
-                window.AiAction.handleRecommendations(res.recommendations);
+                window.AiAction.handleRecommendations(res.recommendations, { openDetail: true });
             }
         } catch (e) {
             // 처리 중 중첩으로 버려진 발화 — 에러 아님, 조용히 무시(직전 요청이 곧 응답).

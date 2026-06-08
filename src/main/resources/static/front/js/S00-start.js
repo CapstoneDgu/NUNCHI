@@ -110,6 +110,12 @@
                 temp ? toSlide(pickRandom(temp.menus), temp.badge, temp.label) : null
             ].filter(Boolean);
 
+            // 그날 추천된 메뉴(슬라이드)를 세션에 저장 → 메뉴 목록/상세에서 동일하게 'AI 추천' 라벨/이유 노출
+            try {
+                const picks = slides.map((s) => ({ menuId: s.menuId, reason: s.reason }));
+                sessionStorage.setItem("nunchiAiRecommend", JSON.stringify(picks));
+            } catch (e) { /* sessionStorage 불가 시 무시 */ }
+
             if (slides.length) applySlides(slides);
         } catch (e) {
             console.warn("[S00] 추천 데이터 hydrate 실패 — 정적 슬라이드 유지", e);

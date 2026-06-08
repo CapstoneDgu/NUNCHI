@@ -64,9 +64,32 @@
     // -------- 4. API 응답 → floors[ stores[ menus[] ] ] 그룹핑 --------
     // floor / restaurantName 가 null 인 메뉴는 "추가메뉴" 로 분류되어 N02 트리에서 제외.
     // (추가메뉴는 향후 별도 UI 에서 표시)
+    // 시작화면(광고)에서 그날 추천된 메뉴 — 세션 저장값(nunchiAiRecommend)을 읽어
+    // 메뉴 목록/상세에서 'AI 추천' 라벨 + 추천 이유를 동일하게 노출하기 위함.
+    function getSessionRecommend() {
+        try {
+            const raw = sessionStorage.getItem("nunchiAiRecommend");
+            if (!raw) return { ids: new Set(), reasonById: {} };
+            const arr = JSON.parse(raw) || [];
+            const ids = new Set();
+            const reasonById = {};
+            arr.forEach(function (p) {
+                if (p && p.menuId != null) {
+                    const id = Number(p.menuId);
+                    ids.add(id);
+                    if (p.reason) reasonById[id] = p.reason;
+                }
+            });
+            return { ids: ids, reasonById: reasonById };
+        } catch (e) {
+            return { ids: new Set(), reasonById: {} };
+        }
+    }
+
     function groupMenus(apiMenus) {
         // floor → restaurantName → menus[]
         const floorMap = new Map();
+        const sessionRec = getSessionRecommend();
 
         for (const m of apiMenus) {
             let fNum  = m.floor;
@@ -112,7 +135,8 @@
                 categoryName: m.categoryName,
                 price:    m.price,
                 imageUrl: m.imageUrl,
-                aiPick:   !!m.isRecommended,
+                aiPick:   !!m.isRecommended || sessionRec.ids.has(Number(m.menuId)),
+                aiReason: sessionRec.reasonById[Number(m.menuId)] || null,
                 soldOut:  !!m.isSoldOut,
                 allergies:    m.allergies || [],
                 spicyLevel:   m.spicyLevel,

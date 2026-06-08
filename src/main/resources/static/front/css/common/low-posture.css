@@ -109,6 +109,20 @@ html.posture-low .ai-chat-panel--open { transform: translateY(0); }
 /* 하단 시트(대화기록) 열리면 ♿ 토글 숨김 — 패널 하단 버튼과 겹침 방지 */
 html.posture-low body:has(.ai-chat-panel--open) .lpost-toggle { display: none; }
 
+/* 음성 대화 패널(.vc-chat — 결제 등 채팅 UI 없는 화면 공용, voice-controller.js 주입):
+   기본은 우측 풀높이 드로어 → 저자세에선 .ai-chat-panel 과 동일하게 하단 시트(절반)로 */
+html.posture-low .vc-chat {
+    top: auto;
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: 100%;
+    height: 50vh;
+    transform: translateY(100%);
+    box-shadow: 0 -16px 48px rgba(30, 25, 21, 0.18);
+}
+html.posture-low .vc-chat.is-open { transform: translateY(0); }
+html.posture-low body:has(.vc-chat.is-open) .lpost-toggle { display: none; }
+
 /* N02 AI 가이드(저자세):
    가이드는 5개 콜아웃이 인라인 left/top 좌표 + JS 화살표로 각 버튼을 가리키는 구조라
    640 프레임에선 좌표가 안 맞는다. 좌표기반 화살표(svg)·강조 복제(lift)는 숨기고,

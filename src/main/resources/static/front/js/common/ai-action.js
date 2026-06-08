@@ -83,11 +83,22 @@
     }
 
     /**
-     * AI 응답의 recommendations 배열을 받아 카드 강조 + 자동 스크롤.
-     * 첫 메뉴만 스크롤 / 나머지는 200ms 간격 펄스.
+     * AI 응답의 recommendations 배열을 받아 화면에 반영.
+     * - opts.openDetail 이고 추천이 '딱 1개'면(=대화로 특정 메뉴를 지목한 상황)
+     *   해당 메뉴 상세 오버레이를 자동으로 연다 → 이후 "주문해줘" 발화가
+     *   옵션 모달로 이어지는 실제 주문 플로우를 따라가게 한다.
+     * - 그 외(여러 개 추천/둘러보기)는 카드 펄스 + 첫 메뉴 스크롤.
      */
-    function handleRecommendations(list) {
+    function handleRecommendations(list, opts) {
         if (!Array.isArray(list) || !list.length) return;
+        opts = opts || {};
+
+        if (opts.openDetail && list.length === 1 && list[0] && list[0].menu_id != null
+            && typeof window.__N02_openDetail === 'function') {
+            window.__N02_openDetail(list[0].menu_id);
+            return;
+        }
+
         list.forEach((m, idx) => {
             setTimeout(() => {
                 const card = document.querySelector(`[data-menu="${m.menu_id}"]`);
