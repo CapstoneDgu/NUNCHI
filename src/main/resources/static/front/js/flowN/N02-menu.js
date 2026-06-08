@@ -614,6 +614,13 @@
         $detail.hidden = true;
         $detail.setAttribute("aria-hidden", "true");
         refreshVisionSelectables();
+
+        // 반복 탐색으로 대기 중인 눈치 신호가 있으면, 상세에서 '나간 뒤' 잠깐(1초) 후 추천 모달
+        if (_pendingNunchiSignal) {
+            const sig = _pendingNunchiSignal;
+            _pendingNunchiSignal = null;
+            _scheduleNunchiModal(sig);
+        }
     }
 
     // ---------- 카트 조작 (모두 서버 Api.cart.* 호출) ----------
@@ -974,6 +981,9 @@
     // NunchiSensor 가 silence(체류)/repeat_browse(상세 반복)/browse_floors(매장 5회 전환)
     // 신호를 주면, GET /api/menus/recommendations 로 추천 메뉴를 받아 모달로 제안한다.
     let _nunchiBusy = false;
+    let _pendingNunchiSignal = null;   // 상세 탐색 중 들어온 신호 — 상세에서 '나간 뒤' 표시
+    let _nunchiTimer = null;
+    const NUNCHI_DELAY_MS = 1000;      // 상세 이탈 / 매장 전환 후 모달까지의 잔류 시간
     const NUNCHI_TITLES = {
         silence:       "한참 고민 중이신가요? 이런 메뉴는 어떠세요?",
         repeat_browse: "메뉴 고르기 어려우신가요? 이런 메뉴 추천드려요",
@@ -1002,18 +1012,33 @@
         return out.slice(0, 3);
     }
 
-    async function showNunchiModal(signal) {
-        if (!$nunchiModal || _nunchiBusy) return;
-        // 옵션 모달(주문 중)이나 눈치 모달이 이미 떠 있으면 방해하지 않는다.
-        // 상세 오버레이는 반복 탐색(repeat_browse) 시 열려 있을 수 있으므로 차단하지 않고 아래에서 닫는다.
+    // NunchiSensor onSignal 진입점.
+    // - 상세(정보)를 보는 중이면 바로 띄우지 않고, 사용자가 상세에서 '나간 뒤'(closeDetail) 1초 후 띄운다.
+    // - 그 외(매장 전환 / 체류)는 약간의 잔류 시간(1초) 후 띄운다.
+    function showNunchiModal(signal) {
+        if (!$nunchiModal) return;
         if (($optModal && !$optModal.hidden) || !$nunchiModal.hidden) return;
+        if (!$detail.hidden) {
+            _pendingNunchiSignal = signal;   // 상세에서 나갈 때(closeDetail) 표시
+            return;
+        }
+        _scheduleNunchiModal(signal);
+    }
+
+    function _scheduleNunchiModal(signal) {
+        clearTimeout(_nunchiTimer);
+        _nunchiTimer = setTimeout(() => _renderNunchiModal(signal), NUNCHI_DELAY_MS);
+    }
+
+    async function _renderNunchiModal(signal) {
+        if (!$nunchiModal || _nunchiBusy) return;
+        // 지연 사이에 사용자가 옵션 모달/상세를 열었거나 눈치 모달이 떠 있으면 방해하지 않는다
+        if (($optModal && !$optModal.hidden) || !$detail.hidden || !$nunchiModal.hidden) return;
         _nunchiBusy = true;
         try {
             const rec = await window.Api.menu.recommendations();
             const menus = pickNunchiMenus(rec || {});
             if (!menus.length) return;
-            // 상세(정보)를 보고 있었다면 닫고 추천 모달로 전환 — repeat_browse 신호가 가드에 막히지 않게
-            if (!$detail.hidden) closeDetail();
             if ($nunchiTitle) {
                 $nunchiTitle.textContent = NUNCHI_TITLES[signal] || "고민되시나요? 이런 메뉴는 어떠세요?";
             }
