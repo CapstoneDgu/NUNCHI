@@ -413,16 +413,16 @@
     };
 
     document.addEventListener('DOMContentLoaded', function () {
-        injectVisionStyle();
-
         if (isVisionEnabled()) {
+            injectVisionStyle();
             connectVisionWebSocket();
+            setTimeout(refreshSelectables, 200);
         } else {
+            clearFocus();
             console.log('[VISION_CLIENT] default mode. vision disabled.');
         }
 
         // DOM 로드 직후 selectable 잡기
-        setTimeout(refreshSelectables, 200);
 
         // 모달/동적 버튼 대응
         const observer = new MutationObserver(function () {

@@ -980,7 +980,10 @@
         if (!$guide) return;
         let seen = false;
         try { seen = sessionStorage.getItem('n02GuideSeen') === '1'; } catch (_) {}
-        if (seen) return;
+        // ?guide=1 (또는 ?guide=show): 이미 본 세션이어도 가이드를 강제로 다시 띄움 — QA/테스트용
+        let force = false;
+        try { force = /[?&]guide=(1|show)(\b|$)/.test(location.search); } catch (_) {}
+        if (seen && !force) return;
         $guide.hidden = false;
         refreshVisionSelectables();
 

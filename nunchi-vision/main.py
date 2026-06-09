@@ -1,6 +1,7 @@
 # main.py
 
 import asyncio
+import os
 import threading
 import time
 import cv2
@@ -37,7 +38,15 @@ async def main():
 
 
 def run_vision_loop(ws_server, loop):
-    capture = CameraCapture(camera_index=0, width=640, height=480, fps=15)
+    camera_index = int(os.environ.get("NUNCHI_CAMERA_INDEX", "0"))
+    camera_backend = cv2.CAP_DSHOW if os.name == "nt" else None
+    capture = CameraCapture(
+        camera_index=camera_index,
+        width=640,
+        height=480,
+        fps=15,
+        backend=camera_backend,
+    )
 
     face_detector = FaceMeshDetector()
     presence_detector = PresenceDetector()
