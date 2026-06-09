@@ -280,15 +280,7 @@ class FaceMeshDetector:
         )
         cv2.circle(frame, (iris_x, iris_y), 4, (0, 255, 255), -1)
 
-        cv2.putText(
-            frame,
-            f"GAZE: {gaze}",
-            (20, 40),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 255, 0),
-            2,
-        )
+        self._draw_gaze_label(frame, gaze, frame_width)
 
         cv2.putText(
             frame,
@@ -308,4 +300,35 @@ class FaceMeshDetector:
             0.6,
             (255, 255, 0),
             2,
+        )
+
+    def _draw_gaze_label(self, frame, gaze, frame_width):
+        text = f"GAZE: {gaze}"
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.8
+        thickness = 2
+        padding_x = 12
+        padding_y = 8
+
+        (text_w, text_h), baseline = cv2.getTextSize(
+            text,
+            font,
+            font_scale,
+            thickness,
+        )
+
+        x1 = max(12, frame_width - text_w - padding_x * 2 - 16)
+        y1 = 16
+        x2 = x1 + text_w + padding_x * 2
+        y2 = y1 + text_h + padding_y * 2 + baseline
+
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 0), -1)
+        cv2.putText(
+            frame,
+            text,
+            (x1 + padding_x, y1 + padding_y + text_h),
+            font,
+            font_scale,
+            (255, 255, 255),
+            thickness,
         )
