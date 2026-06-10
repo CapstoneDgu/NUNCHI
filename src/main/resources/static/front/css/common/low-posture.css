@@ -5,30 +5,41 @@
    적용: <html> 에 .posture-low 클래스 (low-posture.js 가 토글)
    ======================================================== */
 
-/* ---- 저자세 토글 버튼 (항상 하단 고정) ---- */
+/* ---- 저자세 토글 버튼 (항상 하단 고정 · 은은하게) ---- */
 .lpost-toggle {
     position: fixed;
-    right: 20px;
-    bottom: 20px;
+    right: 16px;
+    bottom: 16px;
     z-index: 2147483000;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 14px 18px;
-    border: 0;
+    gap: 6px;
+    padding: 9px 13px;
+    border: 1px solid var(--neutral-200, #e7e3dd);
     border-radius: 999px;
-    background: #1e1915;
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--neutral-600, #6b6660);
+    font-size: 13px;
+    font-weight: 600;
     line-height: 1;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
     cursor: pointer;
+    opacity: 0.92;
     -webkit-tap-highlight-color: transparent;
+    transition: background 140ms ease, color 140ms ease, opacity 140ms ease;
 }
-.lpost-toggle__icon { font-size: 22px; }
-.lpost-toggle:active { transform: scale(0.96); }
-html.posture-low .lpost-toggle { background: #cf5208; }
+.lpost-toggle:hover { opacity: 1; }
+.lpost-toggle__icon { font-size: 16px; }
+.lpost-toggle:active { transform: scale(0.97); }
+/* 저자세 ON 일 때만 살짝 따뜻하게 강조 (튀지 않게) */
+html.posture-low .lpost-toggle {
+    background: var(--primary-50, #fff3ea);
+    color: var(--primary-700, #cf5208);
+    border-color: var(--primary-200, #f6c79e);
+    opacity: 1;
+}
 
 /* ---- 저자세 모드: 가로(720)는 유지, 세로만 절반으로 줄여 하단 정렬 ---- */
 html.posture-low body {
