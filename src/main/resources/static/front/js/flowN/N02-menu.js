@@ -934,6 +934,8 @@
         try { sessionStorage.setItem("voiceMicOn", "1"); } catch (_) {}  // 결제 화면까지 ON 유지
         $micBtn.classList.add("app-topbar__action-icon--mic-active");
         setMicStatus("listening");
+        // 음성 주문 중에는 눈치 감지(체류 15초 등)를 멈춰 모달이 대화를 끊지 않게 한다
+        if (window.NunchiSensor) window.NunchiSensor.pause();
         // 마이크만 켠다 — 대화기록 패널은 자동으로 열지 않는다 (QA #7, 패널은 대화기록 버튼으로만)
     }
 
@@ -943,6 +945,8 @@
         try { sessionStorage.setItem("voiceMicOn", "0"); } catch (_) {}  // 명시적 OFF
         $micBtn.classList.remove("app-topbar__action-icon--mic-active");
         setMicStatus("off");
+        // 음성 종료 → 눈치 감지 재개 (체류 타이머도 새로 시작)
+        if (window.NunchiSensor) window.NunchiSensor.resume();
     }
 
     function toggleMic() {
