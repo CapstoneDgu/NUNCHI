@@ -276,6 +276,28 @@
     </div>
 
     <!-- ========================================================
+         ⑤-c AI 추천 모달 — 음성으로 추천받으면 대화 사이드바 닫고 가운데에
+              이유 라벨(좌상단) + 추천 메뉴 3개(이미지+이름). 터치/음성 선택, X 로 닫으면 사이드바 복구.
+              JS(showRecommendModal)가 채우고 띄운다.
+         ======================================================== -->
+    <div class="n02-rec" data-rec-modal data-vision-scope hidden>
+        <div class="n02-rec__backdrop" data-rec-close></div>
+        <div class="n02-rec__box" role="dialog" aria-modal="true" aria-label="AI 추천 메뉴">
+            <div class="n02-rec__head">
+                <span class="n02-rec__label">
+                    <i class="xi xi-lightning" aria-hidden="true"></i>
+                    <span data-rec-label>AI 추천 메뉴</span>
+                </span>
+                <button class="n02-rec__close" type="button" data-rec-close aria-label="닫기">
+                    <i class="xi xi-close-thin" aria-hidden="true"></i>
+                </button>
+            </div>
+            <ul class="n02-rec__list" data-rec-list></ul>
+            <p class="n02-rec__hint">터치하거나 음성으로 골라보세요 (예: "첫 번째", 메뉴 이름)</p>
+        </div>
+    </div>
+
+    <!-- ========================================================
          ⑥ AI 대화 기록 패널 (우측 슬라이드)
          ======================================================== -->
     <div class="ai-chat-dim" data-chat-dim aria-hidden="true"></div>

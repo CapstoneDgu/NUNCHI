@@ -391,6 +391,9 @@
     const $nunchiModal = document.querySelector('[data-nunchi-modal]');
     const $nunchiList  = document.querySelector('[data-nunchi-list]');
     const $nunchiTitle = document.querySelector('[data-nunchi-title]');
+    const $recModal    = document.querySelector('[data-rec-modal]');
+    const $recList     = document.querySelector('[data-rec-list]');
+    const $recLabel    = document.querySelector('[data-rec-label]');
 
     let optMenuId = null;
     let optGroups = [];
@@ -579,8 +582,26 @@
             openOptionModal(id);
             return true;
         }
+        // "옵션 있어?/옵션 보여줘/옵션 뭐야/옵션 골라" → 옵션 모달을 띄운다 (옵션 없으면 안내)
+        if (/옵션/.test(t)) {
+            showOptionsForMenu(openDetailMenuId);
+            return true;
+        }
         if (/(닫아|닫기|취소|그만|뒤로|나가)/.test(t)) { closeDetail(); return true; }
         return false;
+    }
+
+    // 옵션이 있으면 옵션 모달, 없으면 안내 토스트 ("옵션 있어?" 류 응답용)
+    function showOptionsForMenu(menuId) {
+        if (menuId == null) return;
+        window.Api.menu.detail(menuId).then((d) => {
+            const groups = (d && d.optionGroups) || [];
+            if (groups.length) {
+                openOptionModal(menuId);   // 상세 + 옵션 모달
+            } else {
+                showN02Toast("이 메뉴는 선택할 옵션이 없어요");
+            }
+        }).catch(() => openOptionModal(menuId));
     }
 
     // 발화에 들어있는 메뉴명을 MenuData 에서 찾는다 (공백 제거 substring, 가장 긴 이름 우선)
@@ -883,6 +904,7 @@
     async function dispatchUserUtterance(text) {
         // 0) 옵션 모달/상세가 열려 있으면 그 안에서 우선 처리 (LLM 없이) — QA #9
         if (tryConfirmVoice(text)) return;
+        if (tryRecModalVoice(text)) return;
         if (tryOptModalVoice(text)) return;
         if (tryDetailVoice(text)) return;
 
@@ -946,10 +968,9 @@
                     window.AiAction.handle(a);
                 }
             }
-            // 5) 추천 시각화 — 대화로 특정 메뉴 1개를 지목했으면 상세 오버레이 자동 오픈
-            //    (상세 → "주문해줘" → 옵션 모달, 실제 주문 플로우와 동일하게)
-            if (window.AiAction && res && res.recommendations) {
-                window.AiAction.handleRecommendations(res.recommendations, { openDetail: true });
+            // 5) 추천 → 대화 사이드바 닫고 가운데 추천 모달(이미지+이름, 이유 라벨)
+            if (res && res.recommendations && res.recommendations.length) {
+                showRecommendModal(res.recommendations, res.reply);
             }
         } catch (e) {
             // 처리 중 중첩으로 버려진 발화 — 에러 아님, 조용히 무시(직전 요청이 곧 응답).
@@ -1085,6 +1106,69 @@
 
     function closeNunchiModal() {
         if ($nunchiModal) $nunchiModal.hidden = true;
+    }
+
+    // ---------- AI 추천 모달 (음성 추천 → 대화 사이드바 닫고 가운데에 이미지+이름) ----------
+    let _recMenus = [];
+    let _recChatWasOpen = false;
+
+    function showRecommendModal(recs, reasonText) {
+        if (!$recModal || !Array.isArray(recs) || !recs.length) return;
+        // 대화 사이드바가 열려 있으면 닫고(끝나면 복구), 모달을 가운데 띄운다
+        _recChatWasOpen = !!($chatPanel && $chatPanel.classList.contains("ai-chat-panel--open"));
+        if (_recChatWasOpen) closeChat();
+        // 메뉴 최대 3개 (이미지 + 이름) — image_url 없으면 MenuData 에서 보강
+        _recMenus = recs.slice(0, 3).map((m) => {
+            const found = (window.MenuData && window.MenuData.findMenuById) ? window.MenuData.findMenuById(m.menu_id) : null;
+            const fm = found && found.menu;
+            return { id: m.menu_id, name: m.name || (fm && fm.name) || "", imageUrl: m.image_url || (fm && fm.imageUrl) || "" };
+        }).filter((m) => m.id != null);
+        if (!_recMenus.length) { if (_recChatWasOpen) openChat(); return; }
+        if ($recLabel) {
+            const first = (reasonText || "").split(/[!?.\n]/)[0].trim();   // 이유는 첫 문장만 짧게
+            $recLabel.textContent = first ? (first.length > 42 ? first.slice(0, 42) + "…" : first) : "AI 추천 메뉴";
+        }
+        $recList.innerHTML = _recMenus.map((m, i) => {
+            const thumb = m.imageUrl ? `style="background-image:url('${m.imageUrl}')"` : "";
+            return `
+                <li class="n02-rec__item vision-selectable" data-rec-pick="${m.id}">
+                    <span class="n02-rec__num">${i + 1}</span>
+                    <div class="n02-rec__thumb" ${thumb}></div>
+                    <span class="n02-rec__name">${m.name}</span>
+                </li>`;
+        }).join("");
+        $recModal.hidden = false;
+        refreshVisionSelectables();
+    }
+
+    function closeRecommendModal(reopenChat) {
+        if ($recModal) $recModal.hidden = true;
+        if (reopenChat && _recChatWasOpen) openChat();   // X 로 닫으면 자동으로 닫혔던 사이드바 복구
+        _recChatWasOpen = false;
+        _recMenus = [];
+    }
+
+    function pickRecommend(menuId) {
+        closeRecommendModal(false);   // 선택 시엔 상세로 넘어가므로 사이드바 복구 안 함
+        openDetail(menuId);
+    }
+
+    // 추천 모달 음성: 순번(첫번째/1번/왼쪽…) 또는 메뉴 이름으로 선택, 또는 닫기
+    function tryRecModalVoice(text) {
+        if (!$recModal || $recModal.hidden || !_recMenus.length) return false;
+        const t = (text || "").replace(/\s/g, "");
+        if (!t) return false;
+        if (/(닫아|닫기|취소|그만|아니|싫|나가|뒤로|괜찮)/.test(t)) { closeRecommendModal(true); return true; }
+        let idx = -1;
+        if (/(첫|하나|1번|일번|왼쪽)/.test(t)) idx = 0;
+        else if (/(두번|둘|2번|이번|가운데|중간)/.test(t)) idx = 1;
+        else if (/(세번|셋|3번|삼번|오른쪽)/.test(t)) idx = 2;
+        if (idx >= 0 && idx < _recMenus.length) { pickRecommend(_recMenus[idx].id); return true; }
+        for (const m of _recMenus) {
+            const n = (m.name || "").replace(/\s/g, "");
+            if (n.length >= 2 && t.includes(n)) { pickRecommend(m.id); return true; }
+        }
+        return false;
     }
 
     // 추천 응답에서 서로 다른 메뉴 2~3개 추출 (베스트셀러 + 다이어트/온도 테마 랜덤)
@@ -1408,6 +1492,15 @@
                     closeNunchiModal();
                     openDetail(id);
                 }
+            });
+        }
+
+        // AI 추천 모달 — 닫기(X/배경) / 추천 메뉴 선택(→ 상세)
+        if ($recModal) {
+            $recModal.addEventListener("click", (e) => {
+                if (e.target.closest("[data-rec-close]")) { closeRecommendModal(true); return; }
+                const pick = e.target.closest("[data-rec-pick]");
+                if (pick) pickRecommend(parseInt(pick.getAttribute("data-rec-pick"), 10));
             });
         }
 
