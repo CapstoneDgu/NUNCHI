@@ -449,19 +449,23 @@
     }
 
     // 메뉴 담기 진입점 (터치·음성 공통) — 옵션 있으면 모달, 없으면 바로 담기
-    function openOptionModal(menuId) {
+    function openOptionModal(menuId, spokenText) {
         const found = window.MenuData.findMenuById(menuId);
         if (!found || found.menu.soldOut) return;
         const m = found.menu;
         window.Api.menu.detail(menuId).then((d) => {
             const groups = (d && d.optionGroups) || [];
             if (!groups.length) { addToCart(menuId, { optionIds: [] }); return; }
+            // 어떤 메뉴를 담는지 보이도록 상세 오버레이도 함께 연다 (옵션 모달은 그 위 하단 시트)
+            openDetail(menuId);
             optMenuId = menuId;
             optGroups = groups;
             optBasePrice = m.price;
             if ($optName) $optName.textContent = m.name;
             renderOptGroups();
             if ($optModal) $optModal.hidden = false;
+            // 발화에 옵션이 있었으면(예: "곱빼기로") 미리 선택해 둔다
+            if (spokenText) preselectSpokenOptions(spokenText);
             refreshVisionSelectables();
         }).catch((e) => {
             console.warn("[N02] 옵션 조회 실패", e);
@@ -469,10 +473,20 @@
         });
     }
 
+    // 발화 텍스트에서 옵션명을 찾아 해당 그룹을 미리 선택 (그룹당 1개)
+    function preselectSpokenOptions(text) {
+        for (const g of optGroups) {
+            for (const o of (g.options || [])) {
+                if (_optNameMatches(text, o.name)) { selectOpt(g.groupId, o.optionId); break; }
+            }
+        }
+    }
+
     function closeOptModal() {
         optMenuId = null;
         optGroups = [];
         if ($optModal) $optModal.hidden = true;
+        if ($detail && !$detail.hidden) closeDetail();   // 함께 연 상세 오버레이도 닫는다
         refreshVisionSelectables();
     }
 
@@ -480,7 +494,22 @@
     async function optModalAdd(thenCheckout) {
         if (optMenuId == null) return;
         const id = optMenuId;
+        const name = ($optName && $optName.textContent) || "메뉴";
         const ids = getOptSelectedIds();
+        // 선택한 옵션 요약 — 와사비처럼 기본값으로 채워진 것까지 한 번 더 확인받는다
+        const summary = optGroups.map((g) => {
+            const opt = (g.options || []).find((o) => o.optionId === optSelected[g.groupId]);
+            return g.groupName + ": " + (opt ? opt.name : "-");
+        }).join("  ·  ");
+        if (window.ConfirmModal) {
+            const ok = await window.ConfirmModal.show({
+                title: name + " 이대로 담을까요?",
+                message: summary || "이대로 담을까요?",
+                confirmLabel: "네, 담기",
+                cancelLabel: "다시 선택",
+            });
+            if (!ok) return;   // 취소 — 옵션 모달 유지하고 다시 고르게
+        }
         closeOptModal();
         await addToCart(id, { optionIds: ids });
         if (thenCheckout) gotoCheckout();
@@ -495,6 +524,23 @@
         if (t.includes(n) || n.includes(t)) return true;
         const tokens = (optName || "").split(/\s+/).filter((w) => w.length >= 2 && !_OPT_GENERIC.includes(w));
         return tokens.some((w) => t.includes(w));
+    }
+
+    // 확인 모달(ConfirmModal)이 떠 있으면 음성으로 예/아니요 처리 (DOM 버튼 클릭으로 위임)
+    function tryConfirmVoice(text) {
+        const $cm = document.querySelector('.confirm-modal__overlay');
+        if (!$cm) return false;
+        const t = (text || "").replace(/\s/g, "");
+        if (!t) return false;
+        if (/(아니|아냐|취소|다시|말고|그만|싫)/.test(t)) {
+            const c = $cm.querySelector('.confirm-modal__btn--cancel'); if (c) c.click();
+            return true;
+        }
+        if (/(네|예|응|어|맞아|좋아|담아|담기|그래)/.test(t)) {
+            const c = $cm.querySelector('.confirm-modal__btn--confirm'); if (c) c.click();
+            return true;
+        }
+        return false;
     }
 
     // 옵션 모달이 열려 있을 때의 음성 처리 (선택 / 바로주문 / 더담기 / 닫기) — MCP 원격조작도 동일
@@ -805,6 +851,7 @@
 
     async function dispatchUserUtterance(text) {
         // 0) 옵션 모달/상세가 열려 있으면 그 안에서 우선 처리 (LLM 없이) — QA #9
+        if (tryConfirmVoice(text)) return;
         if (tryOptModalVoice(text)) return;
         if (tryDetailVoice(text)) return;
 
@@ -845,9 +892,17 @@
             // AI 가 백엔드 카트를 변경했을 수 있으므로 서버 카트 재동기화
             await syncCartFromServer();
 
-            // 4) 옵션 필요한 메뉴 → 상세(옵션 UI) 자동 오픈 → 사용자가 옵션 고르고 "담아줘"
-            if (res && res.menu_options && res.menu_options.menu_id != null) {
-                openOptionModal(res.menu_options.menu_id);   // 옵션 모달로 (QA #9, MCP 동일 플로우)
+            // 4) 옵션 필요한 메뉴 → 상세+옵션 모달 자동 오픈.
+            //    단, AI 가 이미 "담겼어요"로 답한 경우엔 모달을 다시 열지 않는다(담은 뒤 모달이 떠 카트를 가리는 문제 방지).
+            const alreadyAdded = res && res.reply && /(담겼|담았)/.test(res.reply);
+            if (res && res.menu_options && res.menu_options.menu_id != null && !alreadyAdded) {
+                const _mid = res.menu_options.menu_id;
+                // 담기 동사가 있으면 상세+옵션 모달, 단순 언급(보여줘/어때/얼마)이면 상세 오버레이만 연다
+                if (/(담아|담을|담기|주문|추가|시킬|시켜|넣어|이걸로|하나|줘)/.test(text)) {
+                    openOptionModal(_mid, text);   // 발화 속 옵션 미리 선택
+                } else {
+                    openDetail(_mid);              // 메뉴만 보여달라 → 상세 오버레이
+                }
             } else if (window.AiAction && res && res.action) {
                 const a = res.action;
                 // 빈 카트로 결제/주문확인 화면 이동 금지 — 메뉴부터 담게 안내
