@@ -583,6 +583,37 @@
         return false;
     }
 
+    // 발화에 들어있는 메뉴명을 MenuData 에서 찾는다 (공백 제거 substring, 가장 긴 이름 우선)
+    function findMenuBySpokenName(text) {
+        const t = (text || "").replace(/\s/g, "");
+        if (!t || !window.MenuData || !window.MenuData.data) return null;
+        let best = null, bestLen = 0;
+        for (const f of (window.MenuData.data.floors || [])) {
+            for (const s of (f.stores || [])) {
+                for (const menu of (s.menus || [])) {
+                    const name = (menu.name || "").replace(/\s/g, "");
+                    if (name.length >= 2 && t.includes(name) && name.length > bestLen) {
+                        best = menu; bestLen = name.length;
+                    }
+                }
+            }
+        }
+        return best;
+    }
+
+    // 메뉴 이름을 말하며 '보기/궁금'을 원하면(담기 동사 없음) AI 없이 바로 상세 오버레이를 연다.
+    // ("수육국밥 볼래", "순대국밥", "가츠동 매워?" 등 — LLM 들쭉날쭉을 우회해 확실히 화면을 조작)
+    function tryDirectMenuView(text) {
+        const t = (text || "").replace(/\s/g, "");
+        if (!t) return false;
+        if (/(말고|아니|빼고|대신|취소|그만)/.test(t)) return false;                 // 부정/제외
+        if (/(담아|담을|담기|주문|추가|시킬|시켜|넣어|하나|이걸로)/.test(t)) return false; // 담기 동사 → 주문 흐름(AI)
+        const menu = findMenuBySpokenName(text);
+        if (!menu) return false;
+        openDetail(menu.id);
+        return true;
+    }
+
     // ---------- 메뉴 상세 오버레이 ----------
     function openDetail(menuId) {
         const found = window.MenuData.findMenuById(menuId);
@@ -859,6 +890,9 @@
         if (window.QuickAction && window.QuickAction.try(text, { page: location.pathname })) {
             return;
         }
+
+        // 1.5) 메뉴 이름 + '보기'(담기 동사 없음) → AI 없이 바로 상세 오버레이 오픈 (확실한 화면 조작)
+        if (tryDirectMenuView(text)) return;
 
         // 2) 세션 보장
         if (!state.sessionId) {
