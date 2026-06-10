@@ -64,6 +64,19 @@
             },
         },
 
+        // ───────── 주문 확인 화면(/summary): "어 맞아 / 응 / 네 / 그래 / 좋아" 수긍도 확인 완료로 ─────────
+        // /summary 에서만 작동 (다른 화면에서 "네/어"는 다른 뜻일 수 있어 한정). 부정형은 가드로 차단.
+        {
+            name: 'summary_confirm',
+            match: /^(어|응|네|예|음)?\s*(맞아요?|맞어|맞다|그래요?|그치|좋아요?|오케이|오케|콜|진행|네|예|응|어)\s*(요|용|아|여)?$/,
+            guard: /(안|못|말고|그만|취소|싫어|아니|잠깐|아직|나중에|아닌|틀)/,
+            allowOn: (p) => p === '/summary',
+            run: () => {
+                const next = document.querySelector('[data-action="next"]');
+                if (next && !next.disabled) next.click();
+            },
+        },
+
         // ───────── 처음으로 (critical — 세션 초기화 위험) ─────────
         {
             name: 'home',
