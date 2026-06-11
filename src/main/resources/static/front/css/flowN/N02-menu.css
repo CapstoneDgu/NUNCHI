@@ -1088,6 +1088,217 @@
 /* ========================================================
    토스트 (매장/포장 변경 등) — QA #3
    ======================================================== */
+.n02-reco {
+    position: fixed;
+    inset: 0;
+    z-index: 1280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .18s var(--ease-out), visibility .18s var(--ease-out);
+}
+
+.n02-reco.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.n02-reco__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(24, 20, 17, 0.48);
+    backdrop-filter: blur(3px);
+}
+
+.n02-reco__panel {
+    position: relative;
+    width: min(720px, calc(100vw - 48px));
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+    padding: 28px;
+    border-radius: 28px;
+    background: #fff;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+    transform: translateY(12px) scale(0.98);
+    transition: transform .18s var(--ease-out);
+}
+
+.n02-reco.is-open .n02-reco__panel {
+    transform: translateY(0) scale(1);
+}
+
+.n02-reco__close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--neutral-100);
+    color: var(--neutral-800);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.n02-reco__head {
+    padding-right: 44px;
+}
+
+.n02-reco__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 9999px;
+    background: var(--primary-500);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.n02-reco__title {
+    margin: 14px 0 8px;
+    font-size: 26px;
+    line-height: 1.25;
+    font-weight: 900;
+    color: var(--neutral-900);
+}
+
+.n02-reco__message {
+    margin: 0;
+    color: var(--neutral-600);
+    font-size: 16px;
+    line-height: 1.55;
+    word-break: keep-all;
+}
+
+.n02-reco__grid {
+    display: grid;
+    gap: 16px;
+    margin-top: 22px;
+}
+
+.n02-reco-card {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 18px;
+    padding: 14px;
+    border: 1px solid var(--neutral-200);
+    border-radius: 22px;
+    background: var(--neutral-0);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+}
+
+.n02-reco-card__image {
+    position: relative;
+    min-height: 160px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--neutral-200), var(--neutral-300));
+    background-position: center;
+    background-size: cover;
+    overflow: hidden;
+}
+
+.n02-reco-card__rank {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--primary-500);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 900;
+}
+
+.n02-reco-card__body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.n02-reco-card__meta {
+    min-height: 19px;
+    color: var(--neutral-500);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.n02-reco-card__name {
+    margin: 6px 0 4px;
+    color: var(--neutral-900);
+    font-size: 22px;
+    line-height: 1.25;
+    font-weight: 900;
+    word-break: keep-all;
+}
+
+.n02-reco-card__reason {
+    margin: 0;
+    color: var(--neutral-600);
+    font-size: 14px;
+    line-height: 1.45;
+    word-break: keep-all;
+}
+
+.n02-reco-card__bottom {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 12px;
+}
+
+.n02-reco-card__price {
+    color: var(--primary-700);
+    font-size: 22px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.n02-reco-card__actions {
+    display: flex;
+    gap: 8px;
+}
+
+.n02-reco-card__ghost,
+.n02-reco-card__add {
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 9999px;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.n02-reco-card__ghost {
+    border: 1px solid var(--neutral-200);
+    background: #fff;
+    color: var(--neutral-700);
+}
+
+.n02-reco-card__add {
+    border: 0;
+    background: var(--primary-500);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
 .n02__toast {
     position: fixed;
     left: 50%;
@@ -1099,18 +1310,54 @@
     font-weight: 700;
     letter-spacing: -0.2px;
     padding: 13px 22px;
-    border-radius: 9999px;
+    width: max-content;
+    max-width: min(620px, calc(100vw - 48px));
+    border-radius: 24px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     opacity: 0;
     visibility: hidden;
     transition: opacity .2s, transform .2s;
     z-index: 1200;
     pointer-events: none;
+    line-height: 1.45;
+    text-align: center;
+    word-break: keep-all;
 }
 .n02__toast.is-visible {
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 760px) {
+    .n02-reco {
+        padding: 18px;
+    }
+
+    .n02-reco__panel {
+        width: calc(100vw - 36px);
+        max-height: calc(100vh - 120px);
+        padding: 22px;
+        border-radius: 24px;
+    }
+
+    .n02-reco-card {
+        grid-template-columns: 1fr;
+    }
+
+    .n02-reco-card__image {
+        min-height: 220px;
+    }
+
+    .n02-reco-card__bottom {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .n02-reco-card__actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 /* 매장/포장 토글 pill — refresh 아이콘 강조 */
