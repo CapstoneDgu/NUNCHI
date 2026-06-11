@@ -59,7 +59,13 @@
         document.body.appendChild(b);
     }
 
+    // 아바타 화면(/avatar)에선 저자세 토글/적용을 하지 않는다 (전체화면 아바타 UI 방해)
+    function isAvatarPage() {
+        try { return location.pathname.indexOf('avatar') >= 0; } catch (e) { return false; }
+    }
+
     function init() {
+        if (isAvatarPage()) return;   // 아바타 화면 제외 — 토글 버튼/하단정렬 모두 미적용
         // URL 강제 진입은 '최초 1회'만 저장값으로 seed → 이후엔 토글/저장값이 기준이 되어
         // ?posture=low 페이지에서 껐다 다시 켜는 것이 정상 동작한다.
         try { if (urlForced() && sessionStorage.getItem(KEY) === null) sessionStorage.setItem(KEY, '1'); } catch (e) {}
