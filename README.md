@@ -6,11 +6,11 @@
 <br/>
 
 # 2. Team Members (팀원 및 팀 소개)
-| 효동 | 팀원2 | 팀원3 | 팀원4 |
+| 조효동 | 이현노 | 임호영 | 임현우 |
 |:------:|:------:|:------:|:------:|
 | <img src="https://github.com/hyodongg.png" alt="효동" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원2" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원3" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원4" width="150"> |
 | BE / AI | BE | FE | FE |
-| [GitHub](https://github.com/hyodongg) | [GitHub](#) | [GitHub](#) | [GitHub](#) |
+| [GitHub](https://github.com/hyodongg) | [GitHub](https://github.com/leehyunro123) | [GitHub](https://github.com/sexybugmaster) | [GitHub](https://github.com/pyeree) |
 
 <br/>
 <br/>
@@ -121,51 +121,21 @@
 
 # 5. Technology Stack (기술 스택)
 
-## 5.1 Language
+
 |  |  |
 |--------|--------|
-| Java 17 | ![Java](https://img.shields.io/badge/Java_17-007396?style=flat-square&logo=openjdk&logoColor=white) |
+| Java | ![Java](https://img.shields.io/badge/Java_17-007396?style=flat-square&logo=openjdk&logoColor=white) |
 | JavaScript | ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) |
-| Python 3.11 | ![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=flat-square&logo=python&logoColor=white) |
-
-<br/>
-
-## 5.2 Backend
-|  |  |  |
-|--------|--------|--------|
-| Spring Boot | ![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=springboot&logoColor=white) | 4.0.5 |
-| Spring Security | ![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=flat-square&logo=springsecurity&logoColor=white) | JWT 인증 |
-| PostgreSQL | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | 메인 DB |
-| Redis | ![Redis](https://img.shields.io/badge/Redis-FF4438?style=flat-square&logo=redis&logoColor=white) | 캐시 / 분산 락 |
-
-<br/>
-
-## 5.3 Frontend
-|  |  |
-|--------|--------|
+| Python | ![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=flat-square&logo=python&logoColor=white) |
+| Spring Boot | ![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=springboot&logoColor=white) |
+| PostgreSQL | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) |
+| Redis | ![Redis](https://img.shields.io/badge/Redis-FF4438?style=flat-square&logo=redis&logoColor=white) |
 | React | ![React](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black) |
-
-<br/>
-
-## 5.4 AI Server ([NUNCHI-AI](https://github.com/CapstoneDgu/NUNCHI-AI))
-|  |  |
-|--------|--------|
 | FastAPI | ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) |
-| LangGraph / LangChain | ![LangChain](https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white) |
-| OpenAI (Whisper / GPT / TTS) | ![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai&logoColor=white) |
-
-<br/>
-
-## 5.5 Cooperation
-|  |  |
-|--------|--------|
-| Git | ![Git](https://img.shields.io/badge/Git-F05032?style=flat-square&logo=git&logoColor=white) |
-| GitHub Actions | ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white) |
+| LangGraph | ![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white) |
+| OpenAI | ![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai&logoColor=white) |
 | Docker | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) |
-| Notion | ![Notion](https://img.shields.io/badge/Notion-000000?style=flat-square&logo=notion&logoColor=white) |
-
-<br/>
-<br/>
+| GitHub Actions | ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white) |
 
 # 6. Project Structure (프로젝트 구조)
 
