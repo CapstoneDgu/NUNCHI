@@ -9,7 +9,7 @@
 | 조효동 | 이현노 | 임호영 | 임현우 |
 |:------:|:------:|:------:|:------:|
 | <img src="https://github.com/hyodongg.png" alt="효동" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원2" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원3" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원4" width="150"> |
-| BE / AI | BE | FE | FE |
+| BE / AI | BE | Infra / VISION/ ADMIN | FE |
 | [GitHub](https://github.com/hyodongg) | [GitHub](https://github.com/leehyunro123) | [GitHub](https://github.com/sexybugmaster) | [GitHub](https://github.com/pyeree) |
 
 <br/>
@@ -105,6 +105,38 @@
 - **음성 불확실성**: STT 신뢰도 낮음
 
 <br/>
+
+## 3.8 시선 추적 주문 (NUNCHI Vision)
+
+OpenCV와 MediaPipe 기반 Python 비전 엔진을 통해 사용자의 시선 방향과 더블 깜빡임을 감지합니다.
+
+Python 비전 서버는 WebSocket(`ws://127.0.0.1:8765`)으로 브라우저와 연결되며,
+프론트엔드의 `vision-client.js`가 `.vision-selectable` 요소를 대상으로 포커스 이동과 클릭을 수행합니다.
+
+- **LEFT / RIGHT 시선 유지**: 선택 포커스 이동
+- **더블 깜빡임**: 현재 포커스된 요소 클릭
+- **캘리브레이션 화면**: 사용자의 중앙 시선 기준 보정
+- **적용 화면**: 모드 선택, 매장/포장 선택, 메뉴 선택, 주문 확인, 결제 흐름
+
+이를 통해 터치 없이도 키오스크 주요 주문 플로우를 진행할 수 있습니다.
+
+<br/>
+
+## 3.9 관리자 모드
+
+키오스크에서 발생한 주문 데이터를 관리자가 확인할 수 있는 운영 관리 화면입니다.
+
+관리자는 주문 내역, 주문 상세 정보, 주문 상태, 주문 시각, 주문 메뉴 등을 조회할 수 있으며, 키오스크에서 생성된 주문 데이터가 백엔드와 DB에 정상 반영되었는지 확인할 수 있습니다.
+
+- 관리자 로그인
+- 주문 내역 조회
+- 주문 상세 정보 확인
+- 주문 상태 확인
+- 주문 데이터 DB 저장 확인
+- 관리자 API 기반 주문 데이터 조회
+- 주문 통계 파일 다운로드
+
+<br/>
 <br/>
 
 # 4. Tasks & Responsibilities (작업 및 역할 분담)
@@ -113,7 +145,7 @@
 |--------|--------|--------|
 | 조효동 | <img src="https://github.com/hyodongg.png" alt="효동" width="100"> | <ul><li>Spring Boot 백엔드 설계 및 개발</li><li>메뉴 조회 · 추천 · 주문 · 결제 플로우 API 구현</li><li>FastAPI AI 서버 설계 및 개발</li><li>LangGraph 주문 에이전트 · MCP Tool 구현</li><li>MCP 서버 Smithery 배포</li><li>CI/CD 설정 및 서버 관리 (GitHub Actions, Discord 웹훅)</li></ul> |
 | 팀원2 | <img src="https://github.com/identicons/placeholder.png" alt="팀원2" width="100"> | <ul><li>Spring Boot 백엔드 개발</li><li>세션 / 통계 API</li><li>DB 설계 및 관리</li></ul> |
-| 팀원3 | <img src="https://github.com/identicons/placeholder.png" alt="팀원3" width="100"> | <ul><li>React 키오스크 UI 개발</li><li>일반 모드 / 아바타 모드 화면</li><li>WebSocket 연동</li></ul> |
+| 호영 | <img src="https://github.com/sexybugmaster.png" alt="호영" width="100"> | <ul><li>AWS EC2 및 Docker Compose 기반 배포 환경 설계</li><li>Spring Boot, FastAPI, PostgreSQL, Redis, Nginx 서버 운영</li><li>GitHub Actions 기반 CI/CD 파이프라인 구축</li><li>Spring Actuator, Prometheus, Grafana 기반 모니터링 환경 구축</li><li>메뉴 API 및 AI 주문 API 성능 분석</li><li>OpenCV / MediaPipe 기반 시선 입력 기능 설계 및 연동 검토</li><li>시선 기반 보조 입력 기능 테스트</li><li>관리자 주문 내역 조회 페이지 개발</li><li>관리자 주문 조회 API 개발</li><li>PostgreSQL 기반 운영 주문 데이터 검증</li></ul> |
 | 팀원4 | <img src="https://github.com/identicons/placeholder.png" alt="팀원4" width="100"> | <ul><li>React 키오스크 UI 개발</li><li>결제 화면 개발</li><li>저자세(배리어프리) 모드 개발</li></ul> |
 
 <br/>
@@ -152,6 +184,11 @@ NUNCHI/
 │   │   └── exception/       # 공통 예외 처리
 │   └── resources/
 │       └── application.yml
+├── nunchi-vision/               # OpenCV / MediaPipe 기반 시선 입력 서버
+│   ├── main.py                  # 비전 엔진 실행 진입점
+│   ├── server.py                # WebSocket 서버
+│   ├── detectors/               # 얼굴/홍채 감지
+│   └── fusion/                  # 시선 이동, 깜빡임, 망설임 이벤트 처리
 ├── tests/                   # 프론트엔드 단위 테스트 (Node test runner)
 ├── docs/
 │   └── images/              # ← 스크린샷 이미지 저장 위치
