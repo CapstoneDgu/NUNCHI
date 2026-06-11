@@ -111,7 +111,7 @@
 
 |  |  |  |
 |--------|--------|--------|
-| 효동 | <img src="https://github.com/hyodongg.png" alt="효동" width="100"> | <ul><li>Spring Boot 백엔드 설계 및 개발</li><li>메뉴 조회 · 추천 · 주문 · 결제 플로우 API 구현</li><li>FastAPI AI 서버 전체 설계 및 개발</li><li>LangGraph 주문 에이전트 · MCP Tool 구현</li><li>MCP 서버 Smithery 배포</li><li>CI/CD 설정 및 서버 관리 (GitHub Actions, Discord 웹훅)</li></ul> |
+| 조효동 | <img src="https://github.com/hyodongg.png" alt="효동" width="100"> | <ul><li>Spring Boot 백엔드 설계 및 개발</li><li>메뉴 조회 · 추천 · 주문 · 결제 플로우 API 구현</li><li>FastAPI AI 서버 전체 설계 및 개발</li><li>LangGraph 주문 에이전트 · MCP Tool 구현</li><li>MCP 서버 Smithery 배포</li><li>CI/CD 설정 및 서버 관리 (GitHub Actions, Discord 웹훅)</li></ul> |
 | 팀원2 | <img src="https://github.com/identicons/placeholder.png" alt="팀원2" width="100"> | <ul><li>Spring Boot 백엔드 개발</li><li>세션 / 통계 API</li><li>DB 설계 및 관리</li></ul> |
 | 팀원3 | <img src="https://github.com/identicons/placeholder.png" alt="팀원3" width="100"> | <ul><li>React 키오스크 UI 개발</li><li>일반 모드 / 아바타 모드 화면</li><li>WebSocket 연동</li></ul> |
 | 팀원4 | <img src="https://github.com/identicons/placeholder.png" alt="팀원4" width="100"> | <ul><li>React 키오스크 UI 개발</li><li>결제 화면 개발</li><li>저자세(배리어프리) 모드 개발</li></ul> |
