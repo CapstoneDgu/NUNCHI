@@ -48,7 +48,7 @@
         //   (/payment 의 "결제 진행" 은 결제수단 룰/ pay_proceed 가 담당)
         {
             name: 'checkout',
-            match: /(결제|주문\s*확인\s*완료|다음\s*단계|다음으로)/,
+            match: /(결제|주문\s*확인|확인\s*완료|확인\s*했|확인\s*눌러|주문\s*완료|주문\s*확정|주문\s*할게|결제\s*진행|진행할게|다음\s*단계|다음으로|이대로\s*(주문|결제|진행))/,
             guard: /(안|못|말고|그만|취소|싫어|아니|잠깐|아직|나중에)/,
             allowOn: (p) => p === '/menu' || p === '/summary',
             run: () => {
@@ -61,6 +61,19 @@
                 const next = document.querySelector('[data-action="next"]');
                 if (next && !next.disabled) next.click();
                 else location.href = '/payment';
+            },
+        },
+
+        // ───────── 주문 확인 화면(/summary): "어 맞아 / 응 / 네 / 그래 / 좋아" 수긍도 확인 완료로 ─────────
+        // /summary 에서만 작동 (다른 화면에서 "네/어"는 다른 뜻일 수 있어 한정). 부정형은 가드로 차단.
+        {
+            name: 'summary_confirm',
+            match: /^(어|응|네|예|음)?\s*(맞아요?|맞어|맞다|그래요?|그치|좋아요?|오케이|오케|콜|진행|네|예|응|어)\s*(요|용|아|여)?$/,
+            guard: /(안|못|말고|그만|취소|싫어|아니|잠깐|아직|나중에|아닌|틀)/,
+            allowOn: (p) => p === '/summary',
+            run: () => {
+                const next = document.querySelector('[data-action="next"]');
+                if (next && !next.disabled) next.click();
             },
         },
 
@@ -85,10 +98,20 @@
         // ───────── 메뉴 화면 이동 (안전) ─────────
         {
             name: 'menu',
-            match: /(메뉴(\s*화면)?(\s*보여)?|메뉴로\s*가|메뉴\s*보여|메뉴\s*가)/,
+            match: /(메뉴\s*(화면|보여|가|줘|로\s*가|로\s*돌아가|돌아가)|메뉴화면|돌아가)/,
             // N02 에 이미 있으면 noop. 다른 페이지에서만 의미
             allowOn: (p) => p !== '/menu',
             run: () => location.href = '/menu',
+        },
+
+        // ───────── "담겼어?/장바구니 보여줘" → 메뉴 화면(카트 보임)으로 (다른 페이지에서) ─────────
+        // /menu 는 N02 가 직접 카트 강조, /summary 는 이미 카트가 보이므로 제외.
+        {
+            name: 'show_cart',
+            match: /(담겼|담았어|들어갔|장바구니\s*(보여|확인)|뭐\s*담았|카트\s*보여)/,
+            guard: /(담아|담을|비워|비우|지워|삭제|초기화|빼)/,
+            allowOn: (p) => p !== '/menu' && p !== '/summary',
+            run: () => { location.href = '/menu'; },
         },
 
         // ───────── 주문 확인 (P01 단축 진입) ─────────
@@ -140,6 +163,21 @@
                 const next = document.querySelector('[data-action="next"]');
                 if (next && !next.disabled) next.click();
             },
+        },
+
+        // ───────── 영수증/번호표 음성 출력 (주문완료 등 출력 가능한 화면) ─────────
+        // window.NunchiPrint(kind) 가 노출된 페이지(P05 주문완료)에서만 발동. 없으면 LLM 으로 넘어감.
+        {
+            name: 'print_receipt',
+            match: /영수증.{0,5}(뽑|출력|인쇄|발급|프린트|줘|주세요)|(뽑아|출력|인쇄|발급|프린트).{0,5}영수증/,
+            allowOn: () => typeof window.NunchiPrint === 'function',
+            run: () => window.NunchiPrint('receipt'),
+        },
+        {
+            name: 'print_ticket',
+            match: /(번호표|대기\s*번호).{0,5}(뽑|출력|인쇄|발급|프린트|줘|주세요)|(뽑아|출력|인쇄|발급|프린트).{0,5}(번호표|대기\s*번호)/,
+            allowOn: () => typeof window.NunchiPrint === 'function',
+            run: () => window.NunchiPrint('ticket'),
         },
 
         // ───────── 마이크 끄기 (안전) ─────────

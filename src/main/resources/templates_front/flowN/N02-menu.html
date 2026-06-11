@@ -162,7 +162,7 @@
             <div class="n02__detail-body" data-detail-body>
                 <p class="n02__detail-desc" data-detail-desc></p>
 
-                <!-- AI 추천 이유 (백엔드가 menu detail 에 aiReason 제공 시 노출) — QA #5 -->
+                <!-- AI 추천 이유 (상세 API 의 reason 이 있을 때 = 오늘의 베스트셀러일 때만 노출) -->
                 <section class="n02__detail-section n02__detail-section--ai"
                          data-detail-ai-section hidden>
                     <h3 class="n02__detail-section-title">
@@ -252,6 +252,48 @@
                 <button class="btn-cta btn-cta--primary n02-opt__btn vision-selectable"
                         type="button" data-opt-action="order">바로 주문 →</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ========================================================
+         ⑤-b 눈치 추천 모달 — 망설임 감지(체류 15초 / 상세 3회 / 매장 5회 전환) 시
+              추천 메뉴를 제안한다. JS(showNunchiModal)가 채우고 띄운다.
+         ======================================================== -->
+    <div class="n02-nunchi" data-nunchi-modal data-vision-scope hidden>
+        <div class="n02-nunchi__backdrop" data-nunchi-close></div>
+        <div class="n02-nunchi__box" role="dialog" aria-modal="true" aria-label="눈치 추천">
+            <button class="n02-nunchi__close" type="button" data-nunchi-close aria-label="닫기">
+                <i class="xi xi-close-thin" aria-hidden="true"></i>
+            </button>
+            <div class="n02-nunchi__head">
+                <span class="n02-nunchi__badge"><i class="xi xi-lightning" aria-hidden="true"></i>눈치 추천</span>
+                <strong class="n02-nunchi__title" data-nunchi-title>고민되시나요? 이런 메뉴는 어떠세요?</strong>
+            </div>
+            <ul class="n02-nunchi__list" data-nunchi-list></ul>
+            <button class="btn-cta btn-cta--secondary n02-nunchi__dismiss vision-selectable"
+                    type="button" data-nunchi-close>괜찮아요, 더 둘러볼게요</button>
+        </div>
+    </div>
+
+    <!-- ========================================================
+         ⑤-c AI 추천 모달 — 음성으로 추천받으면 대화 사이드바 닫고 가운데에
+              이유 라벨(좌상단) + 추천 메뉴 3개(이미지+이름). 터치/음성 선택, X 로 닫으면 사이드바 복구.
+              JS(showRecommendModal)가 채우고 띄운다.
+         ======================================================== -->
+    <div class="n02-rec" data-rec-modal data-vision-scope hidden>
+        <div class="n02-rec__backdrop" data-rec-close></div>
+        <div class="n02-rec__box" role="dialog" aria-modal="true" aria-label="AI 추천 메뉴">
+            <div class="n02-rec__head">
+                <span class="n02-rec__label">
+                    <i class="xi xi-lightning" aria-hidden="true"></i>
+                    <span data-rec-label>AI 추천 메뉴</span>
+                </span>
+                <button class="n02-rec__close" type="button" data-rec-close aria-label="닫기">
+                    <i class="xi xi-close-thin" aria-hidden="true"></i>
+                </button>
+            </div>
+            <ul class="n02-rec__list" data-rec-list></ul>
+            <p class="n02-rec__hint">터치하거나 음성으로 골라보세요 (예: "첫 번째", 메뉴 이름)</p>
         </div>
     </div>
 

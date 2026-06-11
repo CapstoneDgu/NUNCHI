@@ -77,15 +77,6 @@
     // ---------- 유틸 ----------
     const fmt = window.MenuData.formatPrice;
 
-    function escapeHtml(value) {
-        return String(value == null ? "" : value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
-    }
-
     function nowHHMM() {
         const d = new Date();
         const pad = (n) => String(n).padStart(2, "0");
@@ -397,6 +388,12 @@
     const $optName     = document.querySelector('[data-opt-name]');
     const $optPrice    = document.querySelector('[data-opt-price]');
     const $optGroupsEl = document.querySelector('[data-opt-groups]');
+    const $nunchiModal = document.querySelector('[data-nunchi-modal]');
+    const $nunchiList  = document.querySelector('[data-nunchi-list]');
+    const $nunchiTitle = document.querySelector('[data-nunchi-title]');
+    const $recModal    = document.querySelector('[data-rec-modal]');
+    const $recList     = document.querySelector('[data-rec-list]');
+    const $recLabel    = document.querySelector('[data-rec-label]');
 
     let optMenuId = null;
     let optGroups = [];
@@ -455,19 +452,23 @@
     }
 
     // 메뉴 담기 진입점 (터치·음성 공통) — 옵션 있으면 모달, 없으면 바로 담기
-    function openOptionModal(menuId) {
+    function openOptionModal(menuId, spokenText) {
         const found = window.MenuData.findMenuById(menuId);
         if (!found || found.menu.soldOut) return;
         const m = found.menu;
         window.Api.menu.detail(menuId).then((d) => {
             const groups = (d && d.optionGroups) || [];
             if (!groups.length) { addToCart(menuId, { optionIds: [] }); return; }
+            // 어떤 메뉴를 담는지 보이도록 상세 오버레이도 함께 연다 (옵션 모달은 그 위 하단 시트)
+            openDetail(menuId);
             optMenuId = menuId;
             optGroups = groups;
             optBasePrice = m.price;
             if ($optName) $optName.textContent = m.name;
             renderOptGroups();
             if ($optModal) $optModal.hidden = false;
+            // 발화에 옵션이 있었으면(예: "곱빼기로") 미리 선택해 둔다
+            if (spokenText) preselectSpokenOptions(spokenText);
             refreshVisionSelectables();
         }).catch((e) => {
             console.warn("[N02] 옵션 조회 실패", e);
@@ -475,10 +476,20 @@
         });
     }
 
+    // 발화 텍스트에서 옵션명을 찾아 해당 그룹을 미리 선택 (그룹당 1개)
+    function preselectSpokenOptions(text) {
+        for (const g of optGroups) {
+            for (const o of (g.options || [])) {
+                if (_optNameMatches(text, o.name)) { selectOpt(g.groupId, o.optionId); break; }
+            }
+        }
+    }
+
     function closeOptModal() {
         optMenuId = null;
         optGroups = [];
         if ($optModal) $optModal.hidden = true;
+        if ($detail && !$detail.hidden) closeDetail();   // 함께 연 상세 오버레이도 닫는다
         refreshVisionSelectables();
     }
 
@@ -486,7 +497,22 @@
     async function optModalAdd(thenCheckout) {
         if (optMenuId == null) return;
         const id = optMenuId;
+        const name = ($optName && $optName.textContent) || "메뉴";
         const ids = getOptSelectedIds();
+        // 선택한 옵션 요약 — 와사비처럼 기본값으로 채워진 것까지 한 번 더 확인받는다
+        const summary = optGroups.map((g) => {
+            const opt = (g.options || []).find((o) => o.optionId === optSelected[g.groupId]);
+            return g.groupName + ": " + (opt ? opt.name : "-");
+        }).join("  ·  ");
+        if (window.ConfirmModal) {
+            const ok = await window.ConfirmModal.show({
+                title: name + " 이대로 담을까요?",
+                message: summary || "이대로 담을까요?",
+                confirmLabel: "네, 담기",
+                cancelLabel: "다시 선택",
+            });
+            if (!ok) return;   // 취소 — 옵션 모달 유지하고 다시 고르게
+        }
         closeOptModal();
         await addToCart(id, { optionIds: ids });
         if (thenCheckout) gotoCheckout();
@@ -501,6 +527,23 @@
         if (t.includes(n) || n.includes(t)) return true;
         const tokens = (optName || "").split(/\s+/).filter((w) => w.length >= 2 && !_OPT_GENERIC.includes(w));
         return tokens.some((w) => t.includes(w));
+    }
+
+    // 확인 모달(ConfirmModal)이 떠 있으면 음성으로 예/아니요 처리 (DOM 버튼 클릭으로 위임)
+    function tryConfirmVoice(text) {
+        const $cm = document.querySelector('.confirm-modal__overlay');
+        if (!$cm) return false;
+        const t = (text || "").replace(/\s/g, "");
+        if (!t) return false;
+        if (/(아니|아냐|취소|다시|말고|그만|싫)/.test(t)) {
+            const c = $cm.querySelector('.confirm-modal__btn--cancel'); if (c) c.click();
+            return true;
+        }
+        if (/(네|예|응|어|맞아|좋아|담아|담기|그래)/.test(t)) {
+            const c = $cm.querySelector('.confirm-modal__btn--confirm'); if (c) c.click();
+            return true;
+        }
+        return false;
     }
 
     // 옵션 모달이 열려 있을 때의 음성 처리 (선택 / 바로주문 / 더담기 / 닫기) — MCP 원격조작도 동일
@@ -524,7 +567,7 @@
         if (/(더\s*담|담아|담기|넣어|추가|이걸로)/.test(text) && !/(안|말고|취소|아니|그만)/.test(text)) {
             optModalAdd(false); return true;
         }
-        if (/(닫아|닫기|취소|그만|나가)/.test(t)) { closeOptModal(); return true; }
+        if (/(닫아|닫기|꺼|없애|치워|취소|그만|나가|뒤로|돌아가)/.test(t)) { closeOptModal(); return true; }
         return false;
     }
 
@@ -539,7 +582,99 @@
             openOptionModal(id);
             return true;
         }
-        if (/(닫아|닫기|취소|그만|뒤로|나가)/.test(t)) { closeDetail(); return true; }
+        // "옵션 있어?/옵션 보여줘/옵션 뭐야/옵션 골라" → 옵션 모달을 띄운다 (옵션 없으면 안내)
+        if (/옵션/.test(t)) {
+            showOptionsForMenu(openDetailMenuId);
+            return true;
+        }
+        if (/(닫아|닫기|꺼|없애|치워|취소|그만|뒤로|나가|됐|돌아가)/.test(t)) { closeDetail(); return true; }
+        return false;
+    }
+
+    // 옵션이 있으면 옵션 모달, 없으면 안내 토스트 ("옵션 있어?" 류 응답용)
+    function showOptionsForMenu(menuId) {
+        if (menuId == null) return;
+        window.Api.menu.detail(menuId).then((d) => {
+            const groups = (d && d.optionGroups) || [];
+            if (groups.length) {
+                openOptionModal(menuId);   // 상세 + 옵션 모달
+            } else {
+                showN02Toast("이 메뉴는 선택할 옵션이 없어요");
+            }
+        }).catch(() => openOptionModal(menuId));
+    }
+
+    // 발화에 들어있는 메뉴명을 MenuData 에서 찾는다 (공백 제거 substring, 가장 긴 이름 우선)
+    function findMenuBySpokenName(text) {
+        const t = (text || "").replace(/\s/g, "");
+        if (!t || !window.MenuData || !window.MenuData.data) return null;
+        let best = null, bestLen = 0;
+        for (const f of (window.MenuData.data.floors || [])) {
+            for (const s of (f.stores || [])) {
+                for (const menu of (s.menus || [])) {
+                    const name = (menu.name || "").replace(/\s/g, "");
+                    if (name.length >= 2 && t.includes(name) && name.length > bestLen) {
+                        best = menu; bestLen = name.length;
+                    }
+                }
+            }
+        }
+        return best;
+    }
+
+    // 메뉴 이름을 말하며 '보기/궁금'을 원하면(담기 동사 없음) AI 없이 바로 상세 오버레이를 연다.
+    // ("수육국밥 볼래", "순대국밥", "가츠동 매워?" 등 — LLM 들쭉날쭉을 우회해 확실히 화면을 조작)
+    function tryDirectMenuView(text) {
+        const t = (text || "").replace(/\s/g, "");
+        if (!t) return false;
+        if (/(말고|아니|빼고|대신|취소|그만)/.test(t)) return false;                 // 부정/제외
+        if (/(담아|담을|담기|주문|추가|시킬|시켜|넣어|하나|이걸로)/.test(t)) return false; // 담기 동사 → 주문 흐름(AI)
+        const menu = findMenuBySpokenName(text);
+        if (!menu) return false;
+        openDetail(menu.id);
+        return true;
+    }
+
+    // 장바구니 강조 + 요약 안내 (열린 오버레이는 닫는다) — "담겼어?" 응답용
+    function showCart() {
+        if ($detail && !$detail.hidden) closeDetail();
+        if ($optModal && !$optModal.hidden) closeOptModal();
+        if ($recModal && !$recModal.hidden) closeRecommendModal(false);
+        if ($nunchiModal && !$nunchiModal.hidden) closeNunchiModal();
+        const c = totalCartCount();
+        if ($cartBar) {
+            $cartBar.classList.add("ai-pulse");
+            try { $cartBar.scrollIntoView({ behavior: "smooth", block: "end" }); } catch (_) {}
+            setTimeout(() => $cartBar.classList.remove("ai-pulse"), 2000);
+        }
+        showN02Toast(c ? `장바구니에 ${c}개 담겨 있어요 · 총 ${fmt(totalCartAmount())}` : "아직 장바구니가 비어 있어요");
+    }
+    window.__N02_showCart = showCart;
+
+    // 기본 페이지 음성 명령 (카트 확인 / 총액 / 도움말 / 음료 이동)
+    function tryBasicVoice(text) {
+        const t = (text || "").replace(/\s/g, "");
+        if (!t) return false;
+        if (/(도와줘|도움말|뭐할수있|뭐라고하면|어떻게말|무슨명령|명령어)/.test(t)) {
+            showN02Toast('"OO 보여줘", "담아줘", "옵션 있어?", "추천해줘", "담겼어?", "결제할게" 처럼 말해보세요');
+            return true;
+        }
+        // 카트 확인 (담기 동사/비우기/빼기는 제외)
+        if (/(담겼|담았어|들어갔|장바구니|카트|뭐담|뭐들어)/.test(t) && !/(담아|담을|비워|비우|지워|삭제|초기화|빼)/.test(t)) {
+            showCart();
+            return true;
+        }
+        // 총액
+        if (/(총.?얼마|얼마나왔|얼마예|얼마야|합계|총액)/.test(t)) {
+            const c = totalCartCount();
+            showN02Toast(c ? `총 ${fmt(totalCartAmount())} (${c}개)` : "아직 장바구니가 비어 있어요");
+            return true;
+        }
+        // 음료 화면 이동
+        if (/음료/.test(t) && /(보여|화면|메뉴|탭|줘|가|이동)/.test(t) && !/(담아|담을|주문)/.test(t)) {
+            const tab = document.querySelector('[data-floor="F90"]');
+            if (tab) { tab.click(); showN02Toast("음료 메뉴예요"); return true; }
+        }
         return false;
     }
 
@@ -552,23 +687,6 @@
             : null;
         const id = Number(raw);
         return Number.isFinite(id) ? id : null;
-    }
-
-    function resolveRecommendation(item) {
-        const menuId = getRecommendationMenuId(item);
-        const found = menuId != null ? window.MenuData.findMenuById(menuId) : null;
-        const menu = found && found.menu ? found.menu : {};
-        const store = found && found.store ? found.store : {};
-        const floor = found && found.floor ? found.floor : {};
-        return {
-            menuId: menuId,
-            name: item.name || item.menu_name || menu.name || "추천 메뉴",
-            price: item.price != null ? item.price : menu.price,
-            imageUrl: item.image_url || item.imageUrl || menu.imageUrl || "",
-            restaurantName: item.restaurant_name || item.restaurantName || store.name || "",
-            floorName: item.floor_name || item.floorName || floor.name || "",
-            reason: item.reason || item.description || item.summary || "",
-        };
     }
 
     function hasUsableRecommendations(list) {
@@ -595,115 +713,6 @@
                 floorName: floor ? floor.name : "",
                 reason: "현재 매장에서 바로 주문할 수 있는 메뉴예요.",
             }));
-    }
-
-    function ensureRecommendPopup() {
-        let popup = document.querySelector("[data-recommend-popup]");
-        if (popup) return popup;
-
-        popup = document.createElement("section");
-        popup.className = "n02-reco";
-        popup.setAttribute("data-recommend-popup", "");
-        popup.setAttribute("data-vision-scope", "");
-        popup.setAttribute("aria-hidden", "true");
-        popup.hidden = true;
-        popup.innerHTML = `
-            <div class="n02-reco__backdrop" data-reco-close></div>
-            <article class="n02-reco__panel" role="dialog" aria-modal="true" aria-label="추천 메뉴">
-                <button class="n02-reco__close vision-selectable" type="button" data-reco-close aria-label="닫기">
-                    <i class="xi xi-close-thin" aria-hidden="true"></i>
-                </button>
-                <div class="n02-reco__head">
-                    <span class="n02-reco__badge"><i class="xi xi-lightning" aria-hidden="true"></i> AI 추천</span>
-                    <h2 class="n02-reco__title">오늘 인기 메뉴를 추천해드릴게요</h2>
-                    <p class="n02-reco__message" data-reco-message></p>
-                </div>
-                <div class="n02-reco__grid" data-reco-list></div>
-            </article>`;
-        document.body.appendChild(popup);
-
-        popup.addEventListener("click", (e) => {
-            const closeBtn = e.target.closest("[data-reco-close]");
-            if (closeBtn) {
-                closeRecommendPopup();
-                return;
-            }
-
-            const detailBtn = e.target.closest("[data-reco-detail]");
-            if (detailBtn) {
-                const menuId = Number(detailBtn.getAttribute("data-reco-detail"));
-                closeRecommendPopup();
-                openDetail(menuId);
-                return;
-            }
-
-            const addBtn = e.target.closest("[data-reco-add]");
-            if (addBtn) {
-                const menuId = Number(addBtn.getAttribute("data-reco-add"));
-                addToCart(menuId);
-            }
-        });
-
-        return popup;
-    }
-
-    function closeRecommendPopup() {
-        const popup = document.querySelector("[data-recommend-popup]");
-        if (!popup) return;
-        popup.classList.remove("is-open");
-        popup.hidden = true;
-        popup.setAttribute("aria-hidden", "true");
-        refreshVisionSelectables();
-    }
-
-    function showRecommendPopup(list, message) {
-        if (!Array.isArray(list) || !list.length) return;
-        const popup = ensureRecommendPopup();
-        const messageEl = popup.querySelector("[data-reco-message]");
-        const listEl = popup.querySelector("[data-reco-list]");
-        const items = list.map(resolveRecommendation)
-            .filter((item) => item.menuId != null)
-            .slice(0, 3);
-        if (!items.length) return;
-
-        if (messageEl) {
-            messageEl.textContent = message || "고르기 어려우시면 아래 메뉴부터 살펴보세요.";
-        }
-
-        listEl.innerHTML = items.map((item, idx) => {
-            const imageStyle = item.imageUrl
-                ? `style="background-image:url('${escapeHtml(item.imageUrl)}')"`
-                : "";
-            const priceText = item.price != null ? fmt(item.price) : "";
-            const meta = [item.floorName, item.restaurantName].filter(Boolean).join(" · ");
-            return `
-                <article class="n02-reco-card">
-                    <div class="n02-reco-card__image" ${imageStyle}>
-                        <span class="n02-reco-card__rank">${idx + 1}</span>
-                    </div>
-                    <div class="n02-reco-card__body">
-                        <div class="n02-reco-card__meta">${escapeHtml(meta)}</div>
-                        <h3 class="n02-reco-card__name">${escapeHtml(item.name)}</h3>
-                        ${item.reason ? `<p class="n02-reco-card__reason">${escapeHtml(item.reason)}</p>` : ""}
-                        <div class="n02-reco-card__bottom">
-                            <strong class="n02-reco-card__price">${escapeHtml(priceText)}</strong>
-                            <div class="n02-reco-card__actions">
-                                <button class="n02-reco-card__ghost vision-selectable" type="button" data-reco-detail="${item.menuId}">상세</button>
-                                <button class="n02-reco-card__add vision-selectable" type="button" data-reco-add="${item.menuId}">
-                                    <i class="xi xi-plus-thin" aria-hidden="true"></i> 담기
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </article>`;
-        }).join("");
-
-        popup.hidden = false;
-        popup.setAttribute("aria-hidden", "false");
-        requestAnimationFrame(() => {
-            popup.classList.add("is-open");
-            refreshVisionSelectables();
-        });
     }
 
     function openDetail(menuId) {
@@ -750,12 +759,19 @@
         // CTA 가격 (옵션 로딩 전 base 가격)
         $detailCtaPrice.textContent = "· " + fmt(m.price);
 
-        // AI 추천 이유 — 우선 숨기고, 상세 API 응답에 aiReason 있으면 노출 (QA #5, 백엔드 제공 전제)
+        // AI 추천 이유 — 우선 숨기고, 상세 API 응답에 reason 있으면 노출 (오늘의 베스트셀러일 때만 채워짐)
         // (옵션 선택은 상세가 아니라 담기 시 옵션 모달에서 처리 — QA #9)
+        // 시작화면(광고)에서 추천된 메뉴면 세션에 저장된 이유를 먼저 노출,
+        // 상세 API 의 reason(오늘의 베스트셀러)이 있으면 그것으로 갱신
         if ($detailAiSection) $detailAiSection.hidden = true;
+        const sessionReason = (m && m.aiReason) || "";
+        if (sessionReason && $detailAiSection && $detailAiReason) {
+            $detailAiReason.textContent = sessionReason;
+            $detailAiSection.hidden = false;
+        }
         window.Api.menu.detail(menuId).then((d) => {
             if (openDetailMenuId !== menuId) return;   // 그새 다른 메뉴 열렸으면 무시
-            const reason = d && (d.aiReason || d.aiRecommendReason);
+            const reason = (d && (d.reason || d.aiReason || d.aiRecommendReason)) || sessionReason;
             if (reason && $detailAiSection && $detailAiReason) {
                 $detailAiReason.textContent = reason;
                 $detailAiSection.hidden = false;
@@ -775,6 +791,13 @@
         $detail.hidden = true;
         $detail.setAttribute("aria-hidden", "true");
         refreshVisionSelectables();
+
+        // 반복 탐색으로 대기 중인 눈치 신호가 있으면, 상세에서 '나간 뒤' 잠깐(1초) 후 추천 모달
+        if (_pendingNunchiSignal) {
+            const sig = _pendingNunchiSignal;
+            _pendingNunchiSignal = null;
+            _scheduleNunchiModal(sig);
+        }
     }
 
     // ---------- 카트 조작 (모두 서버 Api.cart.* 호출) ----------
@@ -959,6 +982,8 @@
 
     async function dispatchUserUtterance(text) {
         // 0) 옵션 모달/상세가 열려 있으면 그 안에서 우선 처리 (LLM 없이) — QA #9
+        if (tryConfirmVoice(text)) return;
+        if (tryRecModalVoice(text)) return;
         if (tryOptModalVoice(text)) return;
         if (tryDetailVoice(text)) return;
 
@@ -966,6 +991,12 @@
         if (window.QuickAction && window.QuickAction.try(text, { page: location.pathname })) {
             return;
         }
+
+        // 1.4) 카트 확인 / 총액 / 도움말 / 음료 이동 같은 기본 페이지 명령
+        if (tryBasicVoice(text)) return;
+
+        // 1.5) 메뉴 이름 + '보기'(담기 동사 없음) → AI 없이 바로 상세 오버레이 오픈 (확실한 화면 조작)
+        if (tryDirectMenuView(text)) return;
 
         // 2) 세션 보장
         if (!state.sessionId) {
@@ -999,9 +1030,17 @@
             // AI 가 백엔드 카트를 변경했을 수 있으므로 서버 카트 재동기화
             await syncCartFromServer();
 
-            // 4) 옵션 필요한 메뉴 → 상세(옵션 UI) 자동 오픈 → 사용자가 옵션 고르고 "담아줘"
-            if (res && res.menu_options && res.menu_options.menu_id != null) {
-                openOptionModal(res.menu_options.menu_id);   // 옵션 모달로 (QA #9, MCP 동일 플로우)
+            // 4) 옵션 필요한 메뉴 → 상세+옵션 모달 자동 오픈.
+            //    단, AI 가 이미 "담겼어요"로 답한 경우엔 모달을 다시 열지 않는다(담은 뒤 모달이 떠 카트를 가리는 문제 방지).
+            const alreadyAdded = res && res.reply && /(담겼|담았)/.test(res.reply);
+            if (res && res.menu_options && res.menu_options.menu_id != null && !alreadyAdded) {
+                const _mid = res.menu_options.menu_id;
+                // 담기 동사가 있으면 상세+옵션 모달, 단순 언급(보여줘/어때/얼마)이면 상세 오버레이만 연다
+                if (/(담아|담을|담기|주문|추가|시킬|시켜|넣어|이걸로|하나|줘)/.test(text)) {
+                    openOptionModal(_mid, text);   // 발화 속 옵션 미리 선택
+                } else {
+                    openDetail(_mid);              // 메뉴만 보여달라 → 상세 오버레이
+                }
             } else if (window.AiAction && res && res.action) {
                 const a = res.action;
                 // 빈 카트로 결제/주문확인 화면 이동 금지 — 메뉴부터 담게 안내
@@ -1011,9 +1050,9 @@
                     window.AiAction.handle(a);
                 }
             }
-            // 5) 추천 시각화
-            if (window.AiAction && res && res.recommendations) {
-                window.AiAction.handleRecommendations(res.recommendations);
+            // 5) 추천 → 대화 사이드바 닫고 가운데 추천 모달(이미지+이름, 이유 라벨)
+            if (res && res.recommendations && res.recommendations.length) {
+                showRecommendModal(res.recommendations, res.reply);
             }
         } catch (e) {
             // 처리 중 중첩으로 버려진 발화 — 에러 아님, 조용히 무시(직전 요청이 곧 응답).
@@ -1091,6 +1130,8 @@
         try { sessionStorage.setItem("voiceMicOn", "1"); } catch (_) {}  // 결제 화면까지 ON 유지
         $micBtn.classList.add("app-topbar__action-icon--mic-active");
         setMicStatus("listening");
+        // 음성 주문 중에는 눈치 감지(체류 15초 등)를 멈춰 모달이 대화를 끊지 않게 한다
+        if (window.NunchiSensor) window.NunchiSensor.pause();
         // 마이크만 켠다 — 대화기록 패널은 자동으로 열지 않는다 (QA #7, 패널은 대화기록 버튼으로만)
     }
 
@@ -1100,6 +1141,8 @@
         try { sessionStorage.setItem("voiceMicOn", "0"); } catch (_) {}  // 명시적 OFF
         $micBtn.classList.remove("app-topbar__action-icon--mic-active");
         setMicStatus("off");
+        // 음성 종료 → 눈치 감지 재개 (체류 타이머도 새로 시작)
+        if (window.NunchiSensor) window.NunchiSensor.resume();
     }
 
     function toggleMic() {
@@ -1132,6 +1175,156 @@
         showN02Toast(next === 'take_out'
             ? '포장으로 변경했어요'
             : '매장 식사로 변경했어요');
+    }
+
+    // ---------- 눈치 추천 모달 (망설임 감지 시) ----------
+    // NunchiSensor 가 silence(체류)/repeat_browse(상세 반복)/browse_floors(매장 5회 전환)
+    // 신호를 주면, GET /api/menus/recommendations 로 추천 메뉴를 받아 모달로 제안한다.
+    let _nunchiBusy = false;
+    let _pendingNunchiSignal = null;   // 상세 탐색 중 들어온 신호 — 상세에서 '나간 뒤' 표시
+    let _nunchiTimer = null;
+    const NUNCHI_DELAY_MS = 1000;      // 상세 이탈 / 매장 전환 후 모달까지의 잔류 시간
+    const NUNCHI_TITLES = {
+        silence:       "한참 고민 중이신가요? 이런 메뉴는 어떠세요?",
+        repeat_browse: "메뉴 고르기 어려우신가요? 이런 메뉴 추천드려요",
+        browse_floors: "여러 매장을 둘러보고 계시네요! 인기 메뉴는 어떠세요?",
+    };
+
+    function closeNunchiModal() {
+        if ($nunchiModal) $nunchiModal.hidden = true;
+    }
+
+    // ---------- AI 추천 모달 (음성 추천 → 대화 사이드바 닫고 가운데에 이미지+이름) ----------
+    let _recMenus = [];
+    let _recChatWasOpen = false;
+
+    function showRecommendModal(recs, reasonText) {
+        if (!$recModal || !Array.isArray(recs) || !recs.length) return;
+        // 대화 사이드바가 열려 있으면 닫고(끝나면 복구), 모달을 가운데 띄운다
+        _recChatWasOpen = !!($chatPanel && $chatPanel.classList.contains("ai-chat-panel--open"));
+        if (_recChatWasOpen) closeChat();
+        // 메뉴 최대 3개 (이미지 + 이름) — image_url 없으면 MenuData 에서 보강
+        _recMenus = recs.slice(0, 3).map((m) => {
+            const found = (window.MenuData && window.MenuData.findMenuById) ? window.MenuData.findMenuById(m.menu_id) : null;
+            const fm = found && found.menu;
+            return { id: m.menu_id, name: m.name || (fm && fm.name) || "", imageUrl: m.image_url || (fm && fm.imageUrl) || "" };
+        }).filter((m) => m.id != null);
+        if (!_recMenus.length) { if (_recChatWasOpen) openChat(); return; }
+        if ($recLabel) {
+            const first = (reasonText || "").split(/[!?.\n]/)[0].trim();   // 이유는 첫 문장만 짧게
+            $recLabel.textContent = first ? (first.length > 42 ? first.slice(0, 42) + "…" : first) : "AI 추천 메뉴";
+        }
+        $recList.innerHTML = _recMenus.map((m, i) => {
+            const thumb = m.imageUrl ? `style="background-image:url('${m.imageUrl}')"` : "";
+            return `
+                <li class="n02-rec__item vision-selectable" data-rec-pick="${m.id}">
+                    <span class="n02-rec__num">${i + 1}</span>
+                    <div class="n02-rec__thumb" ${thumb}></div>
+                    <span class="n02-rec__name">${m.name}</span>
+                </li>`;
+        }).join("");
+        $recModal.hidden = false;
+        refreshVisionSelectables();
+    }
+
+    function closeRecommendModal(reopenChat) {
+        if ($recModal) $recModal.hidden = true;
+        if (reopenChat && _recChatWasOpen) openChat();   // X 로 닫으면 자동으로 닫혔던 사이드바 복구
+        _recChatWasOpen = false;
+        _recMenus = [];
+    }
+
+    function pickRecommend(menuId) {
+        closeRecommendModal(false);   // 선택 시엔 상세로 넘어가므로 사이드바 복구 안 함
+        openDetail(menuId);
+    }
+
+    // 추천 모달 음성: 순번(첫번째/1번/왼쪽…) 또는 메뉴 이름으로 선택, 또는 닫기
+    function tryRecModalVoice(text) {
+        if (!$recModal || $recModal.hidden || !_recMenus.length) return false;
+        const t = (text || "").replace(/\s/g, "");
+        if (!t) return false;
+        if (/(닫아|닫기|꺼|없애|치워|취소|그만|아니|싫|나가|뒤로|됐|괜찮|돌아가)/.test(t)) { closeRecommendModal(true); return true; }
+        let idx = -1;
+        if (/(첫|하나|1번|일번|왼쪽)/.test(t)) idx = 0;
+        else if (/(두번|둘|2번|이번|가운데|중간)/.test(t)) idx = 1;
+        else if (/(세번|셋|3번|삼번|오른쪽)/.test(t)) idx = 2;
+        if (idx >= 0 && idx < _recMenus.length) { pickRecommend(_recMenus[idx].id); return true; }
+        for (const m of _recMenus) {
+            const n = (m.name || "").replace(/\s/g, "");
+            if (n.length >= 2 && t.includes(n)) { pickRecommend(m.id); return true; }
+        }
+        return false;
+    }
+
+    // 추천 응답에서 서로 다른 메뉴 2~3개 추출 (베스트셀러 + 다이어트/온도 테마 랜덤)
+    function pickNunchiMenus(rec) {
+        const out = [];
+        const seen = new Set();
+        const rand = (arr) => (Array.isArray(arr) && arr.length) ? arr[Math.floor(Math.random() * arr.length)] : null;
+        const push = (m) => {
+            if (!m || m.menuId == null || seen.has(m.menuId)) return;
+            seen.add(m.menuId);
+            out.push({ menuId: m.menuId, name: m.name, price: m.price, imageUrl: m.imageUrl, reason: m.reason || "" });
+        };
+        push(rec.bestSeller);
+        const diet = rand([rec.lowFat, rec.highProtein, rec.lowCalorie].filter((a) => a && a.length));
+        if (diet) push(rand(diet));
+        const temp = rand([rec.cold, rec.hot].filter((a) => a && a.length));
+        if (temp) push(rand(temp));
+        return out.slice(0, 3);
+    }
+
+    // NunchiSensor onSignal 진입점.
+    // - 상세(정보)를 보는 중이면 바로 띄우지 않고, 사용자가 상세에서 '나간 뒤'(closeDetail) 1초 후 띄운다.
+    // - 그 외(매장 전환 / 체류)는 약간의 잔류 시간(1초) 후 띄운다.
+    function showNunchiModal(signal) {
+        if (!$nunchiModal) return;
+        if (($optModal && !$optModal.hidden) || !$nunchiModal.hidden) return;
+        if (!$detail.hidden) {
+            _pendingNunchiSignal = signal;   // 상세에서 나갈 때(closeDetail) 표시
+            return;
+        }
+        _scheduleNunchiModal(signal);
+    }
+
+    function _scheduleNunchiModal(signal) {
+        clearTimeout(_nunchiTimer);
+        _nunchiTimer = setTimeout(() => _renderNunchiModal(signal), NUNCHI_DELAY_MS);
+    }
+
+    async function _renderNunchiModal(signal) {
+        if (!$nunchiModal || _nunchiBusy) return;
+        // 지연 사이에 사용자가 옵션 모달/상세를 열었거나 눈치 모달이 떠 있으면 방해하지 않는다
+        if (($optModal && !$optModal.hidden) || !$detail.hidden || !$nunchiModal.hidden) return;
+        _nunchiBusy = true;
+        try {
+            const rec = await window.Api.menu.recommendations();
+            const menus = pickNunchiMenus(rec || {});
+            if (!menus.length) return;
+            if ($nunchiTitle) {
+                $nunchiTitle.textContent = NUNCHI_TITLES[signal] || "고민되시나요? 이런 메뉴는 어떠세요?";
+            }
+            $nunchiList.innerHTML = menus.map((m) => {
+                const thumb = m.imageUrl ? `style="background-image:url('${m.imageUrl}')"` : "";
+                return `
+                    <li class="n02-nunchi__item vision-selectable" data-nunchi-pick="${m.menuId}">
+                        <div class="n02-nunchi__thumb" ${thumb}></div>
+                        <div class="n02-nunchi__info">
+                            <span class="n02-nunchi__name">${m.name}</span>
+                            ${m.reason ? `<span class="n02-nunchi__reason">${m.reason}</span>` : ""}
+                            <span class="n02-nunchi__price">${fmt(m.price)}</span>
+                        </div>
+                        <i class="xi xi-angle-right-thin n02-nunchi__chevron" aria-hidden="true"></i>
+                    </li>`;
+            }).join("");
+            $nunchiModal.hidden = false;
+            refreshVisionSelectables();
+        } catch (e) {
+            console.warn("[N02] 눈치 추천 모달 실패", e);
+        } finally {
+            _nunchiBusy = false;
+        }
     }
 
     // ---------- 토스트 ----------
@@ -1359,6 +1552,7 @@
             renderFloorTabs();
             renderStoreList();
             renderMenuGrid();
+            if (window.NunchiSensor) window.NunchiSensor.noteStoreSwitch();
         });
 
         // 사이드바 식당 클릭
@@ -1371,7 +1565,30 @@
             persistFloorStore();
             renderStoreList();
             renderMenuGrid();
+            if (window.NunchiSensor) window.NunchiSensor.noteStoreSwitch();
         });
+
+        // 눈치 추천 모달 — 닫기 / 추천 메뉴 선택(→ 상세 오버레이)
+        if ($nunchiModal) {
+            $nunchiModal.addEventListener("click", (e) => {
+                if (e.target.closest("[data-nunchi-close]")) { closeNunchiModal(); return; }
+                const pick = e.target.closest("[data-nunchi-pick]");
+                if (pick) {
+                    const id = parseInt(pick.getAttribute("data-nunchi-pick"), 10);
+                    closeNunchiModal();
+                    openDetail(id);
+                }
+            });
+        }
+
+        // AI 추천 모달 — 닫기(X/배경) / 추천 메뉴 선택(→ 상세)
+        if ($recModal) {
+            $recModal.addEventListener("click", (e) => {
+                if (e.target.closest("[data-rec-close]")) { closeRecommendModal(true); return; }
+                const pick = e.target.closest("[data-rec-pick]");
+                if (pick) pickRecommend(parseInt(pick.getAttribute("data-rec-pick"), 10));
+            });
+        }
 
         // 메뉴 그리드 위임
         $menuGrid.addEventListener("click", (e) => {
@@ -1503,7 +1720,7 @@
         if (window.NunchiSensor) {
             window.NunchiSensor.init({
                 getCartCount: () => state.cart.length,
-                onSignal: (signal) => sendNunchiSignal(signal),
+                onSignal: (signal) => showNunchiModal(signal),
             });
             // 첫 진입 가이드가 떠 있으면 닫힐 때까지 감지 일시정지
             const $g0 = document.querySelector('[data-guide]');
@@ -1551,7 +1768,6 @@
         // QuickAction / AiAction 모듈이 호출할 수 있는 핸들러 노출
         window.__N02_gotoCheckout = gotoCheckout;
         window.__N02_openDetail   = openDetail;
-        window.__N02_showRecommendations = showRecommendPopup;
 
         // 외부에서 마이크 강제 종료 (QuickAction "마이크 꺼" 명령) 수신
         window.addEventListener("voice:stop", () => { if (state.micActive) stopMic(); });
