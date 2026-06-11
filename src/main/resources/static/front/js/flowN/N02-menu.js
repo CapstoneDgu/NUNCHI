@@ -77,6 +77,15 @@
     // ---------- 유틸 ----------
     const fmt = window.MenuData.formatPrice;
 
+    function escapeHtml(value) {
+        return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
     function nowHHMM() {
         const d = new Date();
         const pad = (n) => String(n).padStart(2, "0");
@@ -535,6 +544,142 @@
     }
 
     // ---------- 메뉴 상세 오버레이 ----------
+    function getRecommendationMenuId(item) {
+        if (!item) return null;
+        const raw = item.menu_id != null ? item.menu_id
+            : item.menuId != null ? item.menuId
+            : item.id != null ? item.id
+            : null;
+        const id = Number(raw);
+        return Number.isFinite(id) ? id : null;
+    }
+
+    function resolveRecommendation(item) {
+        const menuId = getRecommendationMenuId(item);
+        const found = menuId != null ? window.MenuData.findMenuById(menuId) : null;
+        const menu = found && found.menu ? found.menu : {};
+        const store = found && found.store ? found.store : {};
+        const floor = found && found.floor ? found.floor : {};
+        return {
+            menuId: menuId,
+            name: item.name || item.menu_name || menu.name || "추천 메뉴",
+            price: item.price != null ? item.price : menu.price,
+            imageUrl: item.image_url || item.imageUrl || menu.imageUrl || "",
+            restaurantName: item.restaurant_name || item.restaurantName || store.name || "",
+            floorName: item.floor_name || item.floorName || floor.name || "",
+            reason: item.reason || item.description || item.summary || "",
+        };
+    }
+
+    function ensureRecommendPopup() {
+        let popup = document.querySelector("[data-recommend-popup]");
+        if (popup) return popup;
+
+        popup = document.createElement("section");
+        popup.className = "n02-reco";
+        popup.setAttribute("data-recommend-popup", "");
+        popup.setAttribute("data-vision-scope", "");
+        popup.setAttribute("aria-hidden", "true");
+        popup.hidden = true;
+        popup.innerHTML = `
+            <div class="n02-reco__backdrop" data-reco-close></div>
+            <article class="n02-reco__panel" role="dialog" aria-modal="true" aria-label="추천 메뉴">
+                <button class="n02-reco__close vision-selectable" type="button" data-reco-close aria-label="닫기">
+                    <i class="xi xi-close-thin" aria-hidden="true"></i>
+                </button>
+                <div class="n02-reco__head">
+                    <span class="n02-reco__badge"><i class="xi xi-lightning" aria-hidden="true"></i> AI 추천</span>
+                    <h2 class="n02-reco__title">오늘 인기 메뉴를 추천해드릴게요</h2>
+                    <p class="n02-reco__message" data-reco-message></p>
+                </div>
+                <div class="n02-reco__grid" data-reco-list></div>
+            </article>`;
+        document.body.appendChild(popup);
+
+        popup.addEventListener("click", (e) => {
+            const closeBtn = e.target.closest("[data-reco-close]");
+            if (closeBtn) {
+                closeRecommendPopup();
+                return;
+            }
+
+            const detailBtn = e.target.closest("[data-reco-detail]");
+            if (detailBtn) {
+                const menuId = Number(detailBtn.getAttribute("data-reco-detail"));
+                closeRecommendPopup();
+                openDetail(menuId);
+                return;
+            }
+
+            const addBtn = e.target.closest("[data-reco-add]");
+            if (addBtn) {
+                const menuId = Number(addBtn.getAttribute("data-reco-add"));
+                addToCart(menuId);
+            }
+        });
+
+        return popup;
+    }
+
+    function closeRecommendPopup() {
+        const popup = document.querySelector("[data-recommend-popup]");
+        if (!popup) return;
+        popup.classList.remove("is-open");
+        popup.hidden = true;
+        popup.setAttribute("aria-hidden", "true");
+        refreshVisionSelectables();
+    }
+
+    function showRecommendPopup(list, message) {
+        if (!Array.isArray(list) || !list.length) return;
+        const popup = ensureRecommendPopup();
+        const messageEl = popup.querySelector("[data-reco-message]");
+        const listEl = popup.querySelector("[data-reco-list]");
+        const items = list.map(resolveRecommendation)
+            .filter((item) => item.menuId != null)
+            .slice(0, 3);
+        if (!items.length) return;
+
+        if (messageEl) {
+            messageEl.textContent = message || "고르기 어려우시면 아래 메뉴부터 살펴보세요.";
+        }
+
+        listEl.innerHTML = items.map((item, idx) => {
+            const imageStyle = item.imageUrl
+                ? `style="background-image:url('${escapeHtml(item.imageUrl)}')"`
+                : "";
+            const priceText = item.price != null ? fmt(item.price) : "";
+            const meta = [item.floorName, item.restaurantName].filter(Boolean).join(" · ");
+            return `
+                <article class="n02-reco-card">
+                    <div class="n02-reco-card__image" ${imageStyle}>
+                        <span class="n02-reco-card__rank">${idx + 1}</span>
+                    </div>
+                    <div class="n02-reco-card__body">
+                        <div class="n02-reco-card__meta">${escapeHtml(meta)}</div>
+                        <h3 class="n02-reco-card__name">${escapeHtml(item.name)}</h3>
+                        ${item.reason ? `<p class="n02-reco-card__reason">${escapeHtml(item.reason)}</p>` : ""}
+                        <div class="n02-reco-card__bottom">
+                            <strong class="n02-reco-card__price">${escapeHtml(priceText)}</strong>
+                            <div class="n02-reco-card__actions">
+                                <button class="n02-reco-card__ghost vision-selectable" type="button" data-reco-detail="${item.menuId}">상세</button>
+                                <button class="n02-reco-card__add vision-selectable" type="button" data-reco-add="${item.menuId}">
+                                    <i class="xi xi-plus-thin" aria-hidden="true"></i> 담기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </article>`;
+        }).join("");
+
+        popup.hidden = false;
+        popup.setAttribute("aria-hidden", "false");
+        requestAnimationFrame(() => {
+            popup.classList.add("is-open");
+            refreshVisionSelectables();
+        });
+    }
+
     function openDetail(menuId) {
         const found = window.MenuData.findMenuById(menuId);
         if (!found) return;
@@ -881,12 +1026,13 @@
             });
             if (res && res.reply) {
                 pushChatBubble("ai", res.reply);
-                // 대화 패널이 닫혀 있어도 보이도록 짧게 토스트로 알림
-                showN02Toast(res.reply.length > 36 ? res.reply.slice(0, 35) + "…" : res.reply);
             }
             // 추천 메뉴 카드 강조 + 스크롤
             if (window.AiAction && res && res.recommendations) {
-                window.AiAction.handleRecommendations(res.recommendations);
+                window.AiAction.handleRecommendations(res.recommendations, res.reply);
+            } else if (res && res.reply) {
+                // 대화 패널이 닫혀 있어도 보이도록 토스트로 알림
+                showN02Toast(res.reply);
             }
         } catch (e) {
             // 음성 요청 처리 중이면 조용히 무시 (_busy) — 다음 기회에 다시 감지됨
@@ -1376,6 +1522,7 @@
         // QuickAction / AiAction 모듈이 호출할 수 있는 핸들러 노출
         window.__N02_gotoCheckout = gotoCheckout;
         window.__N02_openDetail   = openDetail;
+        window.__N02_showRecommendations = showRecommendPopup;
 
         // 외부에서 마이크 강제 종료 (QuickAction "마이크 꺼" 명령) 수신
         window.addEventListener("voice:stop", () => { if (state.micActive) stopMic(); });

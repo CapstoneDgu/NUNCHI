@@ -86,8 +86,11 @@
      * AI 응답의 recommendations 배열을 받아 카드 강조 + 자동 스크롤.
      * 첫 메뉴만 스크롤 / 나머지는 200ms 간격 펄스.
      */
-    function handleRecommendations(list) {
+    function handleRecommendations(list, message) {
         if (!Array.isArray(list) || !list.length) return;
+        if (typeof window.__N02_showRecommendations === 'function') {
+            window.__N02_showRecommendations(list, message);
+        }
         list.forEach((m, idx) => {
             setTimeout(() => {
                 const card = document.querySelector(`[data-menu="${m.menu_id}"]`);
