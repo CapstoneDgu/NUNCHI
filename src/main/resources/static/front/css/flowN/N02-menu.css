@@ -1480,20 +1480,19 @@
     flex: 0 0 auto;
 }
 .n02-nunchi__dismiss {
-    /* 하단 푸터 버튼 — 항상 가로 꽉 채우고 가운데 정렬.
-       btn-cta 의 inline-flex(폭이 글자에 맞춰 줄며 우측으로 붙던 원인)를 덮어쓴다. */
-    display: flex;
+    /* 하단 닫기 버튼 — 모달 끝까지 늘리지 않고 '내용 크기'로 가운데 배치한 pill.
+       (전엔 width:100% 라 오른쪽 끝까지 이어져 답답했음) */
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    align-self: stretch;
-    width: 100%;
-    margin-top: 18px;
-    min-height: 58px;
-    padding: 0 20px;
-    font-size: 18px;
+    align-self: center;          /* flex column 에서 가로 가운데 */
+    width: auto;
+    margin: 20px auto 2px;       /* 위 여백 + 좌우 auto 로 가운데 */
+    min-height: 52px;
+    padding: 0 44px;             /* 좌우 넉넉히 → 적당한 크기 */
+    font-size: 17px;
     font-weight: 700;
-    text-align: center;
-    border-radius: 16px;
+    border-radius: 9999px;       /* 둥근 pill 로 산뜻하게 */
 }
 
 /* ── AI 추천 모달 (음성 추천 시 가운데 표시 · 이유 라벨 + 메뉴 3개) ──────── */
