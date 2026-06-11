@@ -1,2 +1,299 @@
-# NUNCHI
-👀 주문할 때 눈치보지 마세요, AI가 당신의 눈치를 파악해요
+<!-- 배너 이미지 삽입 위치 -->
+<!-- <img src="배너이미지URL" alt="배너" width="100%"/> -->
+
+<br/>
+<br/>
+
+# 1. Project Overview (프로젝트 개요)
+- 프로젝트 이름: NUNCHI (눈치)
+- 프로젝트 설명: LLM Agentic AI 기반 배리어프리 자율주문 키오스크. 음성 대화만으로 메뉴 탐색 → 추천 → 담기 → 결제까지 완료할 수 있으며, 사용자가 말하지 않아도 AI가 망설임을 감지해 먼저 도움을 제안합니다.
+
+<br/>
+<br/>
+
+# 2. Team Members (팀원 및 팀 소개)
+| 효동 | 팀원2 | 팀원3 | 팀원4 |
+|:------:|:------:|:------:|:------:|
+| <img src="https://github.com/hyodongg.png" alt="효동" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원2" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원3" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원4" width="150"> |
+| BE / AI | BE | FE | FE |
+| [GitHub](https://github.com/hyodongg) | [GitHub](#) | [GitHub](#) | [GitHub](#) |
+
+<br/>
+<br/>
+
+# 3. Key Features (주요 기능)
+
+## 3.1 시작 화면
+
+터치 주문, 시선 추적 주문, 저자세(배리어프리) 모드를 선택할 수 있는 메인 화면입니다.
+
+<img src="https://github.com/user-attachments/assets/e54e6ad5-cc99-447b-a537-3530af4ee04f"  alt="메인화면" width="300"/>
+
+<br/>
+
+## 3.2 주문 모드 선택
+
+일반 터치 주문과 AI 대화 주문 중 원하는 방식을 선택합니다.
+
+<img src="https://github.com/user-attachments/assets/5ea4ef96-d0a1-4453-9e8a-bcceb0a984d3" alt="메인화면" width="300"/>
+
+<br/>
+
+## 3.3 일반 모드 (Touch Order)
+
+터치 기반 주문이 기본 흐름입니다. 상단 마이크 버튼으로 음성 주문을 시작하면 AI가 음성을 인식하고 화면을 자동으로 원격 조작하여 메뉴 탐색·담기·결제까지 진행합니다. AI 추천 라벨, 대화 기록, 매장/포장 전환 버튼을 제공합니다.
+
+<img src="https://github.com/user-attachments/assets/8ba8a3b5-2d33-4372-8402-6cd34469743c" alt="메인화면" width="300"/>
+
+
+
+<br/>
+
+## 3.4 아바타 모드 (AI Avatar)
+
+캐릭터 아바타 **"눈치"** 와 음성 대화로 주문 전 과정을 진행합니다. 인기 메뉴 추천은 물론, 아래와 같이 다양한 기준으로 추천을 요청할 수 있습니다.
+
+- **인기 메뉴 기반** 추천
+- **영양성분 기반** 추천 (저칼로리, 고단백 등)
+- **알레르기 기반** 추천 (특정 성분 제외)
+- **날씨 기반** 추천 (오늘 날씨에 어울리는 메뉴)
+
+**아바타 모드 — 대화 & 추천**
+
+<img src="https://github.com/user-attachments/assets/54ab750c-3caa-4f28-bff5-c2e1698de4a3" alt="메인화면" width="300"/>
+
+<br/>
+
+**아바타 모드 — 추천 메뉴 모달**
+
+추천을 받으면 메뉴 카드 모달이 표시됩니다. 마음에 드는 메뉴를 바로 담거나, 마음에 들지 않으면 닫고 다른 추천을 요청할 수 있습니다.
+
+<img src="https://github.com/user-attachments/assets/acc3edb0-b85e-4a0e-81e3-61bd61b8e2bb" alt="메인화면" width="300"/>
+
+
+<br/>
+
+## 3.5 퀵바 (Quick Bar)
+
+다음 발화를 예측하여 하단에 추천 입력 버튼을 제공합니다. 퀵바 응답은 미리 prefetch되어 즉시 응답이 가능합니다.
+
+> 예: `장바구니 확인해줘` · `조건 바꿔서 추천해줘` · `다른 메뉴도 추천해줘`
+
+<img src="https://github.com/user-attachments/assets/61639b41-c19f-407a-a1a1-711050aa06f0" alt="메인화면" width="300"/>
+
+
+<br/>
+
+## 3.6 Smithery MCP 연동
+
+[Smithery.ai](https://smithery.ai)에 NUNCHI MCP 서버를 등록하여, 개인 Claude Desktop에 간단한 명령어 한 줄로 연결할 수 있습니다. 개인 AI를 통해 외국어 주문, 개인 맞춤 추천 등 다양한 방식으로 활용 가능합니다.
+
+<img src="https://github.com/user-attachments/assets/9472ad6b-cfea-4390-a341-ac616c6f31a1" width="600"/>
+
+<img src="https://github.com/user-attachments/assets/c614b573-e7e7-44a3-8604-ca0d6d237731" width="600"/>
+
+<img src="https://github.com/user-attachments/assets/3dac1501-ed1f-49e2-bee0-7070d34f8487" width="600"/>
+
+
+<!-- Smithery 연동 스크린샷 삽입 위치 -->
+<!-- <img src="docs/images/smithery-mcp.png" alt="Smithery MCP 연동" width="100%"/> -->
+
+<br/>
+
+## 3.7 👀 눈치 기능
+
+사용자가 도움을 요청하지 않아도, AI가 망설임 신호를 감지해 먼저 추천을 제안합니다.
+
+- **체류 시간**: 특정 화면에 오래 머무름
+- **반복 탐색**: 같은 메뉴·카테고리 반복 확인
+- **침묵**: 응답 없이 일정 시간 정지
+- **헤징 발화**: "음", "뭐가 좋지", "추천해줘" 등 불확실 표현
+- **음성 불확실성**: STT 신뢰도 낮음
+
+<br/>
+<br/>
+
+# 4. Tasks & Responsibilities (작업 및 역할 분담)
+
+|  |  |  |
+|--------|--------|--------|
+| 효동 | <img src="https://github.com/hyodongg.png" alt="효동" width="100"> | <ul><li>Spring Boot 백엔드 설계 및 개발</li><li>메뉴 조회 · 추천 · 주문 · 결제 플로우 API 구현</li><li>FastAPI AI 서버 전체 설계 및 개발</li><li>LangGraph 주문 에이전트 · MCP Tool 구현</li><li>MCP 서버 Smithery 배포</li><li>CI/CD 설정 및 서버 관리 (GitHub Actions, Discord 웹훅)</li></ul> |
+| 팀원2 | <img src="https://github.com/identicons/placeholder.png" alt="팀원2" width="100"> | <ul><li>Spring Boot 백엔드 개발</li><li>세션 / 통계 API</li><li>DB 설계 및 관리</li></ul> |
+| 팀원3 | <img src="https://github.com/identicons/placeholder.png" alt="팀원3" width="100"> | <ul><li>React 키오스크 UI 개발</li><li>일반 모드 / 아바타 모드 화면</li><li>WebSocket 연동</li></ul> |
+| 팀원4 | <img src="https://github.com/identicons/placeholder.png" alt="팀원4" width="100"> | <ul><li>React 키오스크 UI 개발</li><li>결제 화면 개발</li><li>저자세(배리어프리) 모드 개발</li></ul> |
+
+<br/>
+<br/>
+
+# 5. Technology Stack (기술 스택)
+
+## 5.1 Language
+|  |  |
+|--------|--------|
+| Java 17 | ![Java](https://img.shields.io/badge/Java_17-007396?style=flat-square&logo=openjdk&logoColor=white) |
+| JavaScript | ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) |
+| Python 3.11 | ![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=flat-square&logo=python&logoColor=white) |
+
+<br/>
+
+## 5.2 Backend
+|  |  |  |
+|--------|--------|--------|
+| Spring Boot | ![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=springboot&logoColor=white) | 4.0.5 |
+| Spring Security | ![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=flat-square&logo=springsecurity&logoColor=white) | JWT 인증 |
+| PostgreSQL | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | 메인 DB |
+| Redis | ![Redis](https://img.shields.io/badge/Redis-FF4438?style=flat-square&logo=redis&logoColor=white) | 캐시 / 분산 락 |
+
+<br/>
+
+## 5.3 Frontend
+|  |  |
+|--------|--------|
+| React | ![React](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black) |
+
+<br/>
+
+## 5.4 AI Server ([NUNCHI-AI](https://github.com/CapstoneDgu/NUNCHI-AI))
+|  |  |
+|--------|--------|
+| FastAPI | ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) |
+| LangGraph / LangChain | ![LangChain](https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white) |
+| OpenAI (Whisper / GPT / TTS) | ![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai&logoColor=white) |
+
+<br/>
+
+## 5.5 Cooperation
+|  |  |
+|--------|--------|
+| Git | ![Git](https://img.shields.io/badge/Git-F05032?style=flat-square&logo=git&logoColor=white) |
+| GitHub Actions | ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white) |
+| Docker | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) |
+| Notion | ![Notion](https://img.shields.io/badge/Notion-000000?style=flat-square&logo=notion&logoColor=white) |
+
+<br/>
+<br/>
+
+# 6. Project Structure (프로젝트 구조)
+
+```plaintext
+NUNCHI/
+├── src/main/
+│   ├── java/dgu/capstone/
+│   │   ├── domain/          # 엔티티 및 도메인 모델
+│   │   ├── repository/      # JPA 레포지토리
+│   │   ├── service/         # 비즈니스 로직
+│   │   ├── controller/      # REST API 컨트롤러
+│   │   ├── dto/             # 요청/응답 DTO
+│   │   ├── config/          # Security, Redis 설정
+│   │   └── exception/       # 공통 예외 처리
+│   └── resources/
+│       └── application.yml
+├── tests/                   # 프론트엔드 단위 테스트 (Node test runner)
+├── docs/
+│   └── images/              # ← 스크린샷 이미지 저장 위치
+├── .env.example
+├── Dockerfile
+└── build.gradle
+```
+
+<br/>
+<br/>
+
+# 7. Development Workflow (개발 워크플로우)
+
+## 브랜치 전략 (Branch Strategy)
+
+Git Flow를 기반으로 하며, 다음 브랜치를 사용합니다.
+
+- `main` Branch
+  - 배포 가능한 상태의 코드를 유지합니다.
+  - 모든 배포는 이 브랜치에서 이루어집니다.
+
+- `dev` Branch
+  - 개발 통합 브랜치입니다.
+  - 기능 개발 완료 후 dev로 머지합니다.
+
+- `{name}/{feature}` Branch
+  - 팀원 각자의 기능 개발 브랜치입니다.
+  - 예: `feat/#82/kakao-payment`
+
+<br/>
+<br/>
+
+# 8. Coding Convention
+
+## 명명 규칙 (Java / Spring)
+
+```java
+// 클래스: 파스칼 케이스
+public class OrderService {}
+
+// 메서드 & 변수: 카멜 케이스
+public void createOrder() {}
+private String orderStatus;
+
+// 상수: 어퍼 스네이크 케이스
+public static final String JWT_SECRET = "...";
+```
+
+<br/>
+
+## API 설계 원칙
+
+```
+- REST API: /api/**
+- 응답 코드: 200, 201, 400, 401, 404, 409, 500 명확히 구분
+- 비즈니스 로직은 Controller에 두지 않고 Service로 분리
+- 외부 연동은 Adapter/Client 계층으로 분리
+- 공통 예외 처리 사용
+```
+
+<br/>
+
+## 보안 원칙
+
+```
+- API Key, JWT Secret 등 민감 정보는 코드에 하드코딩 금지
+- 환경 변수(.env)로 관리
+- 결제/인증 정보는 로그에 기록 금지
+```
+
+<br/>
+<br/>
+
+# 9. 커밋 컨벤션
+
+## 기본 구조
+
+```
+[Type] 설명
+```
+
+<br/>
+
+## Type 종류
+
+```
+[Feat]    : 새로운 기능 추가
+[Fix]     : 버그 수정
+[Refactor]: 코드 리팩토링
+[Chore]   : 빌드, 설정, 패키지 변경
+[Docs]    : 문서 작성 / 수정
+```
+
+<br/>
+
+## 커밋 예시
+
+```
+== ex1
+[Feat] 메뉴 추천 API 추가
+
+홈 화면 메뉴 추천 엔드포인트 및 Specification 기반 필터링 구현
+
+== ex2
+[Fix] 장바구니 분산 락 획득 실패 시 409 에러코드 추가
+
+== ex3
+[Chore] Discord 웹훅 CI/CD 알림 추가
+```
