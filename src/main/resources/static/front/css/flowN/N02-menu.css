@@ -1480,9 +1480,20 @@
     flex: 0 0 auto;
 }
 .n02-nunchi__dismiss {
-    margin-top: 16px;
+    /* 하단 푸터 버튼 — 항상 가로 꽉 채우고 가운데 정렬.
+       btn-cta 의 inline-flex(폭이 글자에 맞춰 줄며 우측으로 붙던 원인)를 덮어쓴다. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
     width: 100%;
-    min-height: 56px;
+    margin-top: 18px;
+    min-height: 58px;
+    padding: 0 20px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    border-radius: 16px;
 }
 
 /* ── AI 추천 모달 (음성 추천 시 가운데 표시 · 이유 라벨 + 메뉴 3개) ──────── */
