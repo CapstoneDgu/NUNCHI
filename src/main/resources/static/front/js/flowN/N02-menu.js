@@ -679,6 +679,42 @@
     }
 
     // ---------- 메뉴 상세 오버레이 ----------
+    function getRecommendationMenuId(item) {
+        if (!item) return null;
+        const raw = item.menu_id != null ? item.menu_id
+            : item.menuId != null ? item.menuId
+            : item.id != null ? item.id
+            : null;
+        const id = Number(raw);
+        return Number.isFinite(id) ? id : null;
+    }
+
+    function hasUsableRecommendations(list) {
+        return Array.isArray(list) && list.some((item) => {
+            const menuId = getRecommendationMenuId(item);
+            return menuId != null && !!window.MenuData.findMenuById(menuId);
+        });
+    }
+
+    function getFallbackRecommendations(limit) {
+        const store = getStore(state.currentFloorId, state.currentStoreId);
+        const floor = getFloor(state.currentFloorId);
+        if (!store || !Array.isArray(store.menus)) return [];
+
+        return store.menus
+            .filter((menu) => !menu.soldOut)
+            .slice(0, limit || 3)
+            .map((menu) => ({
+                menu_id: menu.id,
+                name: menu.name,
+                price: menu.price,
+                imageUrl: menu.imageUrl,
+                restaurantName: store.name,
+                floorName: floor ? floor.name : "",
+                reason: "현재 매장에서 바로 주문할 수 있는 메뉴예요.",
+            }));
+    }
+
     function openDetail(menuId) {
         const found = window.MenuData.findMenuById(menuId);
         if (!found) return;
@@ -1055,12 +1091,16 @@
             });
             if (res && res.reply) {
                 pushChatBubble("ai", res.reply);
-                // 대화 패널이 닫혀 있어도 보이도록 짧게 토스트로 알림
-                showN02Toast(res.reply.length > 36 ? res.reply.slice(0, 35) + "…" : res.reply);
             }
+            const recommendations = hasUsableRecommendations(res && res.recommendations)
+                ? res.recommendations
+                : getFallbackRecommendations(3);
             // 추천 메뉴 카드 강조 + 스크롤
-            if (window.AiAction && res && res.recommendations) {
-                window.AiAction.handleRecommendations(res.recommendations);
+            if (window.AiAction && recommendations.length) {
+                window.AiAction.handleRecommendations(recommendations, res && res.reply);
+            } else if (res && res.reply) {
+                // 대화 패널이 닫혀 있어도 보이도록 토스트로 알림
+                showN02Toast(res.reply);
             }
         } catch (e) {
             // 음성 요청 처리 중이면 조용히 무시 (_busy) — 다음 기회에 다시 감지됨

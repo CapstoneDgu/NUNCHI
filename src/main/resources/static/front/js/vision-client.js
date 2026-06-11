@@ -413,19 +413,18 @@
     };
 
     document.addEventListener('DOMContentLoaded', function () {
-        injectVisionStyle();
-
         if (isVisionEnabled()) {
+            injectVisionStyle();
             connectVisionWebSocket();
+            setTimeout(refreshSelectables, 200);
         } else {
+            clearFocus();
             console.log('[VISION_CLIENT] default mode. vision disabled.');
         }
 
-        // DOM 로드 직후 selectable 잡기 (시선 모드일 때만)
+        // DOM 로드 직후 selectable 잡기 — 시선 모드일 때만 (위 DOMContentLoaded 의
+        // isVisionEnabled() 블록에서 이미 refreshSelectables 호출).
         // 기본(터치) 모드에서는 .vision-focused 초록 강조가 잘못 붙는 것을 방지한다.
-        if (isVisionEnabled()) {
-            setTimeout(refreshSelectables, 200);
-        }
 
         // 모달/동적 버튼 대응
         const observer = new MutationObserver(function () {
