@@ -11,6 +11,7 @@ import java.util.Set;
 public record MenuResponse(
         Long menuId,
         String name,
+        String categoryName,
         Integer price,
         Boolean isSoldOut,
         Boolean isRecommended,
@@ -36,6 +37,7 @@ public record MenuResponse(
         return new MenuResponse(
                 menu.getMenuId(),
                 menu.getName(),
+                menu.getCategory() != null ? menu.getCategory().getName() : null,
                 menu.getPrice(),
                 menu.getIsSoldOut(),
                 isRecommended,

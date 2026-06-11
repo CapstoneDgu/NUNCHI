@@ -140,6 +140,10 @@
         top(limit) {
             return request('GET', '/api/menus/top', null, { limit });
         },
+        // GET /api/menus/recommendations — 홈 화면 추천(저지방/고단백/저칼로리/차가운/따뜻한 + 베스트셀러)
+        recommendations() {
+            return request('GET', '/api/menus/recommendations');
+        },
         detail(menuId) {
             return request('GET', `/api/menus/${encodeURIComponent(menuId)}`);
         },

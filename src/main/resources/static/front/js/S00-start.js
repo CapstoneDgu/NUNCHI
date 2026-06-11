@@ -59,42 +59,78 @@
     const nf = new Intl.NumberFormat("ko-KR");
     const fmtWon = (n) => "₩ " + nf.format(Math.max(0, Number(n) || 0));
 
-    // ---- 백엔드 데이터로 슬라이드 채우기 ----
+    // ---- 백엔드 추천 데이터로 슬라이드 채우기 ----
+    // GET /api/menus/recommendations → 광고판 3장 구성:
+    //   ① 오늘의 베스트셀러 (고정)
+    //   ② 저지방·고단백·저칼로리 묶음 중 랜덤 1테마 → 메뉴 1개
+    //   ③ 차가운·따뜻한 중 랜덤 1테마 → 메뉴 1개
+    function pickRandom(arr) {
+        if (!Array.isArray(arr) || arr.length === 0) return null;
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function toSlide(menu, badge, themeLabel) {
+        if (!menu) return null;
+        return {
+            menuId: menu.menuId,
+            name: menu.name,
+            price: menu.price,
+            isSoldOut: menu.isSoldOut,
+            badge: badge,
+            themeLabel: themeLabel,
+            reason: menu.reason || "",
+            imageCandidates: menu.imageUrl ? [menu.imageUrl] : []
+        };
+    }
+
     async function hydrateSlidesFromBackend() {
         if (!window.NunchiApi) return;
         try {
-            const top = await window.NunchiApi.Menus.top(4);
-            const slides = (top || []).slice(0, 4).map((t) => ({
-                menuId: t.menuId,
-                name: t.name,
-                price: t.price,
-                quantitySold: t.quantitySold || 0,
-                isSoldOut: t.isSoldOut,
-                imageCandidates: t.imageUrl ? [t.imageUrl] : []
-            }));
-            applySlides(slides);
+            const rec = await window.NunchiApi.Menus.recommendations();
+            if (!rec) return;
+
+            // ② 저지방/고단백/저칼로리 묶음 중 랜덤 1테마 → 그 안에서 메뉴 랜덤 1개
+            const dietThemes = [
+                { menus: rec.lowFat,      badge: "저지방",   label: "저지방 추천" },
+                { menus: rec.highProtein, badge: "고단백",   label: "고단백 추천" },
+                { menus: rec.lowCalorie,  badge: "다이어트", label: "다이어트 추천" }
+            ].filter((t) => Array.isArray(t.menus) && t.menus.length);
+            const diet = pickRandom(dietThemes);
+
+            // ③ 차가운/따뜻한 중 랜덤 1테마 → 그 안에서 메뉴 랜덤 1개
+            const tempThemes = [
+                { menus: rec.cold, badge: "시원한", label: "시원한 메뉴 추천" },
+                { menus: rec.hot,  badge: "뜨끈한", label: "뜨끈한 메뉴 추천" }
+            ].filter((t) => Array.isArray(t.menus) && t.menus.length);
+            const temp = pickRandom(tempThemes);
+
+            const slides = [
+                toSlide(rec.bestSeller, "베스트셀러", "오늘의 베스트셀러"),
+                diet ? toSlide(pickRandom(diet.menus), diet.badge, diet.label) : null,
+                temp ? toSlide(pickRandom(temp.menus), temp.badge, temp.label) : null
+            ].filter(Boolean);
+
+            // 그날 추천된 메뉴(슬라이드)를 세션에 저장 → 메뉴 목록/상세에서 동일하게 'AI 추천' 라벨/이유 노출
+            try {
+                const picks = slides.map((s) => ({ menuId: s.menuId, reason: s.reason }));
+                sessionStorage.setItem("nunchiAiRecommend", JSON.stringify(picks));
+            } catch (e) { /* sessionStorage 불가 시 무시 */ }
+
+            if (slides.length) applySlides(slides);
         } catch (e) {
-            console.warn("[S00] 메뉴 데이터 hydrate 실패 — 정적 슬라이드 유지", e);
+            console.warn("[S00] 추천 데이터 hydrate 실패 — 정적 슬라이드 유지", e);
         }
     }
 
     /**
-     * top API 결과(slides[])로 1~4번 슬라이드 노드를 갱신.
+     * 추천 결과(slides[])로 SLIDE 1~N 노드를 갱신.
      * concept 슬라이드(첫 번째)는 그대로 유지. 데이터 부족하면 남는 슬라이드는 숨긴다.
+     * 판매량 % / 진행바 대신 추천 이유(reason)를 노출한다.
      */
     function applySlides(slides) {
         const $allSlides = document.querySelectorAll(".s00__slide");
         // 첫 번째는 concept 이라 건드리지 않음
         const $menuSlides = Array.from($allSlides).slice(1);
-        // 1위 quantitySold 기준 비율
-        const top1 = slides[0] && slides[0].quantitySold ? slides[0].quantitySold : 0;
-        const rankBadges = ["지금 1위", "인기", "추천", "오늘의 픽"];
-        const rankLabels = [
-            (n) => "현재 판매량 1위",
-            (n) => "지금 인기 메뉴 2위",
-            (n) => "지금 인기 메뉴 3위",
-            (n) => "지금 인기 메뉴 4위"
-        ];
 
         $menuSlides.forEach(($s, i) => {
             const data = slides[i];
@@ -134,33 +170,32 @@
             if ($name)  $name.textContent  = data.name || "";
             if ($price) $price.textContent = fmtWon(data.price);
 
+            // 배지 = 테마(저지방/시원한/오늘의 베스트셀러 등)
+            const $badgeText = $s.querySelector(".s00__slide-badge span");
+            if ($badgeText) $badgeText.textContent = data.badge || "AI 추천";
+
+            // 통계 영역 → 추천 이유로 대체 (판매량 % / 진행바는 숨김)
             const $statsLabel = $s.querySelector(".s00__slide-stats-label");
             const $statsDesc  = $s.querySelector(".s00__slide-stats-desc");
             const $statsValue = $s.querySelector(".s00__slide-stats-value");
             const $progress   = $s.querySelector(".s00__slide-progress");
-            const $progressFill = $s.querySelector(".s00__slide-progress-fill");
 
-            if ($statsLabel) $statsLabel.textContent = rankLabels[i](data.quantitySold);
-            if ($statsDesc)  $statsDesc.textContent  = `오늘 ${data.quantitySold || 0}개 주문`;
-
-            const pct = top1 > 0 ? Math.round((data.quantitySold / top1) * 100) : 0;
-            const safePct = Math.max(8, Math.min(100, pct)); // 너무 빈 그래프 방지
-            if ($statsValue) $statsValue.textContent = pct + "%";
-            if ($progressFill) $progressFill.style.width = safePct + "%";
-            if ($progress) $progress.setAttribute("aria-valuenow", String(pct));
-
-            const $badgeText = $s.querySelector(".s00__slide-badge span");
-            if ($badgeText) $badgeText.textContent = rankBadges[i] || "추천";
+            if ($statsLabel) $statsLabel.textContent = data.themeLabel || "AI 추천";
+            if ($statsDesc)  $statsDesc.textContent  = data.reason || "";
+            if ($statsValue) $statsValue.style.display = "none";
+            if ($progress)   $progress.style.display = "none";
 
             if (data.isSoldOut) {
                 $s.classList.add("is-soldout");
                 if ($price) $price.textContent = "품절";
+            } else {
+                $s.classList.remove("is-soldout");
             }
         });
 
         // dot 인디케이터 — 사용 가능한 슬라이드 수에 맞춰 hide/show
         const usableMenuCount = slides.filter(Boolean).length;
-        const totalUsable = 1 + usableMenuCount; // concept + 메뉴
+        const totalUsable = 1 + usableMenuCount; // concept + 추천
         if ($dotsRoot) {
             const $allDots = $dotsRoot.querySelectorAll(".s00__slider-dot");
             $allDots.forEach(($d, idx) => {

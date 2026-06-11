@@ -215,6 +215,7 @@
         },
         detail(menuId)             { return get(`/api/menus/${menuId}`); },
         top(limit = 5)             { return get(`/api/menus/top?limit=${limit}`); },
+        recommendations()          { return get('/api/menus/recommendations'); },
     };
 
     // /api/orders/cart, /api/orders/confirm, /api/orders/{id}/cancel

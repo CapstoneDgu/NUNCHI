@@ -77,7 +77,7 @@ public class MenuService {
                 ? menuRepository.findAll()
                 : menuRepository.findByCategory_CategoryId(categoryId);
 
-        Long bestSellerMenuId = findTodayBestSellerMenuId();
+        Long bestSellerMenuId = resolveBestSellerMenuId();
         return menus.stream()
                 .map(menu -> toMenuResponseWithBestSellerLabel(menu, bestSellerMenuId))
                 .toList();
@@ -142,7 +142,7 @@ public class MenuService {
                 .and(MenuSpecification.fetchCategory())
                 .and(MenuSpecification.nameContains(keyword));
 
-        Long bestSellerMenuId = findTodayBestSellerMenuId();
+        Long bestSellerMenuId = resolveBestSellerMenuId();
         return menuRepository.findAll(spec).stream()
                 .map(menu -> toMenuResponseWithBestSellerLabel(menu, bestSellerMenuId))
                 .toList();
@@ -166,7 +166,7 @@ public class MenuService {
                 .stream()
                 .collect(Collectors.groupingBy(option -> option.getOptionGroup().getOptionGroupId()));
 
-        boolean isBestSeller = menuId.equals(findTodayBestSellerMenuId());
+        boolean isBestSeller = menuId.equals(resolveBestSellerMenuId());
         Boolean isRecommended = isBestSeller ? Boolean.TRUE : menu.getIsRecommended();
         String reason = isBestSeller ? BEST_SELLER_REASON : null;
 
@@ -241,7 +241,7 @@ public class MenuService {
     private MenuResponse getBestSellerRecommendation(List<Menu> eligibleMenus) {
         if (eligibleMenus.isEmpty()) return null;
 
-        Long bestSellerMenuId = findTodayBestSellerMenuId();
+        Long bestSellerMenuId = resolveBestSellerMenuId();
         Menu bestSeller = (bestSellerMenuId != null)
                 ? menuRepository.findById(bestSellerMenuId).orElse(eligibleMenus.get(0))
                 : eligibleMenus.get(0);
@@ -250,11 +250,11 @@ public class MenuService {
     }
 
     /**
-     * 오늘의 베스트셀러(판매량 1위) menuId 조회 (추가메뉴/음료/품절 제외)
-     * 일반 메뉴 목록/검색/상세 조회에서도 동일한 메뉴에 isRecommended=true + 추천 이유를 노출해
-     * 홈 화면 추천 라벨과 일관성을 유지하기 위해 사용한다.
+     * 오늘의 베스트셀러 menuId 결정 (추가메뉴/음료/품절 제외)
+     * - 오늘 판매 데이터가 있으면 판매량 1위, 없으면 후보 중 menuId 최소값으로 폴백.
+     * 목록/검색/상세/홈 화면 추천이 모두 같은 메뉴를 베스트셀러로 라벨하도록 단일 소스로 사용한다.
      */
-    private Long findTodayBestSellerMenuId() {
+    private Long resolveBestSellerMenuId() {
         Specification<Menu> eligibleSpec = Specification.where(MenuSpecification.notSoldOut())
                 .and(MenuSpecification.excludeCategoryNames(RECOMMEND_EXCLUDED_CATEGORIES));
         Set<Long> eligibleMenuIds = menuRepository.findAll(eligibleSpec).stream()
@@ -267,7 +267,9 @@ public class MenuService {
                 .map(TopMenuResponse::menuId)
                 .filter(eligibleMenuIds::contains)
                 .findFirst()
-                .orElse(null);
+                // 오늘 판매 데이터가 없으면 후보 중 menuId 최소값으로 폴백
+                // (목록/검색/상세/홈추천이 모두 같은 메뉴를 베스트셀러로 라벨하도록 단일 소스 유지)
+                .orElseGet(() -> eligibleMenuIds.stream().min(Comparator.naturalOrder()).orElse(null));
     }
 
     // 오늘의 베스트셀러라면 isRecommended=true + 추천 이유를 부여하고, 아니면 DB의 기존 값을 그대로 반환
