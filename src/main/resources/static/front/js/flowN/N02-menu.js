@@ -567,7 +567,7 @@
         if (/(더\s*담|담아|담기|넣어|추가|이걸로)/.test(text) && !/(안|말고|취소|아니|그만)/.test(text)) {
             optModalAdd(false); return true;
         }
-        if (/(닫아|닫기|취소|그만|나가)/.test(t)) { closeOptModal(); return true; }
+        if (/(닫아|닫기|꺼|없애|치워|취소|그만|나가|뒤로|돌아가)/.test(t)) { closeOptModal(); return true; }
         return false;
     }
 
@@ -587,7 +587,7 @@
             showOptionsForMenu(openDetailMenuId);
             return true;
         }
-        if (/(닫아|닫기|취소|그만|뒤로|나가)/.test(t)) { closeDetail(); return true; }
+        if (/(닫아|닫기|꺼|없애|치워|취소|그만|뒤로|나가|됐|돌아가)/.test(t)) { closeDetail(); return true; }
         return false;
     }
 
@@ -633,6 +633,49 @@
         if (!menu) return false;
         openDetail(menu.id);
         return true;
+    }
+
+    // 장바구니 강조 + 요약 안내 (열린 오버레이는 닫는다) — "담겼어?" 응답용
+    function showCart() {
+        if ($detail && !$detail.hidden) closeDetail();
+        if ($optModal && !$optModal.hidden) closeOptModal();
+        if ($recModal && !$recModal.hidden) closeRecommendModal(false);
+        if ($nunchiModal && !$nunchiModal.hidden) closeNunchiModal();
+        const c = totalCartCount();
+        if ($cartBar) {
+            $cartBar.classList.add("ai-pulse");
+            try { $cartBar.scrollIntoView({ behavior: "smooth", block: "end" }); } catch (_) {}
+            setTimeout(() => $cartBar.classList.remove("ai-pulse"), 2000);
+        }
+        showN02Toast(c ? `장바구니에 ${c}개 담겨 있어요 · 총 ${fmt(totalCartAmount())}` : "아직 장바구니가 비어 있어요");
+    }
+    window.__N02_showCart = showCart;
+
+    // 기본 페이지 음성 명령 (카트 확인 / 총액 / 도움말 / 음료 이동)
+    function tryBasicVoice(text) {
+        const t = (text || "").replace(/\s/g, "");
+        if (!t) return false;
+        if (/(도와줘|도움말|뭐할수있|뭐라고하면|어떻게말|무슨명령|명령어)/.test(t)) {
+            showN02Toast('"OO 보여줘", "담아줘", "옵션 있어?", "추천해줘", "담겼어?", "결제할게" 처럼 말해보세요');
+            return true;
+        }
+        // 카트 확인 (담기 동사/비우기/빼기는 제외)
+        if (/(담겼|담았어|들어갔|장바구니|카트|뭐담|뭐들어)/.test(t) && !/(담아|담을|비워|비우|지워|삭제|초기화|빼)/.test(t)) {
+            showCart();
+            return true;
+        }
+        // 총액
+        if (/(총.?얼마|얼마나왔|얼마예|얼마야|합계|총액)/.test(t)) {
+            const c = totalCartCount();
+            showN02Toast(c ? `총 ${fmt(totalCartAmount())} (${c}개)` : "아직 장바구니가 비어 있어요");
+            return true;
+        }
+        // 음료 화면 이동
+        if (/음료/.test(t) && /(보여|화면|메뉴|탭|줘|가|이동)/.test(t) && !/(담아|담을|주문)/.test(t)) {
+            const tab = document.querySelector('[data-floor="F90"]');
+            if (tab) { tab.click(); showN02Toast("음료 메뉴예요"); return true; }
+        }
+        return false;
     }
 
     // ---------- 메뉴 상세 오버레이 ----------
@@ -913,6 +956,9 @@
             return;
         }
 
+        // 1.4) 카트 확인 / 총액 / 도움말 / 음료 이동 같은 기본 페이지 명령
+        if (tryBasicVoice(text)) return;
+
         // 1.5) 메뉴 이름 + '보기'(담기 동사 없음) → AI 없이 바로 상세 오버레이 오픈 (확실한 화면 조작)
         if (tryDirectMenuView(text)) return;
 
@@ -1158,7 +1204,7 @@
         if (!$recModal || $recModal.hidden || !_recMenus.length) return false;
         const t = (text || "").replace(/\s/g, "");
         if (!t) return false;
-        if (/(닫아|닫기|취소|그만|아니|싫|나가|뒤로|괜찮)/.test(t)) { closeRecommendModal(true); return true; }
+        if (/(닫아|닫기|꺼|없애|치워|취소|그만|아니|싫|나가|뒤로|됐|괜찮|돌아가)/.test(t)) { closeRecommendModal(true); return true; }
         let idx = -1;
         if (/(첫|하나|1번|일번|왼쪽)/.test(t)) idx = 0;
         else if (/(두번|둘|2번|이번|가운데|중간)/.test(t)) idx = 1;
