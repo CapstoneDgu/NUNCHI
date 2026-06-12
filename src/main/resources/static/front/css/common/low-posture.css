@@ -33,6 +33,27 @@
 .lpost-toggle:hover { opacity: 1; }
 .lpost-toggle__icon { font-size: 16px; }
 .lpost-toggle:active { transform: scale(0.97); }
+
+/* 모달/오버레이가 열려 있으면 저자세 토글을 숨긴다 (일반·저자세 모드 공통).
+   토글 z-index 가 매우 높아, 안 숨기면 모달(상세/옵션/눈치 추천/AI 추천)
+   오른쪽 아래로 토글이 겹쳐 떠 보인다. 모달을 닫으면 다시 나타난다. */
+body:has(.n02__detail:not([hidden])) .lpost-toggle,
+body:has(.n02-opt:not([hidden])) .lpost-toggle,
+body:has(.n02-nunchi:not([hidden])) .lpost-toggle,
+body:has(.n02-rec:not([hidden])) .lpost-toggle {
+    display: none;
+}
+
+/* 모달·옵션·팝업(상세/옵션/눈치 추천/AI 추천)은 항상 최상위 레이어로 올려,
+   저자세 토글(♿, z-index 2147483000)과 저자세 UI 를 완전히 덮는다(저자세가 가려짐).
+   토글 숨김과 함께 이중으로 보장 — 모달이 뜨면 무조건 그 위에 아무것도 안 보이게. */
+.n02__detail:not([hidden]),
+.n02-opt:not([hidden]),
+.n02-nunchi:not([hidden]),
+.n02-rec:not([hidden]) {
+    z-index: 2147483600;
+}
+
 /* 저자세 ON 일 때만 살짝 따뜻하게 강조 (튀지 않게) */
 html.posture-low .lpost-toggle {
     background: var(--primary-50, #fff3ea);
