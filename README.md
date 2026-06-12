@@ -1,3 +1,7 @@
+# NUNCHI
+![CI/CD](https://github.com/CapstoneDgu/NUNCHI/actions/workflows/cd.yml/badge.svg?branch=main)
+<br>
+
 # 1. Project Overview (프로젝트 개요)
 - 프로젝트 이름: NUNCHI (눈치)
 - 프로젝트 설명: LLM Agentic AI 기반 배리어프리 자율주문 키오스크. 음성 대화만으로 메뉴 탐색 → 추천 → 담기 → 결제까지 완료할 수 있으며, 사용자가 말하지 않아도 AI가 망설임을 감지해 먼저 도움을 제안합니다.
