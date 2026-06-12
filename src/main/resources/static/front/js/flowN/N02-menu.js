@@ -929,7 +929,7 @@
         $micStatusEl.dataset.mic = kind;
         const COPY = {
             off:       { title: "마이크 꺼짐",        desc: "상단 마이크 버튼을 눌러 음성 주문을 시작하세요", badge: "OFF" },
-            listening: { title: "듣고 있어요",        desc: "편하게 말씀해 주세요",                            badge: "LIVE" },
+            listening: { title: "듣고 있어요",        desc: "편하게 말씀해 주세요",                            badge: "ON"  },
             thinking:  { title: "응답을 준비 중…",    desc: "잠시만 기다려주세요",                              badge: "…"   },
         };
         const c = COPY[kind] || COPY.off;

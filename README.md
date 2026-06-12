@@ -6,11 +6,11 @@
 <br/>
 
 # 2. Team Members (팀원 및 팀 소개)
-| 효동 | 팀원2 | 팀원3 | 팀원4 |
+| 조효동 | 이현노 | 임호영 | 임현우 |
 |:------:|:------:|:------:|:------:|
-| <img src="https://github.com/hyodongg.png" alt="효동" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원2" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원3" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원4" width="150"> |
-| BE / AI | BE | FE | FE |
-| [GitHub](https://github.com/hyodongg) | [GitHub](#) | [GitHub](#) | [GitHub](#) |
+| <img src="https://github.com/hyodongg.png" alt="효동" width="150"> | <img src="https://github.com/leehyunro123.png" alt="현노" width="150"> | <img src="https://github.com/user-attachments/assets/8364b797-411e-409c-bbcf-8252edcee649" alt="호영" width="150"> | <img src="https://github.com/user-attachments/assets/38a337c7-6881-4e92-a918-a740acc21b20" alt="현우" width="150"> |
+| BE / AI | FE · 결제 · HW연동 | Infra / VISION/ ADMIN | FE/PM |
+| [GitHub](https://github.com/hyodongg) | [GitHub](https://github.com/leehyunro123) | [GitHub](https://github.com/sexybugmaster) | [GitHub](https://github.com/pyeree) |
 
 <br/>
 <br/>
@@ -105,67 +105,72 @@
 - **음성 불확실성**: STT 신뢰도 낮음
 
 <br/>
+
+## 3.8 시선 추적 주문 (NUNCHI Vision)
+
+OpenCV와 MediaPipe 기반 Python 비전 엔진을 통해 사용자의 시선 방향과 더블 깜빡임을 감지합니다.
+
+Python 비전 서버는 WebSocket(`ws://127.0.0.1:8765`)으로 브라우저와 연결되며,
+프론트엔드의 `vision-client.js`가 `.vision-selectable` 요소를 대상으로 포커스 이동과 클릭을 수행합니다.
+
+- **LEFT / RIGHT 시선 유지**: 선택 포커스 이동
+- **더블 깜빡임**: 현재 포커스된 요소 클릭
+- **캘리브레이션 화면**: 사용자의 중앙 시선 기준 보정
+- **적용 화면**: 모드 선택, 매장/포장 선택, 메뉴 선택, 주문 확인, 결제 흐름
+
+이를 통해 터치 없이도 키오스크 주요 주문 플로우를 진행할 수 있습니다.
+
+<br/>
+
+## 3.9 관리자 모드
+
+키오스크에서 발생한 주문 데이터를 관리자가 확인할 수 있는 운영 관리 화면입니다.
+
+관리자는 주문 내역, 주문 상세 정보, 주문 상태, 주문 시각, 주문 메뉴 등을 조회할 수 있으며, 키오스크에서 생성된 주문 데이터가 백엔드와 DB에 정상 반영되었는지 확인할 수 있습니다.
+
+- 관리자 로그인
+- 주문 내역 조회
+- 주문 상세 정보 확인
+- 주문 상태 확인
+- 주문 데이터 DB 저장 확인
+- 관리자 API 기반 주문 데이터 조회
+- 주문 통계 파일 다운로드
+
+<br/>
 <br/>
 
 # 4. Tasks & Responsibilities (작업 및 역할 분담)
 
 |  |  |  |
 |--------|--------|--------|
-| 효동 | <img src="https://github.com/hyodongg.png" alt="효동" width="100"> | <ul><li>Spring Boot 백엔드 설계 및 개발</li><li>메뉴 조회 · 추천 · 주문 · 결제 플로우 API 구현</li><li>FastAPI AI 서버 전체 설계 및 개발</li><li>LangGraph 주문 에이전트 · MCP Tool 구현</li><li>MCP 서버 Smithery 배포</li><li>CI/CD 설정 및 서버 관리 (GitHub Actions, Discord 웹훅)</li></ul> |
-| 팀원2 | <img src="https://github.com/identicons/placeholder.png" alt="팀원2" width="100"> | <ul><li>Spring Boot 백엔드 개발</li><li>세션 / 통계 API</li><li>DB 설계 및 관리</li></ul> |
-| 팀원3 | <img src="https://github.com/identicons/placeholder.png" alt="팀원3" width="100"> | <ul><li>React 키오스크 UI 개발</li><li>일반 모드 / 아바타 모드 화면</li><li>WebSocket 연동</li></ul> |
-| 팀원4 | <img src="https://github.com/identicons/placeholder.png" alt="팀원4" width="100"> | <ul><li>React 키오스크 UI 개발</li><li>결제 화면 개발</li><li>저자세(배리어프리) 모드 개발</li></ul> |
+| 조효동 | <img src="https://github.com/hyodongg.png" alt="효동" width="100"> | <ul><li>Spring Boot & FastAPI 백엔드/AI 서버 설계·개발</li><li>메뉴 조회·추천·주문·결제 API 구현</li><li>LangGraph 주문 에이전트 & MCP Tool/서버(Smithery) 구현</li><li>MCP 서버 Smithery 배포</li><li>CI/CD 설정 및 서버 관리 (GitHub Actions, Discord 웹훅)</li></ul> |
+| 임현우 | <img src="https://github.com/user-attachments/assets/38a337c7-6881-4e92-a918-a740acc21b20" alt="임현우" width="100"> | <ul><li>기획 및 디자인 시스템 구축</li><li>AI 아바타 제작 및 플로우 구현</li><li>아바타 모드 UI 구현</li><li>프론트 통합 및 SSE 클라이언트 구축</li></ul> |
+| 임호영 | <img src="https://github.com/user-attachments/assets/8364b797-411e-409c-bbcf-8252edcee649" alt="호영" width="100"> | <ul><li>AWS EC2 및 Docker Compose 기반 서비스 배포·운영 환경 구축</li><li>Spring Boot, FastAPI, PostgreSQL, Redis, Nginx 기반 서버 아키텍처 구성</li><li>GitHub Actions CI/CD 및 Prometheus·Grafana 기반 모니터링 체계 구축</li><li>관리자 주문 조회 기능 개발, API 성능 분석 및 시선 입력 보조 기능 연동 검토</li></ul> |
+| 이현노 | <img src="https://github.com/leehyunro123.png" alt="현노" width="100"> | <ul><li>일반 모드 키오스크 UI 및 <b>음성 원격조작 주문 플로우</b> 개발 — STT 연동, quick-action·AI action dispatcher 로 「메뉴 탐색 → 상세 → 옵션 모달 → 담기」 화면 자동 제어</li><li><b>AI 추천 모달 · 눈치(망설임) 추천 모달</b> 프론트 구현 — 음성/터치 선택, 추천 사유 라벨, 대화 사이드바 연동</li><li><b>결제 플로우(flowP) 전 화면</b> 구현 — 주문 요약·결제수단·카드결제·완료·실패·카카오페이 바코드, 백엔드/장바구니 서버 연동</li><li><b>실 카드 단말기(IC·마그네틱) 하드웨어 연동</b> 및 영수증·번호표 출력 에이전트 연결</li><li><b>저자세(배리어프리) 모드</b> 구현 — 화면 하단 절반 UI, 모달 겹침·토글 처리</li><li>홈 추천 슬라이드·AI 추천 라벨링, 메뉴 데이터 시드(2·3층 매장·영업시간), 1~3차 QA 대응</li></ul> |
 
 <br/>
 <br/>
 
 # 5. Technology Stack (기술 스택)
 
-## 5.1 Language
+
 |  |  |
 |--------|--------|
-| Java 17 | ![Java](https://img.shields.io/badge/Java_17-007396?style=flat-square&logo=openjdk&logoColor=white) |
+| Java | ![Java](https://img.shields.io/badge/Java_17-007396?style=flat-square&logo=openjdk&logoColor=white) |
 | JavaScript | ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) |
-| Python 3.11 | ![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=flat-square&logo=python&logoColor=white) |
-
-<br/>
-
-## 5.2 Backend
-|  |  |  |
-|--------|--------|--------|
-| Spring Boot | ![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=springboot&logoColor=white) | 4.0.5 |
-| Spring Security | ![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=flat-square&logo=springsecurity&logoColor=white) | JWT 인증 |
-| PostgreSQL | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | 메인 DB |
-| Redis | ![Redis](https://img.shields.io/badge/Redis-FF4438?style=flat-square&logo=redis&logoColor=white) | 캐시 / 분산 락 |
-
-<br/>
-
-## 5.3 Frontend
-|  |  |
-|--------|--------|
-| React | ![React](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black) |
-
-<br/>
-
-## 5.4 AI Server ([NUNCHI-AI](https://github.com/CapstoneDgu/NUNCHI-AI))
-|  |  |
-|--------|--------|
+| Python | ![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=flat-square&logo=python&logoColor=white) |
+| Spring Boot | ![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=springboot&logoColor=white) |
+| PostgreSQL | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) |
+| Redis | ![Redis](https://img.shields.io/badge/Redis-FF4438?style=flat-square&logo=redis&logoColor=white) |
 | FastAPI | ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) |
-| LangGraph / LangChain | ![LangChain](https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white) |
-| OpenAI (Whisper / GPT / TTS) | ![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai&logoColor=white) |
-
-<br/>
-
-## 5.5 Cooperation
-|  |  |
-|--------|--------|
-| Git | ![Git](https://img.shields.io/badge/Git-F05032?style=flat-square&logo=git&logoColor=white) |
-| GitHub Actions | ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white) |
+| LangGraph | ![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white) |
+| OpenAI | ![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai&logoColor=white) |
 | Docker | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) |
-| Notion | ![Notion](https://img.shields.io/badge/Notion-000000?style=flat-square&logo=notion&logoColor=white) |
-
-<br/>
-<br/>
+| GitHub Actions | ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white) |
+| Prometheus | ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat&logo=prometheus&logoColor=white") |
+| Grafana | ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat&logo=grafana&logoColor=white") |
+| OpenCV | ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat&logo=opencv&logoColor=white") |
+| MediaPipe | ![MediaPipe](https://img.shields.io/badge/MediaPipe-0097A7?style=flat&logo=google&logoColor=white") |
 
 # 6. Project Structure (프로젝트 구조)
 
@@ -182,6 +187,11 @@ NUNCHI/
 │   │   └── exception/       # 공통 예외 처리
 │   └── resources/
 │       └── application.yml
+├── nunchi-vision/               # OpenCV / MediaPipe 기반 시선 입력 서버
+│   ├── main.py                  # 비전 엔진 실행 진입점
+│   ├── server.py                # WebSocket 서버
+│   ├── detectors/               # 얼굴/홍채 감지
+│   └── fusion/                  # 시선 이동, 깜빡임, 망설임 이벤트 처리
 ├── tests/                   # 프론트엔드 단위 테스트 (Node test runner)
 ├── docs/
 │   └── images/              # ← 스크린샷 이미지 저장 위치
