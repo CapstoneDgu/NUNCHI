@@ -8,8 +8,7 @@
 # 2. Team Members (팀원 및 팀 소개)
 | 조효동 | 이현노 | 임호영 | 임현우 |
 |:------:|:------:|:------:|:------:|
-| <img src="https://github.com/hyodongg.png" alt="효동" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원2" width="150"> | <img src="<img width="221" height="198" alt="image" src="https://github.com/user-attachments/assets/8364b797-411e-409c-bbcf-8252edcee649" />
-" alt="팀원3" width="150"> | <img src="https://github.com/user-attachments/assets/38a337c7-6881-4e92-a918-a740acc21b20" alt="현우" width="150"> |
+| <img src="https://github.com/hyodongg.png" alt="효동" width="150"> | <img src="https://github.com/identicons/placeholder.png" alt="팀원2" width="150"> | <img src="https://github.com/user-attachments/assets/8364b797-411e-409c-bbcf-8252edcee649" alt="호영" width="150"> | <img src="https://github.com/user-attachments/assets/38a337c7-6881-4e92-a918-a740acc21b20" alt="현우" width="150"> |
 | BE / AI | BE | Infra / VISION/ ADMIN | FE/PM |
 | [GitHub](https://github.com/hyodongg) | [GitHub](https://github.com/leehyunro123) | [GitHub](https://github.com/sexybugmaster) | [GitHub](https://github.com/pyeree) |
 
