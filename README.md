@@ -21,7 +21,8 @@
 
 터치 주문, 시선 추적 주문, 저자세(배리어프리) 모드를 선택할 수 있는 메인 화면입니다.
 
-<img src="https://github.com/user-attachments/assets/e54e6ad5-cc99-447b-a537-3530af4ee04f"  alt="메인화면" width="300"/>
+<img src="https://github.com/user-attachments/assets/5a14c604-c36f-4cbd-8baf-678923c4525b"  alt="메인화면" width="300"/>
+
 
 <br/>
 
@@ -29,7 +30,7 @@
 
 일반 터치 주문과 AI 대화 주문 중 원하는 방식을 선택합니다.
 
-<img src="https://github.com/user-attachments/assets/5ea4ef96-d0a1-4453-9e8a-bcceb0a984d3" alt="메인화면" width="300"/>
+<img src="https://github.com/user-attachments/assets/8f955861-77e1-4e3e-b1d1-67f699057f9f" alt="메인화면" width="300"/>
 
 <br/>
 
@@ -37,8 +38,7 @@
 
 터치 기반 주문이 기본 흐름입니다. 상단 마이크 버튼으로 음성 주문을 시작하면 AI가 음성을 인식하고 화면을 자동으로 원격 조작하여 메뉴 탐색·담기·결제까지 진행합니다. AI 추천 라벨, 대화 기록, 매장/포장 전환 버튼을 제공합니다.
 
-<img src="https://github.com/user-attachments/assets/8ba8a3b5-2d33-4372-8402-6cd34469743c" alt="메인화면" width="300"/>
-
+<img src="https://github.com/user-attachments/assets/d09d2e7a-8f84-4dcf-be67-64ed5343e79a" alt="메인화면" width="300"/>
 
 
 <br/>
@@ -54,7 +54,8 @@
 
 **아바타 모드 — 대화 & 추천**
 
-<img src="https://github.com/user-attachments/assets/54ab750c-3caa-4f28-bff5-c2e1698de4a3" alt="메인화면" width="300"/>
+<img src="https://github.com/user-attachments/assets/8f50218e-2242-49b7-99c1-e10265dde3b5" alt="메인화면" width="300"/>
+
 
 <br/>
 
@@ -62,7 +63,7 @@
 
 추천을 받으면 메뉴 카드 모달이 표시됩니다. 마음에 드는 메뉴를 바로 담거나, 마음에 들지 않으면 닫고 다른 추천을 요청할 수 있습니다.
 
-<img src="https://github.com/user-attachments/assets/acc3edb0-b85e-4a0e-81e3-61bd61b8e2bb" alt="메인화면" width="300"/>
+<img src="https://github.com/user-attachments/assets/ccaf9e71-4e43-47a8-b8b8-50597698ae9b" alt="메인화면" width="300"/>
 
 
 <br/>
@@ -73,7 +74,8 @@
 
 > 예: `장바구니 확인해줘` · `조건 바꿔서 추천해줘` · `다른 메뉴도 추천해줘`
 
-<img src="https://github.com/user-attachments/assets/61639b41-c19f-407a-a1a1-711050aa06f0" alt="메인화면" width="300"/>
+<img src="https://github.com/user-attachments/assets/8880f2a8-3605-4dd0-be7b-980f5a3e0f27" alt="메인화면" width="300"/>
+
 
 
 <br/>
