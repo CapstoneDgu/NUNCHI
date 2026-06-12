@@ -84,6 +84,8 @@
 
 [Smithery.ai](https://smithery.ai)에 NUNCHI MCP 서버를 등록하여, 개인 Claude Desktop에 간단한 명령어 한 줄로 연결할 수 있습니다. 개인 AI를 통해 외국어 주문, 개인 맞춤 추천 등 다양한 방식으로 활용 가능합니다.
 
+<img width="1024" height="441" alt="image" src="https://github.com/user-attachments/assets/da7fd90d-e7b1-46fa-b6a7-3b2926420ba4" />
+
 <img src="https://github.com/user-attachments/assets/9472ad6b-cfea-4390-a341-ac616c6f31a1" width="600"/>
 
 <img src="https://github.com/user-attachments/assets/c614b573-e7e7-44a3-8604-ca0d6d237731" width="600"/>
