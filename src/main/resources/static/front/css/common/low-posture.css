@@ -44,6 +44,16 @@ body:has(.n02-rec:not([hidden])) .lpost-toggle {
     display: none;
 }
 
+/* 모달·옵션·팝업(상세/옵션/눈치 추천/AI 추천)은 항상 최상위 레이어로 올려,
+   저자세 토글(♿, z-index 2147483000)과 저자세 UI 를 완전히 덮는다(저자세가 가려짐).
+   토글 숨김과 함께 이중으로 보장 — 모달이 뜨면 무조건 그 위에 아무것도 안 보이게. */
+.n02__detail:not([hidden]),
+.n02-opt:not([hidden]),
+.n02-nunchi:not([hidden]),
+.n02-rec:not([hidden]) {
+    z-index: 2147483600;
+}
+
 /* 저자세 ON 일 때만 살짝 따뜻하게 강조 (튀지 않게) */
 html.posture-low .lpost-toggle {
     background: var(--primary-50, #fff3ea);
