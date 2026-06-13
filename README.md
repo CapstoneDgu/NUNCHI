@@ -13,7 +13,7 @@
 | 조효동 | 이현노 | 임호영 | 임현우 |
 |:------:|:------:|:------:|:------:|
 | <img src="https://github.com/hyodongg.png" alt="효동" width="150"> | <img src="https://github.com/leehyunro123.png" alt="현노" width="150"> | <img src="https://github.com/user-attachments/assets/8364b797-411e-409c-bbcf-8252edcee649" alt="호영" width="150"> | <img src="https://github.com/user-attachments/assets/38a337c7-6881-4e92-a918-a740acc21b20" alt="현우" width="150"> |
-| BE / AI | FE/PD | Infra / VISION/ ADMIN | FE/PM |
+| BE / AI | FE / PD | Infra / VISION/ ADMIN | FE/PM |
 | [GitHub](https://github.com/hyodongg) | [GitHub](https://github.com/leehyunro123) | [GitHub](https://github.com/sexybugmaster) | [GitHub](https://github.com/pyeree) |
 
 <br/>
